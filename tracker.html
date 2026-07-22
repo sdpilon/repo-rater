@@ -1,0 +1,325 @@
+<title>GitHub Project Tracker — sdpilon</title>
+<style>
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #f0efeb;
+  --ink: #23231f;
+  --ink-2: #5c5b53;
+  --ink-3: #8d8c82;
+  --line: #e2e1da;
+  --accent: #47599c;
+  --accent-ink: #3a4a86;
+  --good: #2e7d4f;
+  --warn: #a9700f;
+  --crit: #b3452e;
+  --meter-track: #e6e5de;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191a1c;
+    --surface: #212226;
+    --surface-2: #2a2b30;
+    --ink: #e8e7e2;
+    --ink-2: #a5a49b;
+    --ink-3: #77766e;
+    --line: #34353a;
+    --accent: #8fa0dd;
+    --accent-ink: #a5b4e8;
+    --good: #5cb885;
+    --warn: #d9a544;
+    --crit: #d97a63;
+    --meter-track: #33343a;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f7f6f3; --surface: #ffffff; --surface-2: #f0efeb; --ink: #23231f;
+  --ink-2: #5c5b53; --ink-3: #8d8c82; --line: #e2e1da; --accent: #47599c;
+  --accent-ink: #3a4a86; --good: #2e7d4f; --warn: #a9700f; --crit: #b3452e;
+  --meter-track: #e6e5de;
+}
+:root[data-theme="dark"] {
+  --bg: #191a1c; --surface: #212226; --surface-2: #2a2b30; --ink: #e8e7e2;
+  --ink-2: #a5a49b; --ink-3: #77766e; --line: #34353a; --accent: #8fa0dd;
+  --accent-ink: #a5b4e8; --good: #5cb885; --warn: #d9a544; --crit: #d97a63;
+  --meter-track: #33343a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--sans); line-height: 1.5;
+  font-size: 15px;
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: 40px 20px 80px; }
+header.page h1 {
+  font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em;
+  margin: 0 0 4px; text-wrap: balance;
+}
+header.page .sub { color: var(--ink-2); margin: 0; }
+header.page .sub code { font-family: var(--mono); font-size: 0.85em; }
+
+.notice {
+  margin-top: 18px; padding: 10px 14px; border: 1px solid var(--line);
+  border-left: 3px solid var(--warn); background: var(--surface);
+  border-radius: 6px; color: var(--ink-2); font-size: 0.86rem;
+}
+
+.totals {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px; margin: 24px 0 36px;
+}
+.tile {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px 14px;
+}
+.tile .n {
+  font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.tile .l {
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ink-3); margin-top: 2px;
+}
+
+.repo {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  margin-bottom: 22px; overflow: hidden;
+}
+.repo-head { padding: 18px 20px 14px; }
+.repo-head .toprow {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+}
+.repo-head h2 { margin: 0; font-size: 1.05rem; font-weight: 650; letter-spacing: -0.01em; }
+.repo-head h2 a { color: var(--ink); text-decoration: none; }
+.repo-head h2 a:hover { color: var(--accent-ink); text-decoration: underline; }
+.badge {
+  font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em;
+  padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line);
+  color: var(--ink-2); background: var(--surface-2);
+}
+.badge.private { border-color: var(--warn); color: var(--warn); background: transparent; }
+.lang { font-size: 0.78rem; color: var(--ink-3); margin-left: auto; }
+.desc { color: var(--ink-2); font-size: 0.86rem; margin: 6px 0 0; }
+
+.meter-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.meter { flex: 1; height: 7px; border-radius: 99px; background: var(--meter-track); overflow: hidden; }
+.meter > div { height: 100%; border-radius: 99px; }
+.meter-pct {
+  font-family: var(--mono); font-size: 0.82rem; font-variant-numeric: tabular-nums;
+  min-width: 3.2em; text-align: right;
+}
+.status-chip {
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em;
+  padding: 3px 9px; border-radius: 5px; white-space: nowrap;
+}
+.s-good  { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
+.s-warn  { color: var(--warn); background: color-mix(in srgb, var(--warn) 13%, transparent); }
+.s-crit  { color: var(--crit); background: color-mix(in srgb, var(--crit) 12%, transparent); }
+.s-none  { color: var(--ink-3); background: var(--surface-2); }
+
+.assess {
+  padding: 14px 20px 16px; border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.assess .eyebrow {
+  font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--accent-ink); font-weight: 650; margin-bottom: 6px;
+}
+.assess p { margin: 0 0 8px; font-size: 0.9rem; max-width: 68ch; }
+.assess p:last-child { margin-bottom: 0; }
+.assess ul { margin: 6px 0 0; padding-left: 18px; font-size: 0.86rem; color: var(--ink-2); }
+.assess li { margin-bottom: 3px; }
+
+.raw { border-top: 1px solid var(--line); background: var(--surface-2); }
+.raw details { border-bottom: 1px solid var(--line); }
+.raw details:last-child { border-bottom: none; }
+.raw summary {
+  cursor: pointer; padding: 9px 20px; font-size: 0.8rem; font-weight: 600;
+  color: var(--ink-2); list-style: none; display: flex; align-items: center; gap: 8px;
+  user-select: none;
+}
+.raw summary::-webkit-details-marker { display: none; }
+.raw summary::before { content: "▸"; color: var(--ink-3); font-size: 0.7rem; transition: transform 0.12s; }
+.raw details[open] summary::before { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .raw summary::before { transition: none; } }
+.raw summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.raw .count {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--ink-3); font-weight: 400;
+}
+.raw .body { padding: 4px 20px 16px; overflow-x: auto; }
+table.log { border-collapse: collapse; font-family: var(--mono); font-size: 0.76rem; width: 100%; }
+table.log td { padding: 2px 14px 2px 0; white-space: nowrap; vertical-align: top; color: var(--ink-2); }
+table.log td.msg { white-space: normal; color: var(--ink); min-width: 24ch; }
+table.log td.date, table.log td.sha { color: var(--ink-3); }
+.pr-state { font-weight: 600; }
+.pr-state.merged { color: var(--good); }
+.pr-state.open { color: var(--accent-ink); }
+.pr-state.closed { color: var(--crit); }
+pre.readme {
+  font-family: var(--mono); font-size: 0.74rem; line-height: 1.55;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  padding: 12px 14px; margin: 0; white-space: pre-wrap; word-break: break-word;
+  max-height: 340px; overflow-y: auto; color: var(--ink-2);
+}
+.empty { font-size: 0.8rem; color: var(--ink-3); font-style: italic; }
+footer.page {
+  margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+  font-size: 0.78rem; color: var(--ink-3); max-width: 68ch;
+}
+</style>
+
+<div class="wrap">
+  <header class="page">
+    <h1>Project completion tracker</h1>
+    <p class="sub">github.com/<code>sdpilon</code> · repos with pushes between <code>2026-06-20</code> and <code>2026-07-21</code> · snapshot taken 2026-07-21</p>
+    <div class="notice">
+      <strong>Static snapshot.</strong> This account's artifact runtime has no in-page AI call (no <code>askClaude</code>) and no GitHub connector, so the data and the AI assessments below were both generated at build time from the live GitHub API — the assessments are Claude's reading of each README's stated goals against the past month's actual activity.
+    </div>
+  </header>
+
+  <div class="totals" id="totals"></div>
+  <div id="repos"></div>
+
+  <footer class="page">
+    Assessments compare what each README claims or promises against commits, PRs, and issues from the past month. Percentages are judgment calls about "stated scope shipped," not code coverage. Issues were open on zero repos in this window. To refresh, re-run the generating session.
+  </footer>
+</div>
+
+<script>
+const DATA = [{"name":"sdpilon/audashio","meta":{"default_branch":"main","description":null,"html_url":"https://github.com/sdpilon/audashio","language":"TypeScript","private":true,"stargazers_count":0},"readme":"# Audashio\n\n**Your homelab, auto-discovered.** A zero-config dashboard for Traefik users.\n\nAudashio reads your Docker labels and shows every Traefik-routed service in one place. No service list to hand-curate.\n\n- **Free and open source** — AGPL-3.0\n- **Single container** — mount the Docker socket and go\n- **Traefik-native** — parses standard Traefik v3 labels you already have\n- **Optional overrides** — polish names, descriptions, icons, and categories with `audashio.*` labels\n\n## Quick start\n\n```yaml\n# compose.yaml\nservices:\n  audashio:\n    image: ghcr.io/audashio/audashio:latest\n    restart: unless-stopped\n    environment:\n      AUDASHIO_SOURCE: docker\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock:ro\n    ports:\n      - \"8080:8080\"\n```\n\n```sh\ndocker compose up -d\n```\n\nThen open <http://localhost:8080>.\n\n## Docs and live demo\n\n- **Live demo & docs:** <https://audashio.lovable.app>\n- **Getting started:** <https://audashio.lovable.app/docs/getting-started>\n- **Labels reference:** <https://audashio.lovable.app/docs/labels>\n\n## Development\n\nAudashio is one TanStack Start app. The same source ships in the Docker image and powers the public live demo (with a mock data source).\n\n```sh\nbun install\nbun run dev\n```\n\n## License\n\n[AGPL-3.0](./LICENSE)","issues":[],"prs":[],"commits":[{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:11:44Z","message":"Added Audashio comparison page","sha":"b591401"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:11:41Z","message":"Changes","sha":"8f95f5d"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:11:37Z","message":"Changes","sha":"79be1b0"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:11:03Z","message":"Changes","sha":"2dc7740"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:08:35Z","message":"Update plan","sha":"44651e8"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:08:09Z","message":"Work in progress","sha":"45f6d69"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:49:08Z","message":"Fixed 5 SEO findings","sha":"2eb7967"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:49:02Z","message":"Changes","sha":"e778a12"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:48:55Z","message":"Changes","sha":"b5b68e1"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:47:13Z","message":"Added robots.txt at root","sha":"fe7e19f"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:47:07Z","message":"Changes","sha":"60205c1"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:29:20Z","message":"Fixed heading hierarchy & a11y","sha":"37866c1"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:29:11Z","message":"Changes","sha":"ce67ac6"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:29:06Z","message":"Changes","sha":"f286537"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:29:02Z","message":"Changes","sha":"671e10b"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:28:48Z","message":"Work in progress","sha":"7dfb726"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T13:49:38Z","message":"Fixed code overflow & ampersand","sha":"de09052"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T13:49:36Z","message":"Changes","sha":"0616529"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T13:49:31Z","message":"Changes","sha":"edb2dd5"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T13:49:18Z","message":"Work in progress","sha":"708bbb8"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:41:10Z","message":"Built Audashio core + routes","sha":"ec13d3e"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:41:00Z","message":"Changes","sha":"29551c8"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:40:54Z","message":"Changes","sha":"f367bf6"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:40:26Z","message":"Changes","sha":"87524a4"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:39:41Z","message":"Changes","sha":"5945921"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:39:09Z","message":"Changes","sha":"8617001"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:38:41Z","message":"Changes","sha":"7d7c4b9"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:38:10Z","message":"Changes","sha":"42997e2"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:37:37Z","message":"Changes","sha":"01c4fcb"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:37:31Z","message":"Changes","sha":"35152e2"}]},{"name":"sdpilon/homebrew-rogueamoeba","meta":{"default_branch":"main","description":"Personal Homebrew tap pinning SoundSource to the last macOS-14-compatible 5.x release, since the official tap now requires macOS 15+","html_url":"https://github.com/sdpilon/homebrew-rogueamoeba","language":"Ruby","private":false,"stargazers_count":0},"readme":"# homebrew-rogueamoeba\n\n`sdpilon`'s personal Homebrew tap for Rogue Amoeba apps. Currently holds one cask, `soundsource@5`, pinning [SoundSource](https://rogueamoeba.com/soundsource/) to the last 5.x release rather than the official tap's 6.x line.\n\n## Why\n\nHomebrew's official `homebrew/cask` tap tracks the current `soundsource` (6.x), which requires macOS 15+. Rogue Amoeba still publishes older [legacy builds](https://rogueamoeba.com/legacy/#soundsource) for older macOS versions. This tap pins SoundSource 5.9.0 (macOS 14.5+) under the separate token `soundsource@5` so it can be installed alongside — or instead of — the official cask without colliding.\n\n## Install\n\n```\nbrew trust sdpilon/rogueamoeba\nbrew tap sdpilon/rogueamoeba\nbrew install --cask sdpilon/rogueamoeba/soundsource@5\n```\n\n## Casks\n\n| Token | Pinned version | macOS floor |\n|---|---|---|\n| `soundsource@5` | 5.9.0 | 14.5+ |\n\nSee `.claude/CLAUDE.md` for cask authoring conventions and validation steps.\n\n## Disclaimer\n\nThis is an unofficial, personal tap and is not affiliated with, endorsed by,\nor sponsored by Rogue Amoeba Software, LLC. SoundSource and its installer are\nproprietary software copyright Rogue Amoeba; this repository only contains a\nHomebrew Cask definition that downloads SoundSource directly from Rogue\nAmoeba's own servers. The cask definition itself is MIT licensed — see\n`LICENSE`.","issues":[],"prs":[],"commits":[{"author":"spencer","date":"2026-07-17T22:49:27Z","message":"docs: add MIT license and non-affiliation disclaimer","sha":"5f586c4"},{"author":"spencer","date":"2026-07-17T22:41:32Z","message":"chore: move docs into .claude/, add README for tap distribution","sha":"e47e769"},{"author":"spencer","date":"2026-07-17T21:19:35Z","message":"docs: document tap distribution and add bump-cask-version skill","sha":"4a8a461"},{"author":"spencer","date":"2026-07-17T19:58:47Z","message":"fix: rename cask token to soundsource@5 to avoid upstream collision","sha":"8e0190c"},{"author":"spencer","date":"2026-07-17T19:37:05Z","message":"feat: add SoundSource cask pinned to 5.9.0 for macOS 14.7.6 compatibility","sha":"22a4f6c"},{"author":"spencer","date":"2026-07-17T18:43:00Z","message":"docs: add plan for soundsource@5 legacy cask","sha":"464ee52"},{"author":"spencer","date":"2026-07-17T18:40:03Z","message":"chore: initial commit","sha":"f0bf341"}]},{"name":"sdpilon/typst-resume","meta":{"default_branch":"main","description":null,"html_url":"https://github.com/sdpilon/typst-resume","language":"Dockerfile","private":true,"stargazers_count":0},"readme":"# Typst project template\n\nA devcontainer-ready starting point for Typst documents, with the\nClaude Code CLI preinstalled. Works locally (Zed + a Docker-API-\ncompatible engine like OrbStack) and in GitHub Codespaces.\n\n## Using this template\n\nClick **Use this template** → **Create a new repository** above, then on\nthe new repo: **Code** → **Codespaces** → **Create codespace on main**.\n\nFirst boot takes a minute or two (installing Typst + tinymist). After that,\nopen the terminal and run `claude`, or `typst compile main.typ`.\n\n### Auth for Claude Code on Codespaces\n\nEach new Codespace starts fresh, so just run `claude` in the terminal\nafter it boots and follow the browser login prompt — one login per new\nproject, no standing secret to manage.\n\n## Using this locally instead\n\nSee `.devcontainer/README.md` for the Zed + OrbStack workflow.","issues":[],"prs":[],"commits":[{"author":"sdpilon","date":"2026-07-16T02:24:25Z","message":"Initial commit","sha":"0afe244"}]},{"name":"sdpilon/typst-template","meta":{"default_branch":"main","description":null,"html_url":"https://github.com/sdpilon/typst-template","language":"Dockerfile","private":false,"stargazers_count":0},"readme":"# Typst project template\n\nA devcontainer-ready starting point for Typst documents, with the\nClaude Code CLI preinstalled. Works locally (Zed + a Docker-API-\ncompatible engine like OrbStack) and in GitHub Codespaces.\n\n## Using this template\n\nClick **Use this template** → **Create a new repository** above, then on\nthe new repo: **Code** → **Codespaces** → **Create codespace on main**.\n\nFirst boot takes a minute or two (installing Typst + tinymist). After that,\nopen the terminal and run `claude`, or `typst compile main.typ`.\n\n### Auth for Claude Code on Codespaces\n\nEach new Codespace starts fresh, so just run `claude` in the terminal\nafter it boots and follow the browser login prompt — one login per new\nproject, no standing secret to manage.\n\n## Using this locally instead\n\nSee `.devcontainer/README.md` for the Zed + OrbStack workflow.","issues":[],"prs":[],"commits":[{"author":"spencer","date":"2026-07-16T02:19:53Z","message":"feat: initial Typst devcontainer setup","sha":"9ca0baf"},{"author":"spencer","date":"2026-07-16T02:19:13Z","message":"chore: create .gitignore","sha":"77ea154"}]},{"name":"sdpilon/home-server","meta":{"default_branch":"main","description":null,"html_url":"https://github.com/sdpilon/home-server","language":"Shell","private":false,"stargazers_count":0},"readme":"# Docker VM Home Server Configuration\n\nMy personal Docker stacks setup. Not intended for public use.\n\n\n## Overview\n\n- Running on a Debian 13 (bookworm) VM in Proxmox\n- Accesses storage over NFS mounts on my NAS\n- Uses [Arcane](https://getarcane.app/) for Docker Compose management.\n  - It's actually useful on the scale I'm currently working at, i.e., a single environment.\n  - It has the right level of control for me, where I can directly edit the `compose.yaml`s (or any files now after a recent update).\n  - The right amount of monitoring and visibility.\n  - And a nice looking UI which provides most functionality you need without having to ssh in for everything, which is handy even when I'm away from the computer, because the mobile version is fully usable. I have spun up a new stack from my phone while laying in bed.\n- Even though I use Arcane, everything still works without using Arcane, so I can still manage my stacks from the command line.\n\n## Stacks & Services:\n\n\n- `arcane` -- The arcane web UI for managing Docker Compose stacks.\n  - 2 containers: arcane, docker socket proxy\n\n- `bentopdf` -- Tools for working with PDF documents, but local. I mainly use it for splitting and merging. Smaller docker image size compared to sterlingPDF.\n  - 1 container: bentopdf\n\n- `immich` -- The main photo management app I use every day.\n  - 4 containers: immich app, immich Machine learning backend, postgres database, redis cache\n\n- `it-tools` -- Some handy IT-related utilities. So I don't have to google to find some specific tool, find random website, and then enter my data into said random website.\n  - 1 container: it-tools\n\n- `jellyfin` -- Media server, for serving media.\n  - 2 containers: jellyfin app, tizen tv app installer/updater (only for docker profile: tv-app)\n\n- `ntfy` --  Currently not actually being used for anything.\n  - 1 container: ntfy\n\n- `omnitools` -- Same story as it-tools, but more general purpose.\n  - 1 container: omnitools\n\n- `servarr` -- My media management and torrenting stack.\n  - 8 containers: sonarr, radarr, lidarr, bazarr, qbittorrent, prowlarr, gluetun, qb port updater\n\n- `traefik` -- Reverse proxy and SSL termination for my services. Moved from `nginx-proxy-manager` because the config is declarative and lives in each service's compose file, for containers anyway. Some are outside of this VM, and are configured separately.\n  - 1 container: traefik\n\n- `uptime-kuma` -- Monitoring my containers, and other services on other hosts, as well as the proxied URLs.\n  - 1 container: uptime-kuma\n\n## Setup\n\nClone the repo to the directory where you want your Compose projects to live.\n\nFor each service, copy the `*.example` file(s) and remove the `.example` suffix, then fill in the values for the environment.\n\nFor example, to set up `immich`,\n- copy `immich/.env.example` to `immich/.env` and fill in the values for the environment\n- copy `immich/secrets/postgres_username.txt.example` to `immich/secrets/postgres_username.txt` and fill in the real username\n- copy `immich/secrets/postgres_password.txt.example` to `immich/secrets/postgres_password.txt` and fill in the real password\n- run `docker compose up -d`","issues":[],"prs":[],"commits":[{"author":"Spencer Pilon","date":"2026-07-15T01:58:50Z","message":"feat: add uptime-kuma","sha":"d74259c"},{"author":"Spencer Pilon","date":"2026-07-15T01:56:16Z","message":"refactor: remove un-needed port traefik label","sha":"b925e53"},{"author":"Spencer Pilon","date":"2026-07-15T01:54:07Z","message":"refactor: use NAS ip address instead of domain name","sha":"5b03f83"},{"author":"Spencer Pilon","date":"2026-06-28T21:54:23Z","message":"fix: revert http router labels to previous working state","sha":"1374d63"},{"author":"Spencer Pilon","date":"2026-06-25T05:12:59Z","message":"refactor(traefik): adjust routing urls","sha":"24da5d6"},{"author":"Spencer Pilon","date":"2026-06-25T01:58:37Z","message":"docs: update README","sha":"ba977ff"},{"author":"Spencer Pilon","date":"2026-06-25T01:57:01Z","message":"feat: add example files for .envs and secrets","sha":"0abe3f7"},{"author":"Spencer Pilon","date":"2026-06-25T01:51:38Z","message":"refactor:  last remaining cert resolver variable","sha":"4f599c4"},{"author":"spencer","date":"2026-06-24T20:37:59Z","message":"docs: Create README file","sha":"bf8a3b6"},{"author":"Spencer Pilon","date":"2026-06-23T01:19:25Z","message":"refactor: remove .env files","sha":"a8097e9"},{"author":"Spencer Pilon","date":"2026-06-23T00:27:30Z","message":"refactor: env variables","sha":"7c9834a"},{"author":"Spencer Pilon","date":"2026-06-23T00:17:35Z","message":"feat: add `ntfy` config","sha":"227d051"},{"author":"Spencer Pilon","date":"2026-06-23T00:15:55Z","message":"refactor: remove now redundant arcane.label on services if same as project, add back the localtime binds and literal values for certresolver","sha":"980715a"},{"author":"Spencer Pilon","date":"2026-06-22T23:40:41Z","message":"refactor: use docker socket proxy instead of direct socket access","sha":"4abd017"},{"author":"Spencer Pilon","date":"2026-06-20T22:25:05Z","message":"refactor: utilise additional environment variables to decrease repeated strings","sha":"b3a852f"},{"author":"Spencer Pilon","date":"2026-06-20T17:03:38Z","message":"refactor: decomission freshrss","sha":"64ac2c1"}]},{"name":"sdpilon/spilon.dev","meta":{"default_branch":"main","description":"Personal site starter template","html_url":"https://github.com/sdpilon/spilon.dev","language":"TypeScript","private":false,"stargazers_count":0},"readme":"# Fresh project\n\n### Usage\n\nMake sure to install Deno:\nhttps://docs.deno.com/runtime/getting_started/installation\n\nThen start the project in development mode:\n\n```\ndeno task dev\n```\n\nThis will watch the project directory and restart as necessary.","issues":[],"prs":[{"created_at":"2026-07-08T23:35:34Z","merged_at":"2026-07-08T23:36:52Z","number":1,"state":"closed","title":"Update fresh version"}],"commits":[{"author":"spencer","date":"2026-07-10T03:45:05Z","message":"feat: update site content","sha":"7ed716a"},{"author":"spilon","date":"2026-07-08T23:36:52Z","message":"Merge pull request #1 from sdpilon/dev","sha":"7ebbdc9"},{"author":"spencer","date":"2026-07-04T19:05:14Z","message":"Update fresh version","sha":"ab4ceeb"},{"author":"spencerpilon","date":"2026-06-21T20:24:23Z","message":"Initial commit","sha":"0cdcd04"}]},{"name":"sdpilon/astro-sienna","meta":{"default_branch":"main","description":null,"html_url":"https://github.com/sdpilon/astro-sienna","language":"Astro","private":true,"stargazers_count":0},"readme":"# Astro Sienna\n\nA minimal Astro blog template with serif typography, dark mode, RSS, OG images, and optional Giscus comments and\nanalytics.\n\n**Live demo:** [Github Pages](https://anjaygoel.github.io/astro-sienna)\n\n![Astro Sienna home page in dark and light themes](.github/assets/preview.png)\n\n## Features\n\n- Astro 6 with content collections (posts and pages, both validated by Zod)\n- MDX support — embed Astro/JSX components, imports, and JS expressions inside posts\n- Light and dark mode with a CSS-only theme toggle\n- Self-hosted serif body font ([Newsreader](https://github.com/productiontype/Newsreader)) and mono (JetBrains Mono)\n- Code blocks via [astro-expressive-code](https://expressive-code.com): themes, copy button, terminal frames, line\n  highlighting\n- Math via KaTeX (`$inline$` and `$$display$$`)\n- Custom containers (`:::note`, `:::tip`, `:::caution`)\n- Per-post OG images generated at build time (Satori + resvg)\n- RSS feed, sitemap, robots.txt, web manifest\n- Optional [Giscus](https://giscus.app) comments with custom matched themes\n- Optional GA4 and Goatcounter analytics, both loaded via [Partytown](https://partytown.qwik.dev/) so they run on a\n  worker thread\n- Optional [webmentions](https://webmention.io), fetched at build and cached locally\n- Perfect Lighthouse scores (Performance, Accessibility, Best Practices, SEO)\n\n## Quick start\n\nClick **Use this template** on GitHub, or clone directly:\n\n```sh\ngit clone https://github.com/AnjayGoel/astro-sienna.git my-site\ncd my-site\npnpm install\npnpm dev\n```\n\nOpen http://localhost:4321.\n\n## Commands\n\n| Command        | What it does                                 |\n|----------------|----------------------------------------------|\n| `pnpm dev`     | Start the dev server with HMR                |\n| `pnpm build`   | Type-check, build, and run Pagefind indexing |\n| `pnpm preview` | Preview the production build locally         |\n| `pnpm format`  | Run Biome and Prettier                       |\n| `pnpm lint`    | Lint with Biome                              |\n\n## Configuration\n\nMost personalisation happens in two files.\n\n**`src/site.config.ts`** holds author, profile, comments, analytics, and webmentions. Every field in `profile` is\noptional. Leave any of `email`, `github`, `linkedin`, `employer`, `alumni`, or `avatar` undefined and the corresponding\nlink is hidden site-wide. Same for `comments` and `analytics`: undefined means the script never loads.\n\n**`astro.config.ts`** is where you set `site` to your final domain (used for canonical URLs, sitemap, RSS, and OG image\nURLs). The base path is handled automatically — see [Deploying](#deploying); you normally don't touch it.\n\nReplace these assets in `public/`:\n\n- `icon.png` (512×512). Drives the favicon and the auto-generated `apple-touch-icon`, `icon-192`, and `icon-512` PWA\n  manifest icons.\n- `social-card.png` (1200×630). Fallback OG image, used when a post doesn't have its own. The default is a placeholder\n  you can swap.\n- `avatar.png` (optional). Referenced from `siteConfig.profile.avatar`, used in the About page's structured data and any\n  avatar slot you add.\n\n### Per-post OG images\n\nEvery post gets its own 1200×630 OG image generated at build time by [Satori](https://github.com/vercel/satori). The\nmarkup lives in `src/pages/og-image/[...slug].png.ts`. Tweak it once and every post's card updates on the next build. To\nskip the generated image and point a post at your own, set `ogImage: \"/path/to/image.png\"` in the post's frontmatter.\n\n## Writing posts\n\nPosts live in `src/content/post/` as `.md` or `.mdx` files. The filename becomes the slug.\n\n```yaml\n---\ntitle: \"Your post title\"\npublishDate: 2026-01-12\ndescription: \"One-sentence summary used in cards, social previews, and meta tags.\"\ntags: [ tag-one, tag-two ]\n# updatedDate: 2026-02-01     # optional, shown as \"Updated …\"\n# draft: true                  # excludes the post from production builds\n# coverImage:\n#   src: ./_assets/cover.png\n#   alt: \"Description for screen readers\"\n---\n```\n\nThe about page is also markdown, at `src/content/page/about.md`. Showcase entries are typed objects in\n`src/data/showcase.ts`; empty the array and the Showcase tab is hidden automatically.\n\n## Project layout\n\n```\nsrc/\n  site.config.ts        # author / profile / integrations\n  content.config.ts     # collection schemas (post, page)\n  content/\n    post/*.md           # blog posts\n    page/about.md       # about page\n  data/showcase.ts      # showcase entries (or empty for none)\n  components/           # blog/, layout/, ui/\n  layouts/              # Base.astro, BlogPost.astro\n  pages/                # routes (incl. /og-image, /posts pagination, rss)\n  plugins/              # remark-admonitions, remark-reading-time\n  styles/global.css     # design tokens and shared utilities\npublic/                 # static assets served at site root\n```\n\n## Theming\n\nDesign tokens are CSS variables at the top of `src/styles/global.css`: accent colour, hairlines, surfaces, fonts. The\nlight and dark variants are gated by `[data-theme=\"light\"]` and `[data-theme=\"dark\"]` on the `<html>` element, so\nswapping them is a single re-render with no script.\n\nCode-block themes are configured separately in `expressiveCodeOptions` in `site.config.ts` (defaults: `min-light` and\n`min-dark`).\n\n## Deploying\n\nOutput is a static `dist/` directory that deploys anywhere serving files: Cloudflare Pages, Netlify, Vercel, GitHub\nPages, S3 + CloudFront. Build command: `pnpm build`. Output directory: `dist`.\n\n### Base path\n\nDefaults to root (`/`) — no config needed for local dev, Netlify, Vercel, Cloudflare Pages, a custom domain, or a\nGitHub Pages **user** site. The whole site (links, assets, feeds, OG/canonical, manifest, Markdown links) is base-aware.\n\nFor a GitHub Pages **project** site (served from `/repo/`), the bundled `.github/workflows/deploy.yml` detects the\nsubpath and configures it automatically; the only manual step is **Settings → Pages → Source: GitHub Actions**. For a\nsubpath on any other host, build with `BASE_PATH=/sub pnpm build`.\n\n## Pulling theme updates\n\nTo keep tracking upstream changes after you've forked, add this repo as a second remote:\n\n```sh\ngit remote add theme https://github.com/AnjayGoel/astro-sienna.git\ngit fetch theme\ngit merge theme/main --allow-unrelated-histories\n```\n\nUse `.gitattributes` with a `merge=ours` driver on personal-content paths (e.g. `src/content/post/*`,\n`src/site.config.ts`, `public/avatar.png`) to keep your changes through the merge.\n\n## Credits\n\nOriginally forked from [astro-theme-cactus](https://github.com/chrismwilliams/astro-theme-cactus)\nby [Chris Williams](https://github.com/chrismwilliams), then heavily revamped into its current form.\n\n## License\n\n[MIT](./LICENSE).","issues":[],"prs":[],"commits":[{"author":"spilon","date":"2026-07-07T18:27:10Z","message":"Initial commit","sha":"0088004"}]},{"name":"sdpilon/skill-spotlight-scan","meta":{"default_branch":"main","description":null,"html_url":"https://github.com/sdpilon/skill-spotlight-scan","language":"TypeScript","private":true,"stargazers_count":0},"readme":"","issues":[],"prs":[],"commits":[{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:29:21Z","message":"Refactored extension to WXT","sha":"d04eefb"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:29:13Z","message":"Changes","sha":"db88f2e"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:29:00Z","message":"Changes","sha":"079aab1"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:28:49Z","message":"Changes","sha":"b2870da"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:28:32Z","message":"Changes","sha":"4b9a7d6"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:28:14Z","message":"Changes","sha":"d0601a0"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:28:03Z","message":"Changes","sha":"e007f06"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:26:57Z","message":"Changes","sha":"9bf932c"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:26:38Z","message":"Changes","sha":"4c7e921"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:25:00Z","message":"Update plan","sha":"b10a96c"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:24:34Z","message":"Work in progress","sha":"7d62b2e"},{"author":"gpt-engineer-app[bot]","date":"2026-06-28T22:12:03Z","message":"Update site info for publish","sha":"99d3b10"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T17:01:27Z","message":"Tested extension URL mapping","sha":"9b7cbb3"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T17:01:21Z","message":"Changes","sha":"6e8ede2"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T17:01:17Z","message":"Changes","sha":"30cfdea"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:49:40Z","message":"Fixed CORS by mapping preview URLs","sha":"f3db3de"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:49:35Z","message":"Changes","sha":"8137a7b"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:49:29Z","message":"Changes","sha":"f0203d7"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:32:02Z","message":"Fixed pair URL origin","sha":"28582b4"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:31:56Z","message":"Changes","sha":"54bb126"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:31:42Z","message":"Changes","sha":"4e3a079"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:31:37Z","message":"Changes","sha":"e4998fb"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:31:31Z","message":"Changes","sha":"7708564"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:11:57Z","message":"Reloaded the schema cache","sha":"8bc8e7b"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:11:51Z","message":"Changes","sha":"be30791"},{"author":"gpt-engineer-app[bot]","date":"2026-06-25T16:11:23Z","message":"Work in progress","sha":"cf5981f"}]},{"name":"sdpilon/audashio-2a113e85","meta":{"default_branch":"main","description":"Superseded — consolidated into sdpilon/audashio","html_url":"https://github.com/sdpilon/audashio-2a113e85","language":"TypeScript","private":true,"stargazers_count":0},"readme":"# Audashio\n\n**Your homelab, auto-discovered.** A zero-config dashboard for Traefik users.\n\nAudashio reads your Docker labels and shows every Traefik-routed service in one place. No service list to hand-curate.\n\n- **Free and open source** — AGPL-3.0\n- **Single container** — mount the Docker socket and go\n- **Traefik-native** — parses standard Traefik v3 labels you already have\n- **Optional overrides** — polish names, descriptions, icons, and categories with `audashio.*` labels\n\n## Quick start\n\n```yaml\n# compose.yaml\nservices:\n  audashio:\n    image: ghcr.io/audashio/audashio:latest\n    restart: unless-stopped\n    environment:\n      AUDASHIO_SOURCE: docker\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock:ro\n    ports:\n      - \"8080:8080\"\n```\n\n```sh\ndocker compose up -d\n```\n\nThen open <http://localhost:8080>.\n\n## Docs and live demo\n\n- **Live demo & docs:** <https://audashio.lovable.app>\n- **Getting started:** <https://audashio.lovable.app/docs/getting-started>\n- **Labels reference:** <https://audashio.lovable.app/docs/labels>\n\n## Development\n\nAudashio is one TanStack Start app. The same source ships in the Docker image and powers the public live demo (with a mock data source).\n\n```sh\nbun install\nbun run dev\n```\n\n## License\n\n[AGPL-3.0](./LICENSE)","issues":[],"prs":[],"commits":[{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:11:44Z","message":"Added Audashio comparison page","sha":"b591401"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:11:41Z","message":"Changes","sha":"8f95f5d"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:11:37Z","message":"Changes","sha":"79be1b0"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:11:03Z","message":"Changes","sha":"2dc7740"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:08:35Z","message":"Update plan","sha":"44651e8"},{"author":"gpt-engineer-app[bot]","date":"2026-06-24T13:08:09Z","message":"Work in progress","sha":"45f6d69"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:49:08Z","message":"Fixed 5 SEO findings","sha":"2eb7967"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:49:02Z","message":"Changes","sha":"e778a12"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:48:55Z","message":"Changes","sha":"b5b68e1"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:47:13Z","message":"Added robots.txt at root","sha":"fe7e19f"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:47:07Z","message":"Changes","sha":"60205c1"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:29:20Z","message":"Fixed heading hierarchy & a11y","sha":"37866c1"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:29:11Z","message":"Changes","sha":"ce67ac6"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:29:06Z","message":"Changes","sha":"f286537"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:29:02Z","message":"Changes","sha":"671e10b"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T18:28:48Z","message":"Work in progress","sha":"7dfb726"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T13:49:38Z","message":"Fixed code overflow & ampersand","sha":"de09052"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T13:49:36Z","message":"Changes","sha":"0616529"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T13:49:31Z","message":"Changes","sha":"edb2dd5"},{"author":"gpt-engineer-app[bot]","date":"2026-06-22T13:49:18Z","message":"Work in progress","sha":"708bbb8"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:41:10Z","message":"Built Audashio core + routes","sha":"ec13d3e"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:41:00Z","message":"Changes","sha":"29551c8"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:40:54Z","message":"Changes","sha":"f367bf6"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:40:26Z","message":"Changes","sha":"87524a4"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:39:41Z","message":"Changes","sha":"5945921"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:39:09Z","message":"Changes","sha":"8617001"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:38:41Z","message":"Changes","sha":"7d7c4b9"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:38:10Z","message":"Changes","sha":"42997e2"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:37:37Z","message":"Changes","sha":"01c4fcb"},{"author":"gpt-engineer-app[bot]","date":"2026-06-21T22:37:31Z","message":"Changes","sha":"35152e2"}]}];
+
+const ASSESS = {
+  "sdpilon/homebrew-rogueamoeba": {
+    pct: 95, band: "good", label: "Shipped",
+    text: "The README states a narrow, concrete goal — a personal tap holding one cask, soundsource@5, pinned to 5.9.0 for macOS 14 — and the week's seven commits deliver exactly that arc: cask added, token renamed to avoid upstream collision, install docs, MIT license and disclaimer. Stated scope is fully shipped; what remains is only the implied maintenance loop (bumping the pin if Rogue Amoeba revises the 5.x legacy build), for which a bump-cask-version skill was already committed.",
+    gaps: []
+  },
+  "sdpilon/typst-resume": {
+    pct: 15, band: "crit", label: "Just started",
+    text: "The README is the unmodified typst-template boilerplate — it describes the devcontainer starter, not a resume. The only commit in the window is the template import. Measured against the repo's evident purpose (a resume in Typst), essentially none of the real work is visible yet.",
+    gaps: ["README still describes the template, not this project", "No commits beyond the template import"]
+  },
+  "sdpilon/typst-template": {
+    pct: 85, band: "good", label: "Functional",
+    text: "The README promises a devcontainer-ready Typst starter with Claude Code preinstalled, working in Codespaces and locally via Zed + OrbStack. The two commits set up exactly that. It has already been consumed downstream (typst-resume was created from it a few minutes later), which is the template doing its one job. Docking points only because the referenced .devcontainer/README.md local workflow can't be verified from commit activity alone.",
+    gaps: []
+  },
+  "sdpilon/home-server": {
+    pct: 90, band: "good", label: "Living config, in sync",
+    text: "This is a living infrastructure repo rather than a project with an endpoint, so the question is documentation-reality alignment — and it's strong. The README lists ten stacks; the month's sixteen commits track it closely: uptime-kuma added (and documented), freshrss decommissioned, the traefik migration's cert-resolver and router-label cleanup finished, secrets moved out of committed .env files. The README even honestly flags ntfy as deployed-but-unused.",
+    gaps: ["ntfy runs but serves nothing — wire it to uptime-kuma alerts or drop it", "GitHub Issues are disabled, so there's no visible backlog"]
+  },
+  "sdpilon/spilon.dev": {
+    pct: null, band: "warn", label: "The chosen site — README still silent",
+    text: "The theme-shopping saga is resolved: this is the former spilon.dev-fresh (Deno Fresh), renamed to the production domain around July 20–21, while the Astro-based spilon.dev and spilon.dev-sidey were deleted and astro-sienna archived. One personal-site repo remains, with real activity behind it — a Fresh version bump through PR #1 and a content update on July 10. The remaining measurement problem is unchanged: the README is still stock Fresh boilerplate, so there are no stated goals to score reality against.",
+    gaps: ["README still describes Fresh, not the site — write down what spilon.dev is supposed to become"]
+  },
+  "sdpilon/astro-sienna": {
+    pct: null, band: "none", label: "Archived — candidate rejected",
+    text: "Resolved around July 20–21: this Astro theme import lost the personal-site bake-off to the Fresh repo (now renamed spilon.dev) and was archived, never having received a commit beyond the July 7 import. Its sibling candidates — the Astro-based spilon.dev and spilon.dev-sidey — were deleted outright.",
+    gaps: []
+  },
+  "sdpilon/skill-spotlight-scan": {
+    pct: null, band: "warn", label: "Active but undocumented",
+    text: "There is no README at all, so a goals-vs-reality comparison is impossible by definition — this repo has reality but no stated goals. The 26 commits sketch the shape anyway: a browser extension, refactored to the WXT framework on June 28, with CORS/preview-URL mapping fixes and a 'site info for publish' commit suggesting it was being prepared for store submission. Then it went quiet for three weeks. Two-thirds of commit messages are 'Changes' or 'Work in progress', which will make this history unreadable in six months.",
+    gaps: ["No README — highest-leverage 20 minutes available anywhere in this list", "Publish prep started June 28, no evidence it finished", "Commit messages are mostly 'Changes'"]
+  },
+  "sdpilon/audashio-2a113e85": {
+    pct: null, band: "none", label: "Archived — merged into audashio",
+    text: "Resolved on July 20: this repo's six extra commits (June 24 — comparison page and WIP work) were fast-forwarded into sdpilon/audashio, and this copy was archived with a pointer description. Its history below is preserved for the record; all future work belongs in the canonical repo.",
+    gaps: []
+  },
+  "sdpilon/audashio": {
+    pct: 60, band: "warn", label: "Core built — now canonical",
+    text: "The README pitches a finished product: a zero-config Traefik dashboard installable today from ghcr.io/audashio/audashio:latest, with a docs site and live demo. The commit burst of June 21–24 built the credible core — 'Built Audashio core + routes', then SEO, accessibility, and a comparison page. As of July 20 this is the single canonical repo: the diverged -2a113e85 twin was fast-forward merged in and archived. What remains is the original gap — no release/tag activity backs the 'pull the image and go' quick start, and no commits since June 24.",
+    gaps: ["Verify the ghcr image the README's quick start promises actually exists and is current", "No development activity since June 24"]
+  }
+};
+
+const fmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+const d = s => fmt.format(new Date(s));
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function meterColor(pct) {
+  if (pct == null) return "var(--ink-3)";
+  if (pct >= 80) return "var(--good)";
+  if (pct >= 40) return "var(--warn)";
+  return "var(--crit)";
+}
+
+const totals = {
+  repos: DATA.length,
+  commits: DATA.reduce((a, r) => a + r.commits.length, 0),
+  prs: DATA.reduce((a, r) => a + r.prs.length, 0),
+  merged: DATA.reduce((a, r) => a + r.prs.filter(p => p.merged_at).length, 0),
+  issues: DATA.reduce((a, r) => a + r.issues.length, 0),
+  priv: DATA.filter(r => r.meta.private).length
+};
+document.getElementById("totals").innerHTML = [
+  [totals.repos, "active repos"],
+  [totals.priv, "private"],
+  [totals.commits, "commits"],
+  [`${totals.merged}/${totals.prs}`, "PRs merged/opened"],
+  [totals.issues, "issues touched"]
+].map(([n, l]) => `<div class="tile"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+
+document.getElementById("repos").innerHTML = DATA.map(r => {
+  const a = ASSESS[r.name] || { pct: null, band: "none", label: "No assessment", text: "", gaps: [] };
+  const m = r.meta || {};
+  const shortName = r.name.split("/")[1];
+
+  const commitRows = r.commits.length
+    ? `<table class="log">` + r.commits.map(c =>
+        `<tr><td class="date">${d(c.date)}</td><td class="sha">${c.sha}</td><td class="msg">${esc(c.message)}</td></tr>`
+      ).join("") + `</table>`
+    : `<div class="empty">No commits in window.</div>`;
+
+  const prRows = r.prs.length
+    ? `<table class="log">` + r.prs.map(p => {
+        const st = p.merged_at ? "merged" : p.state;
+        return `<tr><td class="date">${d(p.created_at)}</td><td class="pr-state ${st}">#${p.number} ${st}</td><td class="msg">${esc(p.title)}</td></tr>`;
+      }).join("") + `</table>`
+    : `<div class="empty">No PRs opened or merged in window.</div>`;
+
+  const issueRows = r.issues.length
+    ? `<table class="log">` + r.issues.map(i =>
+        `<tr><td class="date">${d(i.created_at)}</td><td class="pr-state ${i.state}">#${i.number} ${i.state}</td><td class="msg">${esc(i.title)}</td></tr>`
+      ).join("") + `</table>`
+    : `<div class="empty">No issue activity in window.</div>`;
+
+  const readme = r.readme && r.readme.trim()
+    ? `<pre class="readme">${esc(r.readme)}</pre>`
+    : `<div class="empty">This repo has no README.</div>`;
+
+  return `<article class="repo">
+    <div class="repo-head">
+      <div class="toprow">
+        <h2><a href="https://github.com/${r.name}" target="_blank" rel="noopener">${shortName}</a></h2>
+        <span class="badge${m.private ? " private" : ""}">${m.private ? "private" : "public"}</span>
+        ${m.language ? `<span class="lang">${esc(m.language)}</span>` : ""}
+      </div>
+      ${m.description ? `<p class="desc">${esc(m.description)}</p>` : ""}
+      <div class="meter-row">
+        <span class="status-chip s-${a.band}">${a.label}</span>
+        <div class="meter" role="img" aria-label="Estimated completion ${a.pct == null ? "not measurable" : a.pct + " percent"}">
+          <div style="width:${a.pct ?? 0}%;background:${meterColor(a.pct)}"></div>
+        </div>
+        <span class="meter-pct">${a.pct == null ? "n/a" : a.pct + "%"}</span>
+      </div>
+    </div>
+    <div class="assess">
+      <div class="eyebrow">AI assessment — stated goals vs. reality</div>
+      <p>${a.text}</p>
+      ${a.gaps.length ? `<ul>${a.gaps.map(g => `<li>${g}</li>`).join("")}</ul>` : ""}
+    </div>
+    <div class="raw">
+      <details><summary>Commits <span class="count">${r.commits.length}</span></summary><div class="body">${commitRows}</div></details>
+      <details><summary>Pull requests <span class="count">${r.prs.length}</span></summary><div class="body">${prRows}</div></details>
+      <details><summary>Issues <span class="count">${r.issues.length}</span></summary><div class="body">${issueRows}</div></details>
+      <details><summary>README <span class="count">${r.readme ? r.readme.length + " chars" : "missing"}</span></summary><div class="body">${readme}</div></details>
+    </div>
+  </article>`;
+}).join("");
+</script>
