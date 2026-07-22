@@ -1,0 +1,23 @@
+{
+  "name": "github-project-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test pipeline/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.15.1",
+      "onFail": "download"
+    }
+  },
+  "dependencies": {
+    "duckdb": "^1.4.4"
+  }
+}
