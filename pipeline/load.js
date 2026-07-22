@@ -21,10 +21,15 @@ async function upsertRepo(db, meta, now) {
 }
 
 async function upsertCommit(db, repoId, commit, runId) {
+  const existing = await db.all(
+    "SELECT first_ingested_run_id FROM commits WHERE repo_id = ? AND sha = ?",
+    repoId, commit.sha
+  );
+  const firstIngestedRunId = existing.length > 0 ? existing[0].first_ingested_run_id : runId;
   await db.run(
     `INSERT OR REPLACE INTO commits (repo_id, sha, author_name, authored_at, message, first_ingested_run_id)
      VALUES (?, ?, ?, ?, ?, ?)`,
-    repoId, commit.sha, commit.authorName, commit.authoredAt, commit.message, runId
+    repoId, commit.sha, commit.authorName, commit.authoredAt, commit.message, firstIngestedRunId
   );
 }
 
@@ -58,7 +63,7 @@ async function loadRun({ db, runId, bronzeDir, extractResults, now }) {
   }
 
   for (const result of extractResults) {
-    if (result.dataType === "meta") continue;
+    if (result.dataType === "meta" || result.dataType === "repo") continue;
     if (result.status === "error") {
       await recordFailure(db, runId, result.repoId, result.dataType, result.error, now);
       summary.failuresRecorded += 1;
