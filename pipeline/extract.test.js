@@ -5,7 +5,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { openDb, ensureSchema } = require("./db");
-const { extractRepo } = require("./extract");
+const { extractRepo, extractAll } = require("./extract");
 
 function fakeGhApiJson(pathAndQuery) {
   if (pathAndQuery === "repos/sdpilon/spilon.dev") {
@@ -96,5 +96,51 @@ test("extractRepo uses the stored watermark as the since= cursor on the second r
   };
   await extractRepo({ fullName: "sdpilon/spilon.dev", db, runId: "run_2", bronzeDir, ghApiJson: capturing });
   assert.equal(capturedSince, "2026-07-15T00:00:00.000Z");
+  await db.close();
+});
+
+test("extractRepo records a readme error result without throwing when the readme fetch fails", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  const flakyReadme = (pathAndQuery) => {
+    if (pathAndQuery === "repos/sdpilon/spilon.dev") {
+      return {
+        id: 1, full_name: "sdpilon/spilon.dev", description: null, html_url: "u",
+        default_branch: "main", language: null, stargazers_count: 0, private: false, fork: false, archived: false,
+      };
+    }
+    if (pathAndQuery === "repos/sdpilon/spilon.dev/readme") throw new Error("readme not found");
+    if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/commits")) return [];
+    if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/issues")) return [];
+    throw new Error(`unexpected path: ${pathAndQuery}`);
+  };
+  const results = await extractRepo({ fullName: "sdpilon/spilon.dev", db, runId: "run_1", bronzeDir, ghApiJson: flakyReadme });
+  const readmeResult = results.find((r) => r.dataType === "readme");
+  assert.equal(readmeResult.status, "error");
+  assert.match(readmeResult.error, /readme not found/);
+  await db.close();
+});
+
+test("extractAll continues with the remaining repos when one repo throws unexpectedly", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  const throwing = () => {
+    throw new Error("totally unexpected failure");
+  };
+  const results = await extractAll({
+    repos: ["sdpilon/broken-repo", "sdpilon/spilon.dev"],
+    db, runId: "run_1", bronzeDir,
+    ghApiJson: (pathAndQuery) => {
+      if (pathAndQuery.startsWith("repos/sdpilon/broken-repo")) return throwing();
+      return fakeGhApiJson(pathAndQuery);
+    },
+  });
+  const brokenResult = results.find((r) => r.fullName === "sdpilon/broken-repo");
+  assert.equal(brokenResult.status, "error");
+  assert.match(brokenResult.error, /totally unexpected failure/);
+  const okResults = results.filter((r) => r.fullName === "sdpilon/spilon.dev" && r.status === "ok");
+  assert.equal(okResults.length, 3);
   await db.close();
 });

@@ -29,7 +29,11 @@ async function extractRepo({ fullName, db, runId, bronzeDir, ghApiJson = default
     writeBronze(bronzeDir, runId, meta.repoId, "readme", readme);
     results.push({ fullName, repoId: meta.repoId, dataType: "readme", status: "ok" });
   } catch (err) {
-    writeBronze(bronzeDir, runId, meta.repoId, "readme", "");
+    try {
+      writeBronze(bronzeDir, runId, meta.repoId, "readme", "");
+    } catch {
+      // fallback write also failed; the readme error result below still records the failure
+    }
     results.push({ fullName, repoId: meta.repoId, dataType: "readme", status: "error", error: String(err) });
   }
 
@@ -53,7 +57,11 @@ async function extractRepo({ fullName, db, runId, bronzeDir, ghApiJson = default
 async function extractAll({ repos, db, runId, bronzeDir, ghApiJson = defaultGhApiJson }) {
   const allResults = [];
   for (const fullName of repos) {
-    allResults.push(...(await extractRepo({ fullName, db, runId, bronzeDir, ghApiJson })));
+    try {
+      allResults.push(...(await extractRepo({ fullName, db, runId, bronzeDir, ghApiJson })));
+    } catch (err) {
+      allResults.push({ fullName, repoId: null, dataType: "repo", status: "error", error: String(err) });
+    }
   }
   return allResults;
 }
