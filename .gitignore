@@ -1,3 +1,4 @@
 node_modules/
 tracker.duckdb
 bronze/
+.pnpm-store/
