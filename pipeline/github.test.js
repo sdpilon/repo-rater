@@ -58,6 +58,22 @@ test("fetchCommitsSince maps commits and takes the first line of the message", (
   ]);
 });
 
+test("fetchCommitsSince handles missing commit.author by returning null for authorName and authoredAt", () => {
+  const fakeGhApiJson = () => [
+    {
+      sha: "def456",
+      commit: {
+        author: null,
+        message: "some commit\n\nwith body",
+      },
+    },
+  ];
+  const commits = fetchCommitsSince("sdpilon/spilon.dev", "2026-01-01T00:00:00Z", fakeGhApiJson);
+  assert.deepEqual(commits, [
+    { sha: "def456", authorName: null, authoredAt: null, message: "some commit" },
+  ]);
+});
+
 test("fetchIssuesSince filters out pull requests and maps labels to names", () => {
   const fakeGhApiJson = () => [
     {
