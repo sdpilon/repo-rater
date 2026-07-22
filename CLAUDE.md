@@ -21,3 +21,7 @@ The repo list in `fetch.sh` (the `repos=` variable) changes often as projects co
 ## Gotcha
 
 `inject.js` splices `repos.json` into `tracker.html` using slice-based string splicing, not `String.replace()` — README content can contain `$'`/`$$` sequences that `replace()` would interpret as substitution patterns and corrupt.
+
+## Future direction
+
+The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a not-yet-implemented redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation. Consult those files before assuming the pipeline still works the way this section describes.
