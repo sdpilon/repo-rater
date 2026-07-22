@@ -21,7 +21,7 @@ async function ensureSchema(db, schemaPath = path.join(__dirname, "..", "schema.
   );
   if (existing.length === 0) {
     const schemaSql = fs.readFileSync(schemaPath, "utf8");
-    await db.exec(schemaSql);
+    await db.exec(`BEGIN TRANSACTION;\n${schemaSql}\nCOMMIT;`);
   }
 }
 
