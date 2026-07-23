@@ -5,12 +5,25 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "test": "node --test \"pipeline/**/*.test.js\""
+    "test": "node --test \"pipeline/**/*.test.js\"",
+    "dev": "serve .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "build": "./fetch.sh && node inject.js",
+    "pipeline": "node pipeline/run.js",
+    "deps:outdated": "pnpm outdated",
+    "deps:update": "pnpm update -i --latest",
+    "env-check": "./scripts/doctor.sh"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "duckdb": "^1.4.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
+    "serve": "^14.2.6"
   }
 }

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/bronze",
+      "!**/*.duckdb",
+      "!repos.json",
+      "!schema.sql",
+      "!.claude/**"
+    ]
+  },
+  "linter": { "enabled": true, "rules": { "preset": "recommended" } },
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2 }
+}
