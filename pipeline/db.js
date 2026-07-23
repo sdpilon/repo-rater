@@ -15,9 +15,12 @@ function openDb(dbPath) {
   };
 }
 
-async function ensureSchema(db, schemaPath = path.join(__dirname, "..", "schema.sql")) {
+async function ensureSchema(
+  db,
+  schemaPath = path.join(__dirname, "..", "schema.sql"),
+) {
   const existing = await db.all(
-    "SELECT table_name FROM information_schema.tables WHERE table_name = 'repos'"
+    "SELECT table_name FROM information_schema.tables WHERE table_name = 'repos'",
   );
   if (existing.length === 0) {
     const schemaSql = fs.readFileSync(schemaPath, "utf8");
@@ -29,7 +32,7 @@ async function getWatermark(db, repoId, dataType) {
   const rows = await db.all(
     "SELECT last_fetched_at FROM fetch_watermarks WHERE repo_id = ? AND data_type = ?",
     repoId,
-    dataType
+    dataType,
   );
   return rows.length > 0 ? rows[0].last_fetched_at : null;
 }
@@ -41,7 +44,7 @@ async function setWatermark(db, repoId, dataType, lastFetchedAt, runId) {
     repoId,
     dataType,
     lastFetchedAt,
-    runId
+    runId,
   );
 }
 

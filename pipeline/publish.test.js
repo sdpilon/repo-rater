@@ -9,15 +9,15 @@ test("buildRepoRecord shapes DB rows into the existing repos.json record format"
   await ensureSchema(db);
   await db.run(
     `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, first_seen_at, last_seen_at)
-     VALUES (1, 'sdpilon/spilon.dev', 'site', 'https://github.com/sdpilon/spilon.dev', 'main', 'Astro', 2, false, false, false, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`
+     VALUES (1, 'sdpilon/spilon.dev', 'site', 'https://github.com/sdpilon/spilon.dev', 'main', 'Astro', 2, false, false, false, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
   );
   await db.run(
     `INSERT INTO commits (repo_id, sha, author_name, authored_at, message, first_ingested_run_id)
-     VALUES (1, 'aaaaaaaaaaaaaaaaaaaa', 'Spencer', '2026-07-01T00:00:00Z', 'fix bug', 'run_1')`
+     VALUES (1, 'aaaaaaaaaaaaaaaaaaaa', 'Spencer', '2026-07-01T00:00:00Z', 'fix bug', 'run_1')`,
   );
   await db.run(
     `INSERT INTO issues (repo_id, number, title, state, created_at, closed_at, labels, last_updated_run_id)
-     VALUES (1, 1, 'Bug', 'open', '2026-07-01T00:00:00Z', NULL, list_value('bug'), 'run_1')`
+     VALUES (1, 1, 'Bug', 'open', '2026-07-01T00:00:00Z', NULL, list_value('bug'), 'run_1')`,
   );
   const record = await buildRepoRecord(db, 1);
   assert.equal(record.name, "sdpilon/spilon.dev");

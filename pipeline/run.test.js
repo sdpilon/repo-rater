@@ -9,9 +9,25 @@ const { openDb, ensureSchema } = require("./db");
 
 test("computeRunCounts counts a whole-repo meta-fetch failure as failed, not silently dropped", () => {
   const extractResults = [
-    { fullName: "sdpilon/broken-repo", repoId: null, dataType: "meta", status: "error", error: "repo not found" },
-    { fullName: "sdpilon/spilon.dev", repoId: 1, dataType: "meta", status: "ok" },
-    { fullName: "sdpilon/spilon.dev", repoId: 1, dataType: "commits", status: "ok" },
+    {
+      fullName: "sdpilon/broken-repo",
+      repoId: null,
+      dataType: "meta",
+      status: "error",
+      error: "repo not found",
+    },
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "meta",
+      status: "ok",
+    },
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "commits",
+      status: "ok",
+    },
   ];
   const counts = computeRunCounts(extractResults);
   assert.equal(counts.reposFetchedOk, 1);
@@ -21,9 +37,25 @@ test("computeRunCounts counts a whole-repo meta-fetch failure as failed, not sil
 
 test("computeRunCounts counts a repo as failed (not ok) when only one of its data types errors", () => {
   const extractResults = [
-    { fullName: "sdpilon/spilon.dev", repoId: 1, dataType: "meta", status: "ok" },
-    { fullName: "sdpilon/spilon.dev", repoId: 1, dataType: "commits", status: "error", error: "rate limited" },
-    { fullName: "sdpilon/spilon.dev", repoId: 1, dataType: "issues", status: "ok" },
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "meta",
+      status: "ok",
+    },
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "commits",
+      status: "error",
+      error: "rate limited",
+    },
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "issues",
+      status: "ok",
+    },
   ];
   const counts = computeRunCounts(extractResults);
   assert.equal(counts.reposFetchedOk, 0);
@@ -32,8 +64,18 @@ test("computeRunCounts counts a repo as failed (not ok) when only one of its dat
 
 test("computeRunCounts reports all repos ok when nothing failed", () => {
   const extractResults = [
-    { fullName: "sdpilon/spilon.dev", repoId: 1, dataType: "meta", status: "ok" },
-    { fullName: "sdpilon/typst-resume", repoId: 2, dataType: "meta", status: "ok" },
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "meta",
+      status: "ok",
+    },
+    {
+      fullName: "sdpilon/typst-resume",
+      repoId: 2,
+      dataType: "meta",
+      status: "ok",
+    },
   ];
   const counts = computeRunCounts(extractResults);
   assert.equal(counts.reposFetchedOk, 2);
@@ -45,15 +87,15 @@ test("readEnrichInputs reads commits/issues from the silver layer's full accumul
   await ensureSchema(db);
   await db.run(
     `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, first_seen_at, last_seen_at)
-     VALUES (1, 'sdpilon/spilon.dev', 'site', 'u', 'main', 'Astro', 1, false, false, false, '2026-07-01T00:00:00Z', '2026-07-01T00:00:00Z')`
+     VALUES (1, 'sdpilon/spilon.dev', 'site', 'u', 'main', 'Astro', 1, false, false, false, '2026-07-01T00:00:00Z', '2026-07-01T00:00:00Z')`,
   );
   await db.run(
     `INSERT INTO commits (repo_id, sha, author_name, authored_at, message, first_ingested_run_id)
-     VALUES (1, 'aaa', 'Spencer', '2026-07-01T00:00:00Z', 'first commit', 'run_1')`
+     VALUES (1, 'aaa', 'Spencer', '2026-07-01T00:00:00Z', 'first commit', 'run_1')`,
   );
   await db.run(
     `INSERT INTO issues (repo_id, number, title, state, created_at, closed_at, labels, last_updated_run_id)
-     VALUES (1, 1, 'Bug', 'open', '2026-07-01T00:00:00Z', NULL, [], 'run_1')`
+     VALUES (1, 1, 'Bug', 'open', '2026-07-01T00:00:00Z', NULL, [], 'run_1')`,
   );
 
   const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
@@ -64,7 +106,10 @@ test("readEnrichInputs reads commits/issues from the silver layer's full accumul
   // history (inserted above) already lives in the silver tables from run_1.
   fs.writeFileSync(path.join(runDir, "1_commits.json"), "[]");
   fs.writeFileSync(path.join(runDir, "1_issues.json"), "[]");
-  fs.writeFileSync(path.join(runDir, "1_readme.json"), JSON.stringify("# Hello"));
+  fs.writeFileSync(
+    path.join(runDir, "1_readme.json"),
+    JSON.stringify("# Hello"),
+  );
 
   const inputs = await readEnrichInputs(db, bronzeDir, "run_2", 1);
   assert.deepEqual(inputs.commitMessages, ["first commit"]);

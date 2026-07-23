@@ -28,7 +28,9 @@ function fetchReadme(fullName, ghApiJson = defaultGhApiJson) {
 }
 
 function fetchCommitsSince(fullName, since, ghApiJson = defaultGhApiJson) {
-  const raw = ghApiJson(`repos/${fullName}/commits?since=${since}&per_page=100`);
+  const raw = ghApiJson(
+    `repos/${fullName}/commits?since=${since}&per_page=100`,
+  );
   return raw.map((c) => ({
     sha: c.sha,
     authorName: c.commit.author ? c.commit.author.name : null,
@@ -38,7 +40,9 @@ function fetchCommitsSince(fullName, since, ghApiJson = defaultGhApiJson) {
 }
 
 function fetchIssuesSince(fullName, since, ghApiJson = defaultGhApiJson) {
-  const raw = ghApiJson(`repos/${fullName}/issues?state=all&since=${since}&per_page=100`);
+  const raw = ghApiJson(
+    `repos/${fullName}/issues?state=all&since=${since}&per_page=100`,
+  );
   return raw
     .filter((issue) => !issue.pull_request)
     .map((issue) => ({
@@ -51,4 +55,10 @@ function fetchIssuesSince(fullName, since, ghApiJson = defaultGhApiJson) {
     }));
 }
 
-module.exports = { fetchRepoMeta, fetchReadme, fetchCommitsSince, fetchIssuesSince, defaultGhApiJson };
+module.exports = {
+  fetchRepoMeta,
+  fetchReadme,
+  fetchCommitsSince,
+  fetchIssuesSince,
+  defaultGhApiJson,
+};

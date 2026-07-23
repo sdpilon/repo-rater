@@ -1,7 +1,12 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { fetchRepoMeta, fetchReadme, fetchCommitsSince, fetchIssuesSince } = require("./github");
+const {
+  fetchRepoMeta,
+  fetchReadme,
+  fetchCommitsSince,
+  fetchIssuesSince,
+} = require("./github");
 
 test("fetchRepoMeta maps raw GitHub fields to camelCase repo meta", () => {
   const fakeGhApiJson = (pathAndQuery) => {
@@ -52,9 +57,18 @@ test("fetchCommitsSince maps commits and takes the first line of the message", (
       },
     },
   ];
-  const commits = fetchCommitsSince("sdpilon/spilon.dev", "2026-01-01T00:00:00Z", fakeGhApiJson);
+  const commits = fetchCommitsSince(
+    "sdpilon/spilon.dev",
+    "2026-01-01T00:00:00Z",
+    fakeGhApiJson,
+  );
   assert.deepEqual(commits, [
-    { sha: "abc123", authorName: "Spencer", authoredAt: "2026-07-01T00:00:00Z", message: "fix bug" },
+    {
+      sha: "abc123",
+      authorName: "Spencer",
+      authoredAt: "2026-07-01T00:00:00Z",
+      message: "fix bug",
+    },
   ]);
 });
 
@@ -68,9 +82,18 @@ test("fetchCommitsSince handles missing commit.author by returning null for auth
       },
     },
   ];
-  const commits = fetchCommitsSince("sdpilon/spilon.dev", "2026-01-01T00:00:00Z", fakeGhApiJson);
+  const commits = fetchCommitsSince(
+    "sdpilon/spilon.dev",
+    "2026-01-01T00:00:00Z",
+    fakeGhApiJson,
+  );
   assert.deepEqual(commits, [
-    { sha: "def456", authorName: null, authoredAt: null, message: "some commit" },
+    {
+      sha: "def456",
+      authorName: null,
+      authoredAt: null,
+      message: "some commit",
+    },
   ]);
 });
 
@@ -95,8 +118,19 @@ test("fetchIssuesSince filters out pull requests and maps labels to names", () =
       pull_request: {},
     },
   ];
-  const issues = fetchIssuesSince("sdpilon/spilon.dev", "2026-01-01T00:00:00Z", fakeGhApiJson);
+  const issues = fetchIssuesSince(
+    "sdpilon/spilon.dev",
+    "2026-01-01T00:00:00Z",
+    fakeGhApiJson,
+  );
   assert.deepEqual(issues, [
-    { number: 1, title: "Bug", state: "open", createdAt: "2026-01-01T00:00:00Z", closedAt: null, labels: ["bug"] },
+    {
+      number: 1,
+      title: "Bug",
+      state: "open",
+      createdAt: "2026-01-01T00:00:00Z",
+      closedAt: null,
+      labels: ["bug"],
+    },
   ]);
 });

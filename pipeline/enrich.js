@@ -2,7 +2,9 @@
 const crypto = require("crypto");
 
 function computeInputHash(repoId, readmeText, commitMessages, issueTitles) {
-  const combined = [readmeText || "", ...commitMessages, ...issueTitles].join("\n---\n");
+  const combined = [readmeText || "", ...commitMessages, ...issueTitles].join(
+    "\n---\n",
+  );
   return crypto.createHash("sha256").update(combined).digest("hex");
 }
 
@@ -19,23 +21,46 @@ function generateAssessment(fullName, inputHash) {
   };
 }
 
-async function enrichRepo({ db, repoId, fullName, runId, readmeText, commitMessages, issueTitles, now }) {
-  const inputHash = computeInputHash(repoId, readmeText, commitMessages, issueTitles);
+async function enrichRepo({
+  db,
+  repoId,
+  fullName,
+  runId,
+  readmeText,
+  commitMessages,
+  issueTitles,
+  now,
+}) {
+  const inputHash = computeInputHash(
+    repoId,
+    readmeText,
+    commitMessages,
+    issueTitles,
+  );
   const latest = await db.all(
     "SELECT input_hash FROM repo_assessments WHERE repo_id = ? ORDER BY created_at DESC LIMIT 1",
-    repoId
+    repoId,
   );
   if (latest.length > 0 && latest[0].input_hash === inputHash) {
     return { repoId, called: false };
   }
   const assessment = generateAssessment(fullName, inputHash);
-  const gapsFragment = assessment.gaps.length === 0 ? "[]" : `list_value(${assessment.gaps.map(() => "?").join(", ")})`;
+  const gapsFragment =
+    assessment.gaps.length === 0
+      ? "[]"
+      : `list_value(${assessment.gaps.map(() => "?").join(", ")})`;
   await db.run(
     `INSERT INTO repo_assessments (repo_id, run_id, input_hash, pct, band, label, text, gaps, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ${gapsFragment}, ?)`,
-    repoId, runId, inputHash, assessment.pct, assessment.band, assessment.label, assessment.text,
+    repoId,
+    runId,
+    inputHash,
+    assessment.pct,
+    assessment.band,
+    assessment.label,
+    assessment.text,
     ...assessment.gaps,
-    now
+    now,
   );
   return { repoId, called: true };
 }

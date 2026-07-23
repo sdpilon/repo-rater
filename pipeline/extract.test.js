@@ -27,12 +27,26 @@ function fakeGhApiJson(pathAndQuery) {
   }
   if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/commits")) {
     return [
-      { sha: "aaa", commit: { author: { name: "Spencer", date: "2026-07-01T00:00:00Z" }, message: "fix\nbody" } },
+      {
+        sha: "aaa",
+        commit: {
+          author: { name: "Spencer", date: "2026-07-01T00:00:00Z" },
+          message: "fix\nbody",
+        },
+      },
     ];
   }
   if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/issues")) {
     return [
-      { number: 1, title: "Bug", state: "open", created_at: "2026-07-01T00:00:00Z", closed_at: null, labels: [], pull_request: null },
+      {
+        number: 1,
+        title: "Bug",
+        state: "open",
+        created_at: "2026-07-01T00:00:00Z",
+        closed_at: null,
+        labels: [],
+        pull_request: null,
+      },
     ];
   }
   throw new Error(`unexpected path: ${pathAndQuery}`);
@@ -42,16 +56,26 @@ test("extractRepo writes bronze files for meta, readme, commits, and issues on f
   const db = openDb(":memory:");
   await ensureSchema(db);
   const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
-  const results = await extractRepo({ fullName: "sdpilon/spilon.dev", db, runId: "run_1", bronzeDir, ghApiJson: fakeGhApiJson });
+  const results = await extractRepo({
+    fullName: "sdpilon/spilon.dev",
+    db,
+    runId: "run_1",
+    bronzeDir,
+    ghApiJson: fakeGhApiJson,
+  });
   assert.equal(results.filter((r) => r.status === "ok").length, 3);
   const runDir = path.join(bronzeDir, "run_1");
   assert.ok(fs.existsSync(path.join(runDir, "1_meta.json")));
   assert.ok(fs.existsSync(path.join(runDir, "1_readme.json")));
   assert.ok(fs.existsSync(path.join(runDir, "1_commits.json")));
   assert.ok(fs.existsSync(path.join(runDir, "1_issues.json")));
-  const readme = JSON.parse(fs.readFileSync(path.join(runDir, "1_readme.json"), "utf8"));
+  const readme = JSON.parse(
+    fs.readFileSync(path.join(runDir, "1_readme.json"), "utf8"),
+  );
   assert.equal(readme, "# Hello");
-  const commits = JSON.parse(fs.readFileSync(path.join(runDir, "1_commits.json"), "utf8"));
+  const commits = JSON.parse(
+    fs.readFileSync(path.join(runDir, "1_commits.json"), "utf8"),
+  );
   assert.equal(commits[0].sha, "aaa");
   await db.close();
 });
@@ -63,15 +87,31 @@ test("extractRepo records a per-data-type error result without throwing when a G
   const flaky = (pathAndQuery) => {
     if (pathAndQuery === "repos/sdpilon/spilon.dev") {
       return {
-        id: 1, full_name: "sdpilon/spilon.dev", description: null, html_url: "u",
-        default_branch: "main", language: null, stargazers_count: 0, private: false, fork: false, archived: false,
+        id: 1,
+        full_name: "sdpilon/spilon.dev",
+        description: null,
+        html_url: "u",
+        default_branch: "main",
+        language: null,
+        stargazers_count: 0,
+        private: false,
+        fork: false,
+        archived: false,
       };
     }
-    if (pathAndQuery === "repos/sdpilon/spilon.dev/readme") return { content: Buffer.from("").toString("base64") };
-    if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/commits")) throw new Error("rate limited");
+    if (pathAndQuery === "repos/sdpilon/spilon.dev/readme")
+      return { content: Buffer.from("").toString("base64") };
+    if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/commits"))
+      throw new Error("rate limited");
     return [];
   };
-  const results = await extractRepo({ fullName: "sdpilon/spilon.dev", db, runId: "run_1", bronzeDir, ghApiJson: flaky });
+  const results = await extractRepo({
+    fullName: "sdpilon/spilon.dev",
+    db,
+    runId: "run_1",
+    bronzeDir,
+    ghApiJson: flaky,
+  });
   const commitResult = results.find((r) => r.dataType === "commits");
   assert.equal(commitResult.status, "error");
   assert.match(commitResult.error, /rate limited/);
@@ -89,12 +129,20 @@ test("extractRepo uses the stored watermark as the since= cursor on the second r
   let capturedSince = null;
   const capturing = (pathAndQuery) => {
     if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/commits")) {
-      capturedSince = new URL(`https://x/${pathAndQuery}`).searchParams.get("since");
+      capturedSince = new URL(`https://x/${pathAndQuery}`).searchParams.get(
+        "since",
+      );
       return [];
     }
     return fakeGhApiJson(pathAndQuery);
   };
-  await extractRepo({ fullName: "sdpilon/spilon.dev", db, runId: "run_2", bronzeDir, ghApiJson: capturing });
+  await extractRepo({
+    fullName: "sdpilon/spilon.dev",
+    db,
+    runId: "run_2",
+    bronzeDir,
+    ghApiJson: capturing,
+  });
   assert.equal(capturedSince, "2026-07-15T00:00:00.000Z");
   await db.close();
 });
@@ -106,16 +154,31 @@ test("extractRepo records a readme error result without throwing when the readme
   const flakyReadme = (pathAndQuery) => {
     if (pathAndQuery === "repos/sdpilon/spilon.dev") {
       return {
-        id: 1, full_name: "sdpilon/spilon.dev", description: null, html_url: "u",
-        default_branch: "main", language: null, stargazers_count: 0, private: false, fork: false, archived: false,
+        id: 1,
+        full_name: "sdpilon/spilon.dev",
+        description: null,
+        html_url: "u",
+        default_branch: "main",
+        language: null,
+        stargazers_count: 0,
+        private: false,
+        fork: false,
+        archived: false,
       };
     }
-    if (pathAndQuery === "repos/sdpilon/spilon.dev/readme") throw new Error("readme not found");
+    if (pathAndQuery === "repos/sdpilon/spilon.dev/readme")
+      throw new Error("readme not found");
     if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/commits")) return [];
     if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/issues")) return [];
     throw new Error(`unexpected path: ${pathAndQuery}`);
   };
-  const results = await extractRepo({ fullName: "sdpilon/spilon.dev", db, runId: "run_1", bronzeDir, ghApiJson: flakyReadme });
+  const results = await extractRepo({
+    fullName: "sdpilon/spilon.dev",
+    db,
+    runId: "run_1",
+    bronzeDir,
+    ghApiJson: flakyReadme,
+  });
   const readmeResult = results.find((r) => r.dataType === "readme");
   assert.equal(readmeResult.status, "error");
   assert.match(readmeResult.error, /readme not found/);
@@ -131,16 +194,23 @@ test("extractAll continues with the remaining repos when one repo throws unexpec
   };
   const results = await extractAll({
     repos: ["sdpilon/broken-repo", "sdpilon/spilon.dev"],
-    db, runId: "run_1", bronzeDir,
+    db,
+    runId: "run_1",
+    bronzeDir,
     ghApiJson: (pathAndQuery) => {
-      if (pathAndQuery.startsWith("repos/sdpilon/broken-repo")) return throwing();
+      if (pathAndQuery.startsWith("repos/sdpilon/broken-repo"))
+        return throwing();
       return fakeGhApiJson(pathAndQuery);
     },
   });
-  const brokenResult = results.find((r) => r.fullName === "sdpilon/broken-repo");
+  const brokenResult = results.find(
+    (r) => r.fullName === "sdpilon/broken-repo",
+  );
   assert.equal(brokenResult.status, "error");
   assert.match(brokenResult.error, /totally unexpected failure/);
-  const okResults = results.filter((r) => r.fullName === "sdpilon/spilon.dev" && r.status === "ok");
+  const okResults = results.filter(
+    (r) => r.fullName === "sdpilon/spilon.dev" && r.status === "ok",
+  );
   assert.equal(okResults.length, 3);
   await db.close();
 });

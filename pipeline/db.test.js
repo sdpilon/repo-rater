@@ -7,7 +7,7 @@ test("ensureSchema creates the repos table on a fresh in-memory database", async
   const db = openDb(":memory:");
   await ensureSchema(db);
   const rows = await db.all(
-    "SELECT table_name FROM information_schema.tables WHERE table_name = 'repos'"
+    "SELECT table_name FROM information_schema.tables WHERE table_name = 'repos'",
   );
   assert.equal(rows.length, 1);
   await db.close();
@@ -17,7 +17,9 @@ test("ensureSchema is a no-op the second time it runs against the same database"
   const db = openDb(":memory:");
   await ensureSchema(db);
   await ensureSchema(db);
-  const rows = await db.all("SELECT table_name FROM information_schema.tables WHERE table_name = 'repos'");
+  const rows = await db.all(
+    "SELECT table_name FROM information_schema.tables WHERE table_name = 'repos'",
+  );
   assert.equal(rows.length, 1);
   await db.close();
 });
@@ -41,7 +43,7 @@ test("setWatermark replaces the existing row for the same (repoId, dataType) ins
   const after = await getWatermark(db, 123, "commits");
   assert.equal(after.toISOString(), "2026-07-10T00:00:00.000Z");
   const rows = await db.all(
-    "SELECT COUNT(*)::INTEGER AS n FROM fetch_watermarks WHERE repo_id = 123 AND data_type = 'commits'"
+    "SELECT COUNT(*)::INTEGER AS n FROM fetch_watermarks WHERE repo_id = 123 AND data_type = 'commits'",
   );
   assert.equal(rows[0].n, 1);
   await db.close();
@@ -51,15 +53,18 @@ test("ensureSchema leaves no tables behind if the schema script fails partway th
   const os = require("os");
   const fs = require("fs");
   const path = require("path");
-  const badSchemaPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "schema-")), "bad.sql");
+  const badSchemaPath = path.join(
+    fs.mkdtempSync(path.join(os.tmpdir(), "schema-")),
+    "bad.sql",
+  );
   fs.writeFileSync(
     badSchemaPath,
-    "CREATE TABLE repos (repo_id BIGINT PRIMARY KEY);\nCREATE TABLE broken (this is not valid sql);"
+    "CREATE TABLE repos (repo_id BIGINT PRIMARY KEY);\nCREATE TABLE broken (this is not valid sql);",
   );
   const db = openDb(":memory:");
   await assert.rejects(() => ensureSchema(db, badSchemaPath));
   const rows = await db.all(
-    "SELECT table_name FROM information_schema.tables WHERE table_name = 'repos'"
+    "SELECT table_name FROM information_schema.tables WHERE table_name = 'repos'",
   );
   assert.equal(rows.length, 0);
   await db.close();
