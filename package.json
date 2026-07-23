@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "test": "node --test pipeline/"
+    "test": "node --test \"pipeline/**/*.test.js\""
   },
   "keywords": [],
   "author": "",
