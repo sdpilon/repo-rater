@@ -12,6 +12,15 @@ function makeRunId(now = new Date()) {
   return `run_${now.toISOString().replace(/[:.]/g, "-")}`;
 }
 
+function computeRunCounts(extractResults) {
+  const failedFullNames = new Set(extractResults.filter((r) => r.status === "error").map((r) => r.fullName));
+  const okFullNames = new Set(extractResults.filter((r) => r.repoId).map((r) => r.fullName));
+  const repoIds = new Set(extractResults.filter((r) => r.repoId).map((r) => r.repoId));
+  const reposFetchedOk = new Set([...okFullNames].filter((name) => !failedFullNames.has(name))).size;
+  const reposFailed = failedFullNames.size;
+  return { repoIds, reposFetchedOk, reposFailed };
+}
+
 function readBronzeJson(bronzeDir, runId, repoId, name) {
   const p = path.join(bronzeDir, runId, `${repoId}_${name}.json`);
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
@@ -44,9 +53,7 @@ async function main() {
   const extractResults = await extractAll({ repos: REPOS, db, runId, bronzeDir: BRONZE_DIR });
   const loadSummary = await loadRun({ db, runId, bronzeDir: BRONZE_DIR, extractResults, now: startedAt });
 
-  const failedRepoIds = new Set(extractResults.filter((r) => r.status === "error" && r.repoId).map((r) => r.repoId));
-  const repoIds = new Set(extractResults.filter((r) => r.repoId).map((r) => r.repoId));
-  const reposFetchedOk = new Set([...repoIds].filter((id) => !failedRepoIds.has(id))).size;
+  const { repoIds, reposFetchedOk, reposFailed } = computeRunCounts(extractResults);
 
   let llmCallsMade = 0;
   let llmCallsSkipped = 0;
@@ -68,12 +75,12 @@ async function main() {
 
   const finishedAt = new Date().toISOString();
   await recordRunFinish(db, runId, finishedAt, {
-    status: failedRepoIds.size > 0 ? "partial" : "success",
-    reposFetchedOk, reposFailed: failedRepoIds.size, llmCallsMade, llmCallsSkipped,
+    status: reposFailed > 0 ? "partial" : "success",
+    reposFetchedOk, reposFailed, llmCallsMade, llmCallsSkipped,
   });
 
   console.log(
-    `run ${runId}: ${reposFetchedOk} repos ok, ${failedRepoIds.size} repos with fetch errors, ` +
+    `run ${runId}: ${reposFetchedOk} repos ok, ${reposFailed} repos with fetch errors, ` +
       `${loadSummary.failuresRecorded} failures recorded, ${llmCallsMade} LLM calls made, ${llmCallsSkipped} skipped`
   );
   await db.close();
@@ -86,4 +93,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { makeRunId, main };
+module.exports = { makeRunId, main, computeRunCounts };
