@@ -1206,7 +1206,111 @@ git commit -m "feat(pipeline): add gold publish stage and Stage 0 orchestrator"
 
 ---
 
+### Task 7: Documentation sync (ARCHITECTURE.md + CLAUDE.md)
+
+**Added post-hoc**, after Tasks 1-6 landed: `ARCHITECTURE.md`'s "Status"
+section and `CLAUDE.md`'s "Future direction" section both currently claim
+"design only, nothing implemented yet." That becomes false the moment this
+branch merges — Stage 0 is a real, tested, partial implementation. This task
+brings both docs in line with what actually exists, and is explicit about
+what still doesn't (Discovery, PRs, ASSESS wiring, the ~60-repo widen).
+
+**Files:**
+- Modify: `ARCHITECTURE.md` (intro paragraph + "Status" section)
+- Modify: `CLAUDE.md` ("Future direction" section)
+
+- [ ] **Step 1: Update `ARCHITECTURE.md`'s intro paragraph**
+
+Change:
+
+```
+This is a design draft for evolving the tracker from a hardcoded 9-repo,
+full-refetch-every-time script into a pipeline that can run against a full
+GitHub account (~60 repos) incrementally. Nothing described here is
+implemented yet — `fetch.sh` / `inject.js` / `tracker.html` are still the
+current, working baseline. This document exists to capture the design so
+implementation can proceed against it later.
+```
+
+to:
+
+```
+This is the design for evolving the tracker from a hardcoded 9-repo,
+full-refetch-every-time script into a pipeline that can run against a full
+GitHub account (~60 repos) incrementally. A first vertical slice (Stage 0)
+is implemented in `pipeline/` — see the "Status" section below for exactly
+what that covers. `fetch.sh` / `inject.js` / `tracker.html` remain the
+pipeline that actually produces the checked-in dashboard until Discovery
+and the ~60-repo widen land and it's cut over.
+```
+
+- [ ] **Step 2: Replace `ARCHITECTURE.md`'s "Status" section**
+
+Change:
+
+```
+## Status
+
+Design only. No implementation has started. The existing `fetch.sh` →
+`node inject.js` → `tracker.html` pipeline remains the working baseline
+until these stages are actually built.
+```
+
+to:
+
+```
+## Status
+
+**Stage 0 (a thin vertical slice) is implemented in `pipeline/`**, run
+end-to-end for a hardcoded 2-repo scope: Extract → Load → Enrich → Publish,
+with DuckDB-backed watermarking, idempotent upserts, content-hash-gated
+enrichment, and dead-letter failure isolation all proven out. See
+`docs/superpowers/plans/2026-07-22-stage-0-vertical-slice.md` for what was
+built and why (thinnest end-to-end slice first, Discovery deliberately
+last since it's the easiest stage in isolation).
+
+**Not yet implemented:** Discovery (the repo list is still a hardcoded array
+in `pipeline/config.js`, same as `fetch.sh`'s today), the `prs` data type,
+wiring `repo_assessments` into `tracker.html` (would require extending
+`inject.js`'s splice markers to a second marker pair), and widening from 2
+repos to the full ~60-repo account.
+
+**The existing `fetch.sh` → `node inject.js` → `tracker.html` pipeline
+remains the actual production baseline** — Stage 0's `pipeline/` code is a
+proven-out parallel path, not a replacement, until Discovery and widening
+land and it's cut over.
+```
+
+- [ ] **Step 3: Update `CLAUDE.md`'s "Future direction" section**
+
+Change:
+
+```
+## Future direction
+
+The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a not-yet-implemented redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation. Consult those files before assuming the pipeline still works the way this section describes.
+```
+
+to:
+
+```
+## Future direction
+
+The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation.
+
+A first vertical slice of that redesign (Stage 0) is implemented in `pipeline/` — Extract → Load → Enrich → Publish for a hardcoded 2-repo scope. Discovery is not yet implemented (the repo list is still hardcoded), and `pipeline/` does not yet replace `fetch.sh`/`inject.js` as the pipeline that produces the checked-in `tracker.html` — it's a parallel, proven-out path, not yet the production one. Consult `ARCHITECTURE.md`'s "Status" section and `docs/superpowers/plans/` before assuming how much of the redesign exists.
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add ARCHITECTURE.md CLAUDE.md
+git commit -m "docs: sync ARCHITECTURE.md and CLAUDE.md status with Stage 0 implementation"
+```
+
+---
+
 ## Self-Review Notes
 
-- **Spec coverage:** Extract (bronze, watermarked, per-repo/per-datatype failure isolation) → Task 3. Load (silver, idempotent upsert, dead-letter) → Task 4. Enrich (content-hash gate, append-only) → Task 5. Publish (gold, reads DB not `repos.json` fetch output) → Task 6. `runs` observability row with `llm_calls_skipped` → Task 6. Discovery is explicitly excluded per the brainstorm's sequencing decision (build hardest/least-familiar stages first, Discovery last since it's the easiest stage in isolation).
+- **Spec coverage:** Extract (bronze, watermarked, per-repo/per-datatype failure isolation) → Task 3. Load (silver, idempotent upsert, dead-letter) → Task 4. Enrich (content-hash gate, append-only) → Task 5. Publish (gold, reads DB not `repos.json` fetch output) → Task 6. `runs` observability row with `llm_calls_skipped` → Task 6. Discovery is explicitly excluded per the brainstorm's sequencing decision (build hardest/least-familiar stages first, Discovery last since it's the easiest stage in isolation). Documentation staying in sync with what actually landed → Task 7 (added after the fact, once the risk of `ARCHITECTURE.md`/`CLAUDE.md` going stale was raised).
 - **Parked for the next plan (widening pass):** replacing the hardcoded `REPOS` list with the real `gh api /user/repos` Discovery stage and `repo_discoveries` table; adding the `prs` data type (same shape as `issues`); wiring `repo_assessments` into `tracker.html` by extending `inject.js`'s splice markers to also cover `ASSESS`; widening from 2 repos to ~60.
