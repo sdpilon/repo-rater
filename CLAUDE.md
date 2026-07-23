@@ -27,3 +27,13 @@ The repo list in `fetch.sh` (the `repos=` variable) changes often as projects co
 The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation.
 
 A first vertical slice of that redesign (Stage 0) is implemented in `pipeline/` — Extract → Load → Enrich → Publish for a hardcoded 2-repo scope. Discovery is not yet implemented (the repo list is still hardcoded), and `pipeline/` does not yet replace `fetch.sh`/`inject.js` as the pipeline that produces the checked-in `tracker.html` — it's a parallel, proven-out path, not yet the production one. Consult `ARCHITECTURE.md`'s "Status" section and `docs/superpowers/plans/` before assuming how much of the redesign exists.
+
+## Keeping docs in sync
+
+Before finishing any `pipeline/`-related branch, check whether `ARCHITECTURE.md`'s "Status" section and this file's "Future direction" section above still accurately describe what's implemented vs. not. Update them in the same branch if they don't — see `docs/postmortems/2026-07-22-stage-0-vertical-slice.md` for why this is called out explicitly rather than left to be remembered.
+
+## Verifying pipeline changes
+
+Run `./scripts/doctor.sh` before trusting a fresh checkout or a fresh `pnpm install` — it catches the environment issues (corrupted lockfile, unbuilt DuckDB binding, sandboxed network masquerading as an auth failure, a `test` script that silently discovers 0 files) that cost real time on Stage 0. See the same postmortem for details.
+
+Any task that wires previously-independent, already-tested `pipeline/` modules together into an orchestrator (extract→load→enrich→publish, or any future stage) needs a live end-to-end verification step against real external data, not just unit tests of the pieces — Stage 0's most severe bug (the content-hash gate never actually skipping) passed all 28 unit tests and was only caught by running the orchestrator twice against real GitHub repos.
