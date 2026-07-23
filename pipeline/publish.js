@@ -1,0 +1,48 @@
+"use strict";
+const fs = require("fs");
+const path = require("path");
+const { execFileSync } = require("child_process");
+
+async function buildRepoRecord(db, repoId) {
+  const [repoRow] = await db.all(
+    `SELECT full_name, description, html_url, default_branch, stargazers_count, is_private, language
+     FROM repos WHERE repo_id = ?`,
+    repoId
+  );
+  const commits = await db.all(
+    `SELECT sha, authored_at, message, author_name FROM commits WHERE repo_id = ? ORDER BY authored_at DESC`,
+    repoId
+  );
+  const issues = await db.all(
+    `SELECT number, title, state, created_at, closed_at, labels FROM issues WHERE repo_id = ? ORDER BY created_at DESC`,
+    repoId
+  );
+  return {
+    name: repoRow.full_name,
+    meta: {
+      private: repoRow.is_private,
+      description: repoRow.description,
+      html_url: repoRow.html_url,
+      default_branch: repoRow.default_branch,
+      stargazers_count: repoRow.stargazers_count,
+      language: repoRow.language,
+    },
+    readme: "",
+    issues: issues.map((i) => ({
+      number: i.number, title: i.title, state: i.state, created_at: i.created_at, closed_at: i.closed_at, labels: i.labels,
+    })),
+    prs: [],
+    commits: commits.map((c) => ({
+      sha: c.sha.slice(0, 7), date: c.authored_at, message: c.message, author: c.author_name,
+    })),
+  };
+}
+
+async function publish({ db, repoIds, repoRoot = path.join(__dirname, "..") }) {
+  const records = [];
+  for (const repoId of repoIds) records.push(await buildRepoRecord(db, repoId));
+  fs.writeFileSync(path.join(repoRoot, "repos.json"), JSON.stringify(records, null, 2));
+  execFileSync("node", ["inject.js"], { cwd: repoRoot, stdio: "inherit" });
+}
+
+module.exports = { buildRepoRecord, publish };
