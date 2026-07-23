@@ -24,4 +24,6 @@ The repo list in `fetch.sh` (the `repos=` variable) changes often as projects co
 
 ## Future direction
 
-The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a not-yet-implemented redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation. Consult those files before assuming the pipeline still works the way this section describes.
+The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation.
+
+A first vertical slice of that redesign (Stage 0) is implemented in `pipeline/` — Extract → Load → Enrich → Publish for a hardcoded 2-repo scope. Discovery is not yet implemented (the repo list is still hardcoded), and `pipeline/` does not yet replace `fetch.sh`/`inject.js` as the pipeline that produces the checked-in `tracker.html` — it's a parallel, proven-out path, not yet the production one. Consult `ARCHITECTURE.md`'s "Status" section and `docs/superpowers/plans/` before assuming how much of the redesign exists.

@@ -1,11 +1,12 @@
 # Architecture: incremental multi-repo tracker pipeline
 
-This is a design draft for evolving the tracker from a hardcoded 9-repo,
+This is the design for evolving the tracker from a hardcoded 9-repo,
 full-refetch-every-time script into a pipeline that can run against a full
-GitHub account (~60 repos) incrementally. Nothing described here is
-implemented yet — `fetch.sh` / `inject.js` / `tracker.html` are still the
-current, working baseline. This document exists to capture the design so
-implementation can proceed against it later.
+GitHub account (~60 repos) incrementally. A first vertical slice (Stage 0)
+is implemented in `pipeline/` — see the "Status" section below for exactly
+what that covers. `fetch.sh` / `inject.js` / `tracker.html` remain the
+pipeline that actually produces the checked-in dashboard until Discovery
+and the ~60-repo widen land and it's cut over.
 
 ## Why
 
@@ -135,6 +136,21 @@ Full DDL: see [`schema.sql`](schema.sql). Key design choices:
 
 ## Status
 
-Design only. No implementation has started. The existing `fetch.sh` →
-`node inject.js` → `tracker.html` pipeline remains the working baseline
-until these stages are actually built.
+**Stage 0 (a thin vertical slice) is implemented in `pipeline/`**, run
+end-to-end for a hardcoded 2-repo scope: Extract → Load → Enrich → Publish,
+with DuckDB-backed watermarking, idempotent upserts, content-hash-gated
+enrichment, and dead-letter failure isolation all proven out. See
+`docs/superpowers/plans/2026-07-22-stage-0-vertical-slice.md` for what was
+built and why (thinnest end-to-end slice first, Discovery deliberately
+last since it's the easiest stage in isolation).
+
+**Not yet implemented:** Discovery (the repo list is still a hardcoded array
+in `pipeline/config.js`, same as `fetch.sh`'s today), the `prs` data type,
+wiring `repo_assessments` into `tracker.html` (would require extending
+`inject.js`'s splice markers to a second marker pair), and widening from 2
+repos to the full ~60-repo account.
+
+**The existing `fetch.sh` → `node inject.js` → `tracker.html` pipeline
+remains the actual production baseline** — Stage 0's `pipeline/` code is a
+proven-out parallel path, not a replacement, until Discovery and widening
+land and it's cut over.
