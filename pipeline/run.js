@@ -26,6 +26,25 @@ function readBronzeJson(bronzeDir, runId, repoId, name) {
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
 
+// Commits/issues are watermarked (incremental) — a given run's bronze file
+// only holds *new* rows since the last fetch, which is empty on almost every
+// run after the first. Hashing that delta would make the content-hash gate
+// see a "change" on every run regardless of whether anything actually
+// changed. Enrichment needs the repo's full current state, so this reads
+// commits/issues from the silver layer (DuckDB) instead of this run's
+// bronze delta. Only readme has no watermark — it's refetched in full every
+// run, so this run's bronze copy of it already is the current full state.
+async function readEnrichInputs(db, bronzeDir, runId, repoId) {
+  const readmeText = readBronzeJson(bronzeDir, runId, repoId, "readme") || "";
+  const commits = await db.all("SELECT message FROM commits WHERE repo_id = ?", repoId);
+  const issues = await db.all("SELECT title FROM issues WHERE repo_id = ?", repoId);
+  return {
+    readmeText,
+    commitMessages: commits.map((c) => c.message),
+    issueTitles: issues.map((i) => i.title),
+  };
+}
+
 async function recordRunStart(db, runId, startedAt) {
   await db.run(
     `INSERT INTO runs (run_id, started_at, status, repos_discovered, repos_fetched_ok, repos_failed, llm_calls_made, llm_calls_skipped)
@@ -59,12 +78,10 @@ async function main() {
   let llmCallsSkipped = 0;
   for (const repoId of repoIds) {
     const meta = readBronzeJson(BRONZE_DIR, runId, repoId, "meta");
-    const readmeText = readBronzeJson(BRONZE_DIR, runId, repoId, "readme") || "";
-    const commits = readBronzeJson(BRONZE_DIR, runId, repoId, "commits") || [];
-    const issues = readBronzeJson(BRONZE_DIR, runId, repoId, "issues") || [];
+    const { readmeText, commitMessages, issueTitles } = await readEnrichInputs(db, BRONZE_DIR, runId, repoId);
     const result = await enrichRepo({
       db, repoId, fullName: meta.fullName, runId,
-      readmeText, commitMessages: commits.map((c) => c.message), issueTitles: issues.map((i) => i.title),
+      readmeText, commitMessages, issueTitles,
       now: new Date().toISOString(),
     });
     if (result.called) llmCallsMade += 1;
@@ -93,4 +110,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { makeRunId, main, computeRunCounts };
+module.exports = { makeRunId, main, computeRunCounts, readEnrichInputs };
