@@ -4,9 +4,13 @@ This is the design for evolving the tracker from a hardcoded 9-repo,
 full-refetch-every-time script into a pipeline that can run against a full
 GitHub account (~60 repos) incrementally. A first vertical slice (Stage 0)
 is implemented in `pipeline/` — see the "Status" section below for exactly
-what that covers. `fetch.sh` / `inject.js` / `tracker.html` remain the
-pipeline that actually produces the checked-in dashboard until Discovery
-and the ~60-repo widen land and it's cut over.
+what that covers. `fetch.sh` / `inject.js` is the pipeline you should run
+to safely refresh the checked-in dashboard. **`pipeline/run.js` already
+writes to the same `repos.json` / `tracker.html`** (its Publish stage calls
+the same `inject.js`), but only for its hardcoded 2-repo scope — running it
+against the real repo overwrites the full dataset down to just those 2
+repos. This isn't a deliberate cutover gate, it's an unfixed bug; see
+"Status" below.
 
 ## Why
 
@@ -150,7 +154,24 @@ wiring `repo_assessments` into `tracker.html` (would require extending
 `inject.js`'s splice markers to a second marker pair), and widening from 2
 repos to the full ~60-repo account.
 
-**The existing `fetch.sh` → `node inject.js` → `tracker.html` pipeline
-remains the actual production baseline** — Stage 0's `pipeline/` code is a
-proven-out parallel path, not a replacement, until Discovery and widening
-land and it's cut over.
+**Known bug — Publish is not actually isolated from production.**
+`pipeline/publish.js` writes directly to `repos.json` and shells out to the
+same `inject.js` used by `fetch.sh`, so `node pipeline/run.js` (or
+`pnpm pipeline`) overwrites the checked-in `tracker.html` for real. Because
+`pipeline/config.js` only scopes 2 repos, this silently truncates the other
+7 repos' data rather than merging with or safely coexisting alongside it.
+Confirmed by actually running it against the real repo and observing
+`repos.json`/`tracker.html` collapse to the 2-repo scope (recovered via
+`git checkout -- repos.json tracker.html`, since nothing had been
+committed). Until this is fixed — most simply, by having `publish()` write
+to a separate file when scoped to fewer than the full repo set, or by not
+calling `inject.js` until Discovery + widening land — treat `pnpm pipeline`
+/ `node pipeline/run.js` as unsafe to run without reverting `repos.json`
+and `tracker.html` afterward.
+
+**`fetch.sh` → `node inject.js` → `tracker.html` is still the pipeline you
+should use to actually refresh the dashboard.** Stage 0's `pipeline/` is
+proven out end-to-end (Extract → Load → Enrich all work, confirmed by a
+live run producing real rows in `tracker.duckdb`), but its Publish stage
+reaching into the same production files it's supposed to be isolated from
+means it isn't a safe parallel path yet, let alone a replacement.

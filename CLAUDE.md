@@ -24,9 +24,11 @@ The repo list in `fetch.sh` (the `repos=` variable) changes often as projects co
 
 ## Future direction
 
-The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation.
+The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation. `ROADMAP.md` tracks sequencing (what's next vs. later) for that redesign.
 
-A first vertical slice of that redesign (Stage 0) is implemented in `pipeline/` — Extract → Load → Enrich → Publish for a hardcoded 2-repo scope. Discovery is not yet implemented (the repo list is still hardcoded), and `pipeline/` does not yet replace `fetch.sh`/`inject.js` as the pipeline that produces the checked-in `tracker.html` — it's a parallel, proven-out path, not yet the production one. Consult `ARCHITECTURE.md`'s "Status" section and `docs/superpowers/plans/` before assuming how much of the redesign exists.
+A first vertical slice of that redesign (Stage 0) is implemented in `pipeline/` — Extract → Load → Enrich → Publish for a hardcoded 2-repo scope. Discovery is not yet implemented (the repo list is still hardcoded).
+
+**`pipeline/` is not isolated from production the way earlier notes here implied.** `pipeline/publish.js` writes straight to the same `repos.json` and shells out to the same `inject.js` that `fetch.sh` uses, which means it overwrites the checked-in `tracker.html` too. The only thing keeping it from being a real cutover is that it's unsafe to run as-is: because `pipeline/config.js` only scopes 2 repos, running `node pipeline/run.js` (or `pnpm pipeline`) replaces the full legacy dataset with just those 2 repos, silently discarding the rest. This is a known bug, not a deliberate staged rollout — confirmed by actually running it (see `docs/postmortems/`, or just don't run `pnpm pipeline`/`node pipeline/run.js` against the real repo without reverting after: `git checkout -- repos.json tracker.html`). Consult `ARCHITECTURE.md`'s "Status" section and `docs/superpowers/plans/` before assuming how much of the redesign exists.
 
 ## Keeping docs in sync
 
