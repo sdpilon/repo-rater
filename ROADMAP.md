@@ -18,17 +18,7 @@ completes.
 
 ## Next
 
-- **Wire Discovery in + decide filter policy + widen from 2 repos to the
-  full ~60-repo account** — moved up from "Later": now that `pipeline/` is
-  treated as the real project (see Done below), this is what actually
-  restores full dashboard coverage, since `pnpm pipeline` currently
-  publishes only `pipeline/config.js`'s hardcoded 2 repos. `pipeline/discover.js`
-  exists and works standalone (see Done below), but nothing calls it from
-  `run.js`'s `main()` yet, and there's no decision on which discovered repos
-  should actually be tracked (everything gh returns? auto-exclude
-  forks/archived? an explicit allow/deny list?). This item is: decide the
-  filter policy, wire `discoverRepos()` in to replace `pipeline/config.js`'s
-  hardcoded `REPOS`, and drop the 2-repo scope.
+(nothing queued here right now — see "Now" above for the one open item)
 
 ## Later
 
@@ -44,15 +34,33 @@ completes.
 
 ## Done
 
+- **Wire Discovery into `run.js`'s `main()`, widen from 2 repos to the full
+  account.** No filter policy applied — `main()` extracts/loads/enriches/
+  publishes every repo Discovery returns (forks and archived included).
+  `pipeline/config.js`'s hardcoded `REPOS` is deleted. Added `--dry-run`
+  (reports scope + repos with no prior assessment, zero side effects) and
+  `--limit N` (restricts a real run to the first N discovered repos;
+  discovery itself is never restricted by `--limit`) flags to `run.js`.
+  Live-verified against the real account: dry-run found 65 repos discovered,
+  63 with no prior assessment; a `--limit 3` run confirmed `repos`/
+  `repo_discoveries` always reflect the full 65-repo account regardless of
+  `--limit`, while `repos.json`/`tracker.html` reflect only the limited
+  subset; a full run (no flags) discovered 65, fetched 28 ok, hit 37 fetch
+  errors (overwhelmingly repos with no README — a 404, handled as an
+  expected per-datatype failure — plus one "Git Repository is empty" 409),
+  made 60 enrichment calls, skipped 5 (already assessed); running the same
+  full run again immediately after made 0 enrichment calls and skipped all
+  65, confirming the content-hash gate holds when nothing has changed.
+  `repos.json` now has 65 entries (was 2); `tracker.html`'s injected `DATA`
+  block was verified to parse as valid JSON with all 65.
+
 - **Decided: `pipeline/publish.js` overwriting `repos.json`/`tracker.html`
   is accepted behavior, not a bug.** `pipeline/` is now treated as the real
   project; the earlier framing (see `docs/postmortems/`) of the overwrite as
   a footgun to fix before it's safe to run assumed `fetch.sh`'s output was
-  the thing worth protecting. That's no longer the premise. The one
-  remaining caveat: until Discovery is wired in and widened (see "Next"),
-  running `pnpm pipeline` for real collapses dashboard coverage down to
-  `pipeline/config.js`'s 2 hardcoded repos — an accepted, temporary
-  tradeoff rather than something to guard against.
+  the thing worth protecting. That's no longer the premise. Discovery is now
+  wired in (see the item above), so `pnpm pipeline` publishes the full
+  discovered account rather than a hardcoded 2-repo subset.
 
 - **Stage 0 vertical slice** (`pipeline/`) — Extract → Load → Enrich →
   Publish, proven end-to-end for a hardcoded 2-repo scope: DuckDB-backed
@@ -66,8 +74,8 @@ completes.
   live runs against the real account: 65 repos, no filtering, `runs` and
   `repo_discoveries` both correctly populated (see `ARCHITECTURE.md`'s
   Status section for the actual output). Runnable standalone via
-  `pnpm pipeline:discover`; deliberately not wired into `run.js`'s `main()`
-  — see the Later item above for why.
+  `pnpm pipeline:discover`, and now also wired into `run.js`'s `main()`
+  (see the "Wire Discovery..." item above).
 - **Environment tooling** — `scripts/doctor.sh` (preflight checks: lockfile
   integrity, DuckDB binding, real `gh` auth reachability, test discovery)
   and standard `package.json` scripts (`dev`, `lint`, `format`, `build`,

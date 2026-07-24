@@ -4,13 +4,12 @@ This is the design for evolving the tracker from a hardcoded 9-repo,
 full-refetch-every-time script into a pipeline that can run against a full
 GitHub account (~60 repos) incrementally. A first vertical slice (Stage 0)
 is implemented in `pipeline/` — see the "Status" section below for exactly
-what that covers. `fetch.sh` / `inject.js` is the pipeline you should run
-to safely refresh the checked-in dashboard. **`pipeline/run.js` already
-writes to the same `repos.json` / `tracker.html`** (its Publish stage calls
-the same `inject.js`), but only for its hardcoded 2-repo scope — running it
-against the real repo overwrites the full dataset down to just those 2
-repos. This isn't a deliberate cutover gate, it's an unfixed bug; see
-"Status" below.
+what that covers. **`pipeline/run.js`'s `main()` now runs Discovery against
+the real account and writes to the same `repos.json` / `tracker.html`**
+(its Publish stage calls the same `inject.js`) — see "Status" below for the
+live-verified counts. `fetch.sh` / `inject.js` remains a separate, working
+path; retiring it is a tracked-but-unconfirmed roadmap item (`ROADMAP.md`'s
+"Later" section).
 
 ## Why
 
@@ -148,7 +147,8 @@ enrichment, and dead-letter failure isolation all proven out. See
 built and why (thinnest end-to-end slice first, Discovery deliberately
 last since it's the easiest stage in isolation).
 
-**Discovery is implemented as a standalone module, not yet wired in.**
+**Discovery is implemented as a standalone module** (and, as of this
+section's next paragraph, also wired into `run.js`'s `main()`).
 `pipeline/discover.js` calls `gh api user/repos` (paginated, `affiliation=owner`),
 upserts every returned repo into `repos`, appends one row per repo to
 `repo_discoveries`, and writes a `runs` row with real counts (via
@@ -172,16 +172,42 @@ per run_id (append-only, not overwritten) and `runs` has a matching row per
 run_id (`status: 'success', repos_discovered: 65, repos_fetched_ok: 65,
 repos_failed: 0`), rather than a dangling `run_id` with no `runs` entry.
 
-It does **not** replace `pipeline/config.js`'s `REPOS` or get called from
-`run.js`'s `main()` — no filter policy (forks, archived, curation) has been
-decided yet, and wiring it in would immediately widen what `pnpm pipeline`
-publishes. That wiring, plus the filter-policy decision, is the "widen to
-60 repos" item (`ROADMAP.md`'s "Next" section).
+**Discovery is now wired into `run.js`'s `main()`.** `pipeline/config.js`'s
+`REPOS` constant is deleted (`grep -rn "REPOS" pipeline/` returns nothing);
+`main()` calls `discoverRepos()` and extracts/loads/enriches/publishes the
+full discovered set, with no filter policy applied (everything `gh`
+returns — forks and archived repos included). Two new `run.js` flags
+support this: `--dry-run` (reports scope and how many repos have no prior
+assessment, zero side effects) and `--limit N` (restricts a real run to the
+first N discovered repos; discovery itself is never restricted by `--limit`
+— `repos`/`repo_discoveries` always reflect the full account).
 
-**Not yet implemented:** the `prs` data type, wiring `repo_assessments` into
-`tracker.html` (would require extending `inject.js`'s splice markers to a
-second marker pair), and widening from 2 repos to the full ~60-repo account
-(gated on Discovery's wiring + filter policy above).
+Live-verified against the real account (2026-07-24):
+
+```
+$ node pipeline/run.js --dry-run
+65 repos discovered, 63 with no prior assessment
+
+$ node pipeline/run.js            # first full run
+65 discovered, 28 fetched ok, 37 fetch errors (mostly repos with no
+README, a 404 on GitHub's readme endpoint, handled as an expected
+per-datatype failure; one "Git Repository is empty" 409, same handling),
+60 enrichment calls made, 5 skipped (already had a prior assessment)
+
+$ node pipeline/run.js            # same command, run again immediately
+65 discovered, same 28 ok / 37 fetch errors, 0 enrichment calls made,
+65 skipped — confirms the content-hash gate: nothing changed between the
+two runs, so nothing was re-assessed
+```
+
+`runs.repos_discovered` was 65 on both full runs, confirming discovery
+scope is independent of `--limit`. `repos.json` now has 65 entries (was 2);
+`tracker.html`'s injected `DATA` block was verified to parse as valid JSON
+with 65 entries.
+
+**Not yet implemented:** the `prs` data type, and wiring `repo_assessments`
+into `tracker.html` (would require extending `inject.js`'s splice markers
+to a second marker pair).
 
 **Publish writes directly to the production dataset — deliberately.**
 `pipeline/publish.js` writes directly to `repos.json` and shells out to the
@@ -192,14 +218,12 @@ repos and an early run truncated the other 7 repos' data (recovered via
 `git checkout -- repos.json tracker.html`, since nothing had been
 committed). It's now treated as accepted behavior instead: `pipeline/` is
 the real project, and `fetch.sh`'s output was never something worth
-protecting from it (see `ROADMAP.md`'s "Done" section). The remaining
-consequence, not a bug to fix: running `pnpm pipeline` for real today
-collapses dashboard coverage down to `pipeline/config.js`'s 2 hardcoded
-repos, until Discovery is wired in and widened.
+protecting from it (see `ROADMAP.md`'s "Done" section). Now that Discovery
+is wired in and the 2-repo scope is gone, `pnpm pipeline` publishes the
+full discovered account instead of collapsing coverage down to it.
 
-**`fetch.sh` → `node inject.js` → `tracker.html` is still the pipeline you
-should use to actually refresh the dashboard.** Stage 0's `pipeline/` is
-proven out end-to-end (Extract → Load → Enrich all work, confirmed by a
-live run producing real rows in `tracker.duckdb`), but its Publish stage
-reaching into the same production files it's supposed to be isolated from
-means it isn't a safe parallel path yet, let alone a replacement.
+**`pipeline/run.js` is now the pipeline that publishes the real,
+full-account dashboard** — proven end-to-end (Extract → Load → Enrich →
+Publish) by the live-verified runs above. `fetch.sh` → `node inject.js` →
+`tracker.html` still works as a separate path; whether to retire it is an
+open roadmap item (`ROADMAP.md`'s "Later" section), not yet decided.
