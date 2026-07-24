@@ -7,10 +7,7 @@ const { loadRun } = require("./load");
 const { enrichRepo } = require("./enrich");
 const { publish } = require("./publish");
 const { REPOS, DB_PATH, BRONZE_DIR } = require("./config");
-
-function makeRunId(now = new Date()) {
-  return `run_${now.toISOString().replace(/[:.]/g, "-")}`;
-}
+const { makeRunId, recordRunStart, recordRunFinish } = require("./run-tracking");
 
 function computeRunCounts(extractResults) {
   const failedFullNames = new Set(
@@ -59,29 +56,6 @@ async function readEnrichInputs(db, bronzeDir, runId, repoId) {
   };
 }
 
-async function recordRunStart(db, runId, startedAt, reposDiscovered) {
-  await db.run(
-    `INSERT INTO runs (run_id, started_at, status, repos_discovered, repos_fetched_ok, repos_failed, llm_calls_made, llm_calls_skipped)
-     VALUES (?, ?, 'partial', ?, 0, 0, 0, 0)`,
-    runId,
-    startedAt,
-    reposDiscovered,
-  );
-}
-
-async function recordRunFinish(db, runId, finishedAt, counts) {
-  await db.run(
-    `UPDATE runs SET finished_at = ?, status = ?, repos_fetched_ok = ?, repos_failed = ?, llm_calls_made = ?, llm_calls_skipped = ?
-     WHERE run_id = ?`,
-    finishedAt,
-    counts.status,
-    counts.reposFetchedOk,
-    counts.reposFailed,
-    counts.llmCallsMade,
-    counts.llmCallsSkipped,
-    runId,
-  );
-}
 
 async function main() {
   const db = openDb(DB_PATH);
@@ -157,10 +131,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  makeRunId,
   main,
   computeRunCounts,
   readEnrichInputs,
-  recordRunStart,
-  recordRunFinish,
 };
