@@ -11,6 +11,17 @@
             "statusMessage": "Checking git status before review dispatch..."
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/warn-docs-sync.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking doc-sync status before commit..."
+          }
+        ]
       }
     ]
   }
