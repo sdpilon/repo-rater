@@ -175,28 +175,27 @@ repos_failed: 0`), rather than a dangling `run_id` with no `runs` entry.
 It does **not** replace `pipeline/config.js`'s `REPOS` or get called from
 `run.js`'s `main()` — no filter policy (forks, archived, curation) has been
 decided yet, and wiring it in would immediately widen what `pnpm pipeline`
-publishes while the bug below is still unfixed. That wiring, plus the
-filter-policy decision, is the "widen to 60 repos" item.
+publishes. That wiring, plus the filter-policy decision, is the "widen to
+60 repos" item (`ROADMAP.md`'s "Next" section).
 
 **Not yet implemented:** the `prs` data type, wiring `repo_assessments` into
 `tracker.html` (would require extending `inject.js`'s splice markers to a
 second marker pair), and widening from 2 repos to the full ~60-repo account
 (gated on Discovery's wiring + filter policy above).
 
-**Known bug — Publish is not actually isolated from production.**
+**Publish writes directly to the production dataset — deliberately.**
 `pipeline/publish.js` writes directly to `repos.json` and shells out to the
 same `inject.js` used by `fetch.sh`, so `node pipeline/run.js` (or
-`pnpm pipeline`) overwrites the checked-in `tracker.html` for real. Because
-`pipeline/config.js` only scopes 2 repos, this silently truncates the other
-7 repos' data rather than merging with or safely coexisting alongside it.
-Confirmed by actually running it against the real repo and observing
-`repos.json`/`tracker.html` collapse to the 2-repo scope (recovered via
+`pnpm pipeline`) overwrites the checked-in `tracker.html` for real. This was
+previously logged here as a bug, since `pipeline/config.js` only scopes 2
+repos and an early run truncated the other 7 repos' data (recovered via
 `git checkout -- repos.json tracker.html`, since nothing had been
-committed). Until this is fixed — most simply, by having `publish()` write
-to a separate file when scoped to fewer than the full repo set, or by not
-calling `inject.js` until Discovery + widening land — treat `pnpm pipeline`
-/ `node pipeline/run.js` as unsafe to run without reverting `repos.json`
-and `tracker.html` afterward.
+committed). It's now treated as accepted behavior instead: `pipeline/` is
+the real project, and `fetch.sh`'s output was never something worth
+protecting from it (see `ROADMAP.md`'s "Done" section). The remaining
+consequence, not a bug to fix: running `pnpm pipeline` for real today
+collapses dashboard coverage down to `pipeline/config.js`'s 2 hardcoded
+repos, until Discovery is wired in and widened.
 
 **`fetch.sh` → `node inject.js` → `tracker.html` is still the pipeline you
 should use to actually refresh the dashboard.** Stage 0's `pipeline/` is
