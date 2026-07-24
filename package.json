@@ -13,6 +13,7 @@
     "build": "./fetch.sh && node inject.js",
     "pipeline": "node pipeline/run.js",
     "pipeline:discover": "node pipeline/discover.js",
+    "tracker:screenshot": "pnpm install && node .claude/skills/run-github-project-tracker/driver.mjs",
     "deps:outdated": "pnpm outdated",
     "deps:update": "pnpm update -i --latest",
     "env-check": "./scripts/doctor.sh"

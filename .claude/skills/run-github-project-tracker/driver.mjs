@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Launches `serve .`, drives tracker.html with Playwright Chromium, screenshots it.
-// Usage: node .claude/skills/run-github-project-tracker/driver.mjs
+// Usage: pnpm run tracker:screenshot
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
