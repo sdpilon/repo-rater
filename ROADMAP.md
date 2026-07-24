@@ -38,7 +38,9 @@ completes.
   account.** No filter policy applied — `main()` extracts/loads/enriches/
   publishes every repo Discovery returns (forks and archived included).
   `pipeline/config.js`'s hardcoded `REPOS` is deleted. Added `--dry-run`
-  (reports scope + repos with no prior assessment, zero side effects) and
+  (reports scope + repos with no prior assessment; runs a real discovery —
+  writes `repos`/`repo_discoveries`/`runs` — but no extraction, load,
+  enrichment, publish, or `repos.json`/`tracker.html` writes) and
   `--limit N` (restricts a real run to the first N discovered repos;
   discovery itself is never restricted by `--limit`) flags to `run.js`.
   Live-verified against the real account: dry-run found 65 repos discovered,

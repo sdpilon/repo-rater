@@ -112,12 +112,21 @@ async function main(argv = process.argv.slice(2)) {
   }
 
   if (args.dryRun) {
+    await recordRunStart(db, runId, startedAt, discoveredCount);
     const repoIds = discovered.map((r) => r.repoId);
     const unassessed = await countUnassessedRepos(db, repoIds);
     console.log(
       `run ${runId} (dry-run): ${discoveredCount} repos discovered, ` +
-        `${unassessed} have no prior assessment and would trigger an enrichment call on a real run`,
+        `${unassessed} have no prior assessment`,
     );
+    const finishedAt = new Date().toISOString();
+    await recordRunFinish(db, runId, finishedAt, {
+      status: "success",
+      reposFetchedOk: 0,
+      reposFailed: 0,
+      llmCallsMade: 0,
+      llmCallsSkipped: 0,
+    });
     await db.close();
     return;
   }

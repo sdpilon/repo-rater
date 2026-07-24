@@ -178,7 +178,9 @@ repos_failed: 0`), rather than a dangling `run_id` with no `runs` entry.
 full discovered set, with no filter policy applied (everything `gh`
 returns — forks and archived repos included). Two new `run.js` flags
 support this: `--dry-run` (reports scope and how many repos have no prior
-assessment, zero side effects) and `--limit N` (restricts a real run to the
+assessment; runs a real discovery — writes `repos`/`repo_discoveries`/`runs`
+— but no extraction, load, enrichment, publish, or `repos.json`/
+`tracker.html` writes) and `--limit N` (restricts a real run to the
 first N discovered repos; discovery itself is never restricted by `--limit`
 — `repos`/`repo_discoveries` always reflect the full account).
 
