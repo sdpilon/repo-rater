@@ -6,7 +6,8 @@ const { extractAll } = require("./extract");
 const { loadRun } = require("./load");
 const { enrichRepo } = require("./enrich");
 const { publish } = require("./publish");
-const { REPOS, DB_PATH, BRONZE_DIR } = require("./config");
+const { discoverRepos } = require("./discover");
+const { DB_PATH, BRONZE_DIR } = require("./config");
 const { makeRunId, recordRunStart, recordRunFinish } = require("./run-tracking");
 
 function computeRunCounts(extractResults) {
@@ -90,15 +91,42 @@ async function countUnassessedRepos(db, repoIds) {
   return repoIds.filter((id) => !assessedIds.has(id)).length;
 }
 
-async function main() {
+async function main(argv = process.argv.slice(2)) {
+  const args = parseArgs(argv);
   const db = openDb(DB_PATH);
   await ensureSchema(db);
   const runId = makeRunId();
   const startedAt = new Date().toISOString();
-  await recordRunStart(db, runId, startedAt, REPOS.length);
+
+  const {
+    repos: discovered,
+    count: discoveredCount,
+    error: discoverError,
+  } = await discoverRepos({ db, runId, now: startedAt });
+
+  if (discoverError) {
+    console.error(`run ${runId}: discovery failed, aborting: ${discoverError}`);
+    await db.close();
+    process.exitCode = 1;
+    return;
+  }
+
+  if (args.dryRun) {
+    const repoIds = discovered.map((r) => r.repoId);
+    const unassessed = await countUnassessedRepos(db, repoIds);
+    console.log(
+      `run ${runId} (dry-run): ${discoveredCount} repos discovered, ` +
+        `${unassessed} have no prior assessment and would trigger an enrichment call on a real run`,
+    );
+    await db.close();
+    return;
+  }
+
+  const repos = buildRepoList(discovered, args.limit);
+  await recordRunStart(db, runId, startedAt, discoveredCount);
 
   const extractResults = await extractAll({
-    repos: REPOS,
+    repos,
     db,
     runId,
     bronzeDir: BRONZE_DIR,
@@ -151,7 +179,8 @@ async function main() {
 
   console.log(
     `run ${runId}: ${reposFetchedOk} repos ok, ${reposFailed} repos with fetch errors, ` +
-      `${loadSummary.failuresRecorded} failures recorded, ${llmCallsMade} LLM calls made, ${llmCallsSkipped} skipped`,
+      `${loadSummary.failuresRecorded} failures recorded, ${llmCallsMade} enrichment calls made, ${llmCallsSkipped} skipped` +
+      (args.limit ? ` (limited to ${args.limit} of ${discoveredCount} discovered repos)` : ""),
   );
   await db.close();
 }
