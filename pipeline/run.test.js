@@ -4,7 +4,12 @@ const assert = require("node:assert/strict");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { computeRunCounts, readEnrichInputs } = require("./run");
+const {
+  computeRunCounts,
+  readEnrichInputs,
+  parseArgs,
+  buildRepoList,
+} = require("./run");
 const { openDb, ensureSchema } = require("./db");
 
 test("computeRunCounts counts a whole-repo meta-fetch failure as failed, not silently dropped", () => {
@@ -116,4 +121,39 @@ test("readEnrichInputs reads commits/issues from the silver layer's full accumul
   assert.deepEqual(inputs.issueTitles, ["Bug"]);
   assert.equal(inputs.readmeText, "# Hello");
   await db.close();
+});
+
+test("parseArgs defaults to no dry-run and no limit", () => {
+  assert.deepEqual(parseArgs([]), { dryRun: false, limit: null });
+});
+
+test("parseArgs recognizes --dry-run", () => {
+  assert.deepEqual(parseArgs(["--dry-run"]), { dryRun: true, limit: null });
+});
+
+test("parseArgs recognizes --limit N", () => {
+  assert.deepEqual(parseArgs(["--limit", "5"]), { dryRun: false, limit: 5 });
+});
+
+test("parseArgs rejects a non-positive-integer --limit value", () => {
+  assert.throws(() => parseArgs(["--limit", "abc"]), /--limit requires a positive integer/);
+  assert.throws(() => parseArgs(["--limit", "0"]), /--limit requires a positive integer/);
+  assert.throws(() => parseArgs(["--limit", "-3"]), /--limit requires a positive integer/);
+});
+
+test("buildRepoList maps discovered repo objects to their fullName", () => {
+  const discovered = [
+    { repoId: 1, fullName: "sdpilon/a" },
+    { repoId: 2, fullName: "sdpilon/b" },
+  ];
+  assert.deepEqual(buildRepoList(discovered, null), ["sdpilon/a", "sdpilon/b"]);
+});
+
+test("buildRepoList applies a limit by taking the first N", () => {
+  const discovered = [
+    { repoId: 1, fullName: "sdpilon/a" },
+    { repoId: 2, fullName: "sdpilon/b" },
+    { repoId: 3, fullName: "sdpilon/c" },
+  ];
+  assert.deepEqual(buildRepoList(discovered, 2), ["sdpilon/a", "sdpilon/b"]);
 });

@@ -56,6 +56,28 @@ async function readEnrichInputs(db, bronzeDir, runId, repoId) {
   };
 }
 
+function parseArgs(argv) {
+  const args = { dryRun: false, limit: null };
+  for (let i = 0; i < argv.length; i += 1) {
+    if (argv[i] === "--dry-run") {
+      args.dryRun = true;
+    } else if (argv[i] === "--limit") {
+      const raw = argv[i + 1];
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value <= 0) {
+        throw new Error(`--limit requires a positive integer, got ${raw}`);
+      }
+      args.limit = value;
+      i += 1;
+    }
+  }
+  return args;
+}
+
+function buildRepoList(discoveredRepos, limit) {
+  const fullNames = discoveredRepos.map((r) => r.fullName);
+  return typeof limit === "number" ? fullNames.slice(0, limit) : fullNames;
+}
 
 async function main() {
   const db = openDb(DB_PATH);
@@ -134,4 +156,6 @@ module.exports = {
   main,
   computeRunCounts,
   readEnrichInputs,
+  parseArgs,
+  buildRepoList,
 };
