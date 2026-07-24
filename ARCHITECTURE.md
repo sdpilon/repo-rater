@@ -148,11 +148,40 @@ enrichment, and dead-letter failure isolation all proven out. See
 built and why (thinnest end-to-end slice first, Discovery deliberately
 last since it's the easiest stage in isolation).
 
-**Not yet implemented:** Discovery (the repo list is still a hardcoded array
-in `pipeline/config.js`, same as `fetch.sh`'s today), the `prs` data type,
-wiring `repo_assessments` into `tracker.html` (would require extending
-`inject.js`'s splice markers to a second marker pair), and widening from 2
-repos to the full ~60-repo account.
+**Discovery is implemented as a standalone module, not yet wired in.**
+`pipeline/discover.js` calls `gh api user/repos` (paginated, `affiliation=owner`),
+upserts every returned repo into `repos`, appends one row per repo to
+`repo_discoveries`, and writes a `runs` row with real counts (via
+`run.js`'s `recordRunStart`/`recordRunFinish`, not the hardcoded config
+length). A bad repo or a mid-pagination API failure is isolated per-repo
+(recorded as a result, not a thrown exception that drops the whole batch) —
+same failure-isolation shape as `extract.js`.
+
+It's runnable on its own (`pnpm pipeline:discover`). Live-verified against
+the real account, run twice back to back:
+
+```
+$ node pipeline/discover.js
+discover run_2026-07-24T11-19-53-533Z: 65 repos discovered (3 forks, 2 archived), 65 recorded ok, 0 failed
+$ node pipeline/discover.js
+discover run_2026-07-24T11-19-54-449Z: 65 repos discovered (3 forks, 2 archived), 65 recorded ok, 0 failed
+```
+
+and confirmed in `tracker.duckdb` directly — `repo_discoveries` has 65 rows
+per run_id (append-only, not overwritten) and `runs` has a matching row per
+run_id (`status: 'success', repos_discovered: 65, repos_fetched_ok: 65,
+repos_failed: 0`), rather than a dangling `run_id` with no `runs` entry.
+
+It does **not** replace `pipeline/config.js`'s `REPOS` or get called from
+`run.js`'s `main()` — no filter policy (forks, archived, curation) has been
+decided yet, and wiring it in would immediately widen what `pnpm pipeline`
+publishes while the bug below is still unfixed. That wiring, plus the
+filter-policy decision, is the "widen to 60 repos" item.
+
+**Not yet implemented:** the `prs` data type, wiring `repo_assessments` into
+`tracker.html` (would require extending `inject.js`'s splice markers to a
+second marker pair), and widening from 2 repos to the full ~60-repo account
+(gated on Discovery's wiring + filter policy above).
 
 **Known bug — Publish is not actually isolated from production.**
 `pipeline/publish.js` writes directly to `repos.json` and shells out to the

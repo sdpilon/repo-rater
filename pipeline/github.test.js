@@ -6,6 +6,7 @@ const {
   fetchReadme,
   fetchCommitsSince,
   fetchIssuesSince,
+  fetchAccountRepos,
 } = require("./github");
 
 test("fetchRepoMeta maps raw GitHub fields to camelCase repo meta", () => {
@@ -131,6 +132,65 @@ test("fetchIssuesSince filters out pull requests and maps labels to names", () =
       createdAt: "2026-01-01T00:00:00Z",
       closedAt: null,
       labels: ["bug"],
+    },
+  ]);
+});
+
+function makeRawRepo(n) {
+  return {
+    id: n,
+    full_name: `sdpilon/repo-${n}`,
+    description: `repo ${n}`,
+    html_url: `https://github.com/sdpilon/repo-${n}`,
+    default_branch: "main",
+    language: "JavaScript",
+    stargazers_count: n,
+    private: false,
+    fork: n % 2 === 0,
+    archived: false,
+  };
+}
+
+test("fetchAccountRepos pages through full 100-item pages and stops on a short page", () => {
+  const page1 = Array.from({ length: 100 }, (_, i) => makeRawRepo(i + 1));
+  const page2 = [makeRawRepo(101), makeRawRepo(102)];
+  const calledPaths = [];
+  const fakeGhApiJson = (pathAndQuery) => {
+    calledPaths.push(pathAndQuery);
+    const url = new URL(`https://x/${pathAndQuery}`);
+    const page = url.searchParams.get("page");
+    if (page === "1") return page1;
+    if (page === "2") return page2;
+    throw new Error(`unexpected page: ${page}`);
+  };
+  const repos = fetchAccountRepos(fakeGhApiJson);
+  assert.equal(repos.length, 102);
+  assert.equal(calledPaths.length, 2);
+  assert.match(
+    calledPaths[0],
+    /^user\/repos\?affiliation=owner&per_page=100&page=1$/,
+  );
+  assert.match(
+    calledPaths[1],
+    /^user\/repos\?affiliation=owner&per_page=100&page=2$/,
+  );
+});
+
+test("fetchAccountRepos maps raw fields to camelCase repo meta", () => {
+  const fakeGhApiJson = () => [makeRawRepo(1)];
+  const repos = fetchAccountRepos(fakeGhApiJson);
+  assert.deepEqual(repos, [
+    {
+      repoId: 1,
+      fullName: "sdpilon/repo-1",
+      description: "repo 1",
+      htmlUrl: "https://github.com/sdpilon/repo-1",
+      defaultBranch: "main",
+      language: "JavaScript",
+      stargazersCount: 1,
+      isPrivate: false,
+      isFork: false,
+      isArchived: false,
     },
   ]);
 });

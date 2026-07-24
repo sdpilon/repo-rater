@@ -6,8 +6,7 @@ function defaultGhApiJson(pathAndQuery) {
   return JSON.parse(out);
 }
 
-function fetchRepoMeta(fullName, ghApiJson = defaultGhApiJson) {
-  const raw = ghApiJson(`repos/${fullName}`);
+function mapRawRepo(raw) {
   return {
     repoId: raw.id,
     fullName: raw.full_name,
@@ -20,6 +19,10 @@ function fetchRepoMeta(fullName, ghApiJson = defaultGhApiJson) {
     isFork: raw.fork,
     isArchived: raw.archived,
   };
+}
+
+function fetchRepoMeta(fullName, ghApiJson = defaultGhApiJson) {
+  return mapRawRepo(ghApiJson(`repos/${fullName}`));
 }
 
 function fetchReadme(fullName, ghApiJson = defaultGhApiJson) {
@@ -55,10 +58,26 @@ function fetchIssuesSince(fullName, since, ghApiJson = defaultGhApiJson) {
     }));
 }
 
+function fetchAccountRepos(ghApiJson = defaultGhApiJson) {
+  const perPage = 100;
+  let page = 1;
+  const all = [];
+  for (;;) {
+    const raw = ghApiJson(
+      `user/repos?affiliation=owner&per_page=${perPage}&page=${page}`,
+    );
+    for (const r of raw) all.push(mapRawRepo(r));
+    if (raw.length < perPage) break;
+    page += 1;
+  }
+  return all;
+}
+
 module.exports = {
   fetchRepoMeta,
   fetchReadme,
   fetchCommitsSince,
   fetchIssuesSince,
+  fetchAccountRepos,
   defaultGhApiJson,
 };

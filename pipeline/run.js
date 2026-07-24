@@ -59,13 +59,13 @@ async function readEnrichInputs(db, bronzeDir, runId, repoId) {
   };
 }
 
-async function recordRunStart(db, runId, startedAt) {
+async function recordRunStart(db, runId, startedAt, reposDiscovered) {
   await db.run(
     `INSERT INTO runs (run_id, started_at, status, repos_discovered, repos_fetched_ok, repos_failed, llm_calls_made, llm_calls_skipped)
      VALUES (?, ?, 'partial', ?, 0, 0, 0, 0)`,
     runId,
     startedAt,
-    REPOS.length,
+    reposDiscovered,
   );
 }
 
@@ -88,7 +88,7 @@ async function main() {
   await ensureSchema(db);
   const runId = makeRunId();
   const startedAt = new Date().toISOString();
-  await recordRunStart(db, runId, startedAt);
+  await recordRunStart(db, runId, startedAt, REPOS.length);
 
   const extractResults = await extractAll({
     repos: REPOS,
@@ -156,4 +156,11 @@ if (require.main === module) {
   });
 }
 
-module.exports = { makeRunId, main, computeRunCounts, readEnrichInputs };
+module.exports = {
+  makeRunId,
+  main,
+  computeRunCounts,
+  readEnrichInputs,
+  recordRunStart,
+  recordRunFinish,
+};
