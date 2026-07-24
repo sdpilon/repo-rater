@@ -79,6 +79,17 @@ function buildRepoList(discoveredRepos, limit) {
   return typeof limit === "number" ? fullNames.slice(0, limit) : fullNames;
 }
 
+async function countUnassessedRepos(db, repoIds) {
+  if (repoIds.length === 0) return 0;
+  const placeholders = repoIds.map(() => "?").join(",");
+  const rows = await db.all(
+    `SELECT DISTINCT repo_id FROM repo_assessments WHERE repo_id IN (${placeholders})`,
+    ...repoIds,
+  );
+  const assessedIds = new Set(rows.map((r) => Number(r.repo_id)));
+  return repoIds.filter((id) => !assessedIds.has(id)).length;
+}
+
 async function main() {
   const db = openDb(DB_PATH);
   await ensureSchema(db);
@@ -158,4 +169,5 @@ module.exports = {
   readEnrichInputs,
   parseArgs,
   buildRepoList,
+  countUnassessedRepos,
 };

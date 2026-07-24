@@ -9,6 +9,7 @@ const {
   readEnrichInputs,
   parseArgs,
   buildRepoList,
+  countUnassessedRepos,
 } = require("./run");
 const { openDb, ensureSchema } = require("./db");
 
@@ -156,4 +157,29 @@ test("buildRepoList applies a limit by taking the first N", () => {
     { repoId: 3, fullName: "sdpilon/c" },
   ];
   assert.deepEqual(buildRepoList(discovered, 2), ["sdpilon/a", "sdpilon/b"]);
+});
+
+test("countUnassessedRepos counts only repos with no repo_assessments row", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, first_seen_at, last_seen_at)
+     VALUES (1, 'sdpilon/a', null, 'u', 'main', null, 0, false, false, false, '2026-07-01T00:00:00Z', '2026-07-01T00:00:00Z')`,
+  );
+  await db.run(
+    `INSERT INTO repo_assessments (repo_id, run_id, input_hash, pct, band, label, text, gaps, created_at)
+     VALUES (1, 'run_0', 'hash1', 50, 'unknown', 'x', 'y', [], '2026-07-01T00:00:00Z')`,
+  );
+
+  const count = await countUnassessedRepos(db, [1, 2, 3]);
+  assert.equal(count, 2);
+
+  await db.close();
+});
+
+test("countUnassessedRepos returns 0 for an empty repo list without querying", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  assert.equal(await countUnassessedRepos(db, []), 0);
+  await db.close();
 });
