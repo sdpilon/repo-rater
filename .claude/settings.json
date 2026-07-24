@@ -2,26 +2,37 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Agent",
         "hooks": [
           {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/warn-dirty-review.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel 2\u003e/dev/null || echo .)/.claude/hooks/warn-dirty-review.sh\"",
+            "statusMessage": "Checking git status before review dispatch...",
             "timeout": 10,
-            "statusMessage": "Checking git status before review dispatch..."
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": "Agent"
       },
       {
-        "matcher": "Bash",
         "hooks": [
           {
-            "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/warn-docs-sync.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel 2\u003e/dev/null || echo .)/.claude/hooks/warn-docs-sync.sh\"",
+            "statusMessage": "Checking doc-sync status before commit...",
             "timeout": 10,
-            "statusMessage": "Checking doc-sync status before commit..."
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "bd prime --hook-json",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
       }
     ]
   }
