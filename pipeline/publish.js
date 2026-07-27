@@ -2,8 +2,9 @@
 const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
+const { readBronzeJson } = require("./extract");
 
-async function buildRepoRecord(db, repoId) {
+async function buildRepoRecord(db, repoId, runId, bronzeDir) {
   const [repoRow] = await db.all(
     `SELECT full_name, description, html_url, default_branch, stargazers_count, is_private, language
      FROM repos WHERE repo_id = ?`,
@@ -35,7 +36,10 @@ async function buildRepoRecord(db, repoId) {
       stargazers_count: repoRow.stargazers_count,
       language: repoRow.language,
     },
-    readme: "",
+    readme:
+      runId && bronzeDir
+        ? readBronzeJson(bronzeDir, runId, repoId, "readme") || ""
+        : "",
     issues: issues.map((i) => ({
       number: i.number,
       title: i.title,
@@ -69,9 +73,16 @@ async function buildRepoRecord(db, repoId) {
   };
 }
 
-async function publish({ db, repoIds, repoRoot = path.join(__dirname, "..") }) {
+async function publish({
+  db,
+  repoIds,
+  repoRoot = path.join(__dirname, ".."),
+  runId,
+  bronzeDir,
+}) {
   const records = [];
-  for (const repoId of repoIds) records.push(await buildRepoRecord(db, repoId));
+  for (const repoId of repoIds)
+    records.push(await buildRepoRecord(db, repoId, runId, bronzeDir));
   fs.writeFileSync(
     path.join(repoRoot, "repos.json"),
     JSON.stringify(records, null, 2),

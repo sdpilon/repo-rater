@@ -1,8 +1,6 @@
 "use strict";
-const path = require("path");
-const fs = require("fs");
 const { openDb, ensureSchema } = require("./db");
-const { extractAll } = require("./extract");
+const { extractAll, readBronzeJson } = require("./extract");
 const { loadRun } = require("./load");
 const { enrichRepo } = require("./enrich");
 const { publish } = require("./publish");
@@ -29,11 +27,6 @@ function computeRunCounts(extractResults) {
   ).size;
   const reposFailed = failedFullNames.size;
   return { repoIds, reposFetchedOk, reposFailed };
-}
-
-function readBronzeJson(bronzeDir, runId, repoId, name) {
-  const p = path.join(bronzeDir, runId, `${repoId}_${name}.json`);
-  return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
 
 // Commits/issues are watermarked (incremental) — a given run's bronze file
@@ -179,7 +172,12 @@ async function main(argv = process.argv.slice(2)) {
     else llmCallsSkipped += 1;
   }
 
-  await publish({ db, repoIds: Array.from(repoIds) });
+  await publish({
+    db,
+    repoIds: Array.from(repoIds),
+    runId,
+    bronzeDir: BRONZE_DIR,
+  });
 
   const finishedAt = new Date().toISOString();
   await recordRunFinish(db, runId, finishedAt, {

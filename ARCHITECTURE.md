@@ -7,14 +7,13 @@ is implemented in `pipeline/` — see the "Status" section below for exactly
 what that covers. **`pipeline/run.js`'s `main()` now runs Discovery against
 the real account and writes to the same `repos.json` / `tracker.html`**
 (its Publish stage calls the same `inject.js`) — see "Status" below for the
-live-verified counts. `fetch.sh` / `inject.js` remains a separate, working
-path; retiring it is a tracked-but-unconfirmed roadmap item (`ROADMAP.md`'s
-"Later" section).
+live-verified counts. `fetch.sh` has been retired: `pipeline/` is now the
+only path that produces `repos.json` / `tracker.html`.
 
 ## Why
 
-The current pipeline (`fetch.sh`) has a few properties that don't scale
-past a small, manually-curated repo list:
+The original pipeline (`fetch.sh`, now retired) had a few properties that
+don't scale past a small, manually-curated repo list:
 
 - The repo list is hardcoded in `fetch.sh` and has to be edited by hand as
   projects come and go.
@@ -218,20 +217,25 @@ hand-authored `ASSESS` entry for that repo. This is intentional: until
 a stub, the hand-authored entries stay authoritative wherever they exist.
 
 **Publish writes directly to the production dataset — deliberately.**
-`pipeline/publish.js` writes directly to `repos.json` and shells out to the
-same `inject.js` used by `fetch.sh`, so `node pipeline/run.js` (or
-`pnpm pipeline`) overwrites the checked-in `tracker.html` for real. This was
-previously logged here as a bug, since `pipeline/config.js` only scopes 2
-repos and an early run truncated the other 7 repos' data (recovered via
+`pipeline/publish.js` writes directly to `repos.json` and shells out to
+`inject.js`, so `node pipeline/run.js` (or `pnpm pipeline`) overwrites the
+checked-in `tracker.html` for real. This was previously logged here as a
+bug, since `pipeline/config.js` only scoped 2 repos and an early run
+truncated the other 7 repos' data (recovered via
 `git checkout -- repos.json tracker.html`, since nothing had been
 committed). It's now treated as accepted behavior instead: `pipeline/` is
-the real project, and `fetch.sh`'s output was never something worth
-protecting from it (see `ROADMAP.md`'s "Done" section). Now that Discovery
-is wired in and the 2-repo scope is gone, `pnpm pipeline` publishes the
-full discovered account instead of collapsing coverage down to it.
+the real project (see `ROADMAP.md`'s "Done" section). Now that Discovery is
+wired in and the 2-repo scope is gone, `pnpm pipeline` publishes the full
+discovered account instead of collapsing coverage down to it.
 
-**`pipeline/run.js` is now the pipeline that publishes the real,
-full-account dashboard** — proven end-to-end (Extract → Load → Enrich →
-Publish) by the live-verified runs above. `fetch.sh` → `node inject.js` →
-`tracker.html` still works as a separate path; whether to retire it is an
-open roadmap item (`ROADMAP.md`'s "Later" section), not yet decided.
+**`fetch.sh` has been retired.** `pipeline/run.js` is now the only pipeline
+that produces `repos.json` / `tracker.html` — proven end-to-end (Extract →
+Load → Enrich → Publish) by the live-verified runs above. The one gap that
+would have made retirement a regression — `pipeline/publish.js` hardcoding
+`readme: ""` while `fetch.sh` fetched real README text — is fixed:
+`buildRepoRecord()` now reads the real README text out of that run's bronze
+copy (`readBronzeJson(bronzeDir, runId, repoId, "readme")`, exported from
+`extract.js` alongside its `writeBronze()` counterpart), threaded through
+from `run.js`'s already-in-scope `runId`/`BRONZE_DIR`. `package.json`'s
+`build` script now runs `node pipeline/run.js` directly; there's no
+remaining `fetch.sh` path to fall back to.

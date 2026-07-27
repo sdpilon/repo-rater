@@ -13,21 +13,33 @@ completes.
 
 ## Now
 
-- **Retire `fetch.sh`** — now that `pipeline/` is the real project and
-  `publish.js` writing to `repos.json`/`tracker.html` is accepted behavior,
-  `fetch.sh` is legacy rather than a production path to protect. Retire it
-  once Discovery's widening (above) restores at least the repo coverage
-  `fetch.sh` currently provides.
+(nothing queued here right now — see "Next"/"Later" below)
 
 ## Next
 
-(nothing queued here right now — see "Now" above for the one open item)
+- **UI-based per-repo assess/ignore selection** — let the user choose which
+  repos get an AI assessment (vs. ignored) directly from `tracker.html`,
+  instead of `update-tracker`'s `$ARGUMENTS` naming repos by hand each run.
+  Tracked as a separate beads issue, filed when `fetch.sh` was retired
+  (see "Done" below) — has real open design questions (where selections
+  get persisted, whether it needs a small local server) not yet worked out.
 
 ## Later
 
 (nothing queued here right now)
 
 ## Done
+
+- **Retire `fetch.sh`** — `pipeline/` is the real project and
+  `publish.js` writing to `repos.json`/`tracker.html` is accepted behavior,
+  so `fetch.sh` was deleted outright. The one gap that would have made this
+  a regression — `pipeline/publish.js` always publishing `readme: ""` while
+  `fetch.sh` fetched real README text — is fixed: `buildRepoRecord()` now
+  reads the real README text out of that run's bronze copy. `package.json`'s
+  `build` script now runs `node pipeline/run.js` directly, and
+  `.claude/skills/update-tracker/SKILL.md` was rewritten to run the pipeline
+  and scope assessment work via `$ARGUMENTS` instead of hand-editing a
+  `repos=` list that no longer exists.
 
 - **`prs` data type** — the pipeline now extracts/loads/publishes pull
   requests (`fetchPrsSince` and the full extract/load/publish wiring),

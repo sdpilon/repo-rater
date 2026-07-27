@@ -9,7 +9,7 @@
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
-    "build": "./fetch.sh && node inject.js",
+    "build": "node pipeline/run.js",
     "pipeline": "node pipeline/run.js",
     "pipeline:discover": "node pipeline/discover.js",
     "tracker:screenshot": "pnpm install && node .claude/skills/run-github-project-tracker/driver.mjs",

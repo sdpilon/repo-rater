@@ -4,15 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A static, single-file dashboard (`tracker.html`) summarizing recent activity across a hardcoded list of GitHub repos, plus an AI-written "stated goals vs. reality" assessment for each repo.
+A static, single-file dashboard (`tracker.html`) summarizing recent activity across the user's full GitHub account (discovered automatically, not a hardcoded list), plus an AI-written "stated goals vs. reality" assessment for each repo.
 
 ## Pipeline
 
-1. `./fetch.sh` — pulls readme/issues/prs/commits/meta for each repo in the `repos=` list via `gh api`, writes `parts_NN.json` per repo, then combines them into `repos.json`. Requires `gh` authenticated.
-2. `node inject.js` — splices `repos.json` into `tracker.html`'s `const DATA = ...` block.
-3. Open `tracker.html` in a browser to view.
+1. `node pipeline/run.js` (or `pnpm pipeline`) — discovers every repo in the account via `gh api /user/repos`, then extracts/loads/enriches/publishes each one: pulls readme/issues/prs/commits/meta, upserts into a DuckDB-backed store, runs a content-hash-gated AI assessment, and writes `repos.json` + splices it into `tracker.html`'s `const DATA = ...` block. Requires `gh` authenticated. Use `--dry-run` to preview scope with no writes, or `--limit N` to restrict a real run to the first N discovered repos.
+2. Open `tracker.html` in a browser to view.
 
-The repo list in `fetch.sh` (the `repos=` variable) changes often as projects come and go — check whether it's still current before running a refresh.
+`fetch.sh` (the original hardcoded 9-repo script this replaced) has been retired and deleted — `pipeline/run.js` is the only path that produces `repos.json`/`tracker.html` now.
 
 ## The ASSESS block
 
@@ -24,11 +23,11 @@ The repo list in `fetch.sh` (the `repos=` variable) changes often as projects co
 
 ## Future direction
 
-The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation. `ROADMAP.md` tracks sequencing (what's next vs. later) for that redesign.
+`ARCHITECTURE.md` and `schema.sql` describe the redesign that produced the pipeline above: repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation. `ROADMAP.md` tracks sequencing (what's next vs. later) for what remains.
 
-A first vertical slice of that redesign (Stage 0) is implemented in `pipeline/` — Extract → Load → Enrich → Publish. Discovery (`pipeline/discover.js`) is now wired into `run.js`'s `main()`: a real run enumerates the full GitHub account via `gh api /user/repos` and extracts/loads/enriches/publishes every repo it finds, with no filter policy applied (forks and archived repos included). `pipeline/config.js` no longer has a hardcoded `REPOS` scope. Live-verified against the real account: 65 repos discovered, 28 fetched ok (37 fetch errors, overwhelmingly repos with no README), 60 enrichment calls made on the first run and 0 on an immediate second run (content-hash gate confirmed working). `run.js` also has `--dry-run` (report scope; runs a real discovery — writes `repos`/`repo_discoveries`/`runs` — but no extraction, load, enrichment, publish, or `repos.json`/`tracker.html` writes) and `--limit N` (restrict a real run to the first N discovered repos) flags.
+A first vertical slice of that redesign (Stage 0) is implemented in `pipeline/` — Extract → Load → Enrich → Publish. Discovery (`pipeline/discover.js`) is wired into `run.js`'s `main()`: a real run enumerates the full GitHub account via `gh api /user/repos` and extracts/loads/enriches/publishes every repo it finds, with no filter policy applied (forks and archived repos included). `pipeline/config.js` no longer has a hardcoded `REPOS` scope. Live-verified against the real account: 65 repos discovered, 28 fetched ok (37 fetch errors, overwhelmingly repos with no README), 60 enrichment calls made on the first run and 0 on an immediate second run (content-hash gate confirmed working). `run.js` also has `--dry-run` (report scope; runs a real discovery — writes `repos`/`repo_discoveries`/`runs` — but no extraction, load, enrichment, publish, or `repos.json`/`tracker.html` writes) and `--limit N` (restrict a real run to the first N discovered repos) flags.
 
-**`pipeline/` is now the real project, not an isolated experiment.** `pipeline/publish.js` writes straight to the same `repos.json` and shells out to the same `inject.js` that `fetch.sh` uses, overwriting the checked-in `tracker.html` too — and that's intentional now, not a bug to guard against (see `ROADMAP.md`'s "Done" section for when/why this was decided). Running `node pipeline/run.js` (or `pnpm pipeline`) for real now publishes the full discovered account — the earlier caveat about it collapsing the dashboard down to a hardcoded 2-repo scope no longer applies. Consult `ARCHITECTURE.md`'s "Status" section and `docs/superpowers/plans/` before assuming how much of the redesign exists.
+**`pipeline/` is now the real project, not an isolated experiment.** `pipeline/publish.js` writes straight to `repos.json` and shells out to `inject.js`, overwriting the checked-in `tracker.html` too — and that's intentional now, not a bug to guard against (see `ROADMAP.md`'s "Done" section for when/why this was decided). Running `node pipeline/run.js` (or `pnpm pipeline`) for real publishes the full discovered account. `fetch.sh` has been retired: it's deleted, `package.json`'s `build` script now runs `node pipeline/run.js` directly, and the README gap that would have made this a regression (`pipeline/publish.js` used to always publish `readme: ""`) is fixed — `buildRepoRecord()` now reads each run's real bronze README text. Consult `ARCHITECTURE.md`'s "Status" section and `docs/superpowers/plans/` before assuming how much of the redesign exists.
 
 ## Keeping docs in sync
 

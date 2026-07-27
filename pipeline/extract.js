@@ -23,6 +23,11 @@ function writeBronze(bronzeDir, runId, repoId, name, payload) {
   );
 }
 
+function readBronzeJson(bronzeDir, runId, repoId, name) {
+  const p = path.join(bronzeDir, runId, `${repoId}_${name}.json`);
+  return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
+}
+
 async function extractRepo({
   fullName,
   db,
@@ -133,6 +138,7 @@ module.exports = {
   extractRepo,
   extractAll,
   writeBronze,
+  readBronzeJson,
   DATA_TYPES,
   DEFAULT_SINCE,
 };

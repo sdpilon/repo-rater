@@ -2234,7 +2234,7 @@
       "stargazers_count": 0,
       "language": "Astro"
     },
-    "readme": "",
+    "readme": "# Astro Sienna\n\nA minimal Astro blog template with serif typography, dark mode, RSS, OG images, and optional Giscus comments and\nanalytics.\n\n**Live demo:** [Github Pages](https://anjaygoel.github.io/astro-sienna)\n\n![Astro Sienna home page in dark and light themes](.github/assets/preview.png)\n\n## Features\n\n- Astro 6 with content collections (posts and pages, both validated by Zod)\n- MDX support — embed Astro/JSX components, imports, and JS expressions inside posts\n- Light and dark mode with a CSS-only theme toggle\n- Self-hosted serif body font ([Newsreader](https://github.com/productiontype/Newsreader)) and mono (JetBrains Mono)\n- Code blocks via [astro-expressive-code](https://expressive-code.com): themes, copy button, terminal frames, line\n  highlighting\n- Math via KaTeX (`$inline$` and `$$display$$`)\n- Custom containers (`:::note`, `:::tip`, `:::caution`)\n- Per-post OG images generated at build time (Satori + resvg)\n- RSS feed, sitemap, robots.txt, web manifest\n- Optional [Giscus](https://giscus.app) comments with custom matched themes\n- Optional GA4 and Goatcounter analytics, both loaded via [Partytown](https://partytown.qwik.dev/) so they run on a\n  worker thread\n- Optional [webmentions](https://webmention.io), fetched at build and cached locally\n- Perfect Lighthouse scores (Performance, Accessibility, Best Practices, SEO)\n\n## Quick start\n\nClick **Use this template** on GitHub, or clone directly:\n\n```sh\ngit clone https://github.com/AnjayGoel/astro-sienna.git my-site\ncd my-site\npnpm install\npnpm dev\n```\n\nOpen http://localhost:4321.\n\n## Commands\n\n| Command        | What it does                                 |\n|----------------|----------------------------------------------|\n| `pnpm dev`     | Start the dev server with HMR                |\n| `pnpm build`   | Type-check, build, and run Pagefind indexing |\n| `pnpm preview` | Preview the production build locally         |\n| `pnpm format`  | Run Biome and Prettier                       |\n| `pnpm lint`    | Lint with Biome                              |\n\n## Configuration\n\nMost personalisation happens in two files.\n\n**`src/site.config.ts`** holds author, profile, comments, analytics, and webmentions. Every field in `profile` is\noptional. Leave any of `email`, `github`, `linkedin`, `employer`, `alumni`, or `avatar` undefined and the corresponding\nlink is hidden site-wide. Same for `comments` and `analytics`: undefined means the script never loads.\n\n**`astro.config.ts`** is where you set `site` to your final domain (used for canonical URLs, sitemap, RSS, and OG image\nURLs). The base path is handled automatically — see [Deploying](#deploying); you normally don't touch it.\n\nReplace these assets in `public/`:\n\n- `icon.png` (512×512). Drives the favicon and the auto-generated `apple-touch-icon`, `icon-192`, and `icon-512` PWA\n  manifest icons.\n- `social-card.png` (1200×630). Fallback OG image, used when a post doesn't have its own. The default is a placeholder\n  you can swap.\n- `avatar.png` (optional). Referenced from `siteConfig.profile.avatar`, used in the About page's structured data and any\n  avatar slot you add.\n\n### Per-post OG images\n\nEvery post gets its own 1200×630 OG image generated at build time by [Satori](https://github.com/vercel/satori). The\nmarkup lives in `src/pages/og-image/[...slug].png.ts`. Tweak it once and every post's card updates on the next build. To\nskip the generated image and point a post at your own, set `ogImage: \"/path/to/image.png\"` in the post's frontmatter.\n\n## Writing posts\n\nPosts live in `src/content/post/` as `.md` or `.mdx` files. The filename becomes the slug.\n\n```yaml\n---\ntitle: \"Your post title\"\npublishDate: 2026-01-12\ndescription: \"One-sentence summary used in cards, social previews, and meta tags.\"\ntags: [ tag-one, tag-two ]\n# updatedDate: 2026-02-01     # optional, shown as \"Updated …\"\n# draft: true                  # excludes the post from production builds\n# coverImage:\n#   src: ./_assets/cover.png\n#   alt: \"Description for screen readers\"\n---\n```\n\nThe about page is also markdown, at `src/content/page/about.md`. Showcase entries are typed objects in\n`src/data/showcase.ts`; empty the array and the Showcase tab is hidden automatically.\n\n## Project layout\n\n```\nsrc/\n  site.config.ts        # author / profile / integrations\n  content.config.ts     # collection schemas (post, page)\n  content/\n    post/*.md           # blog posts\n    page/about.md       # about page\n  data/showcase.ts      # showcase entries (or empty for none)\n  components/           # blog/, layout/, ui/\n  layouts/              # Base.astro, BlogPost.astro\n  pages/                # routes (incl. /og-image, /posts pagination, rss)\n  plugins/              # remark-admonitions, remark-reading-time\n  styles/global.css     # design tokens and shared utilities\npublic/                 # static assets served at site root\n```\n\n## Theming\n\nDesign tokens are CSS variables at the top of `src/styles/global.css`: accent colour, hairlines, surfaces, fonts. The\nlight and dark variants are gated by `[data-theme=\"light\"]` and `[data-theme=\"dark\"]` on the `<html>` element, so\nswapping them is a single re-render with no script.\n\nCode-block themes are configured separately in `expressiveCodeOptions` in `site.config.ts` (defaults: `min-light` and\n`min-dark`).\n\n## Deploying\n\nOutput is a static `dist/` directory that deploys anywhere serving files: Cloudflare Pages, Netlify, Vercel, GitHub\nPages, S3 + CloudFront. Build command: `pnpm build`. Output directory: `dist`.\n\n### Base path\n\nDefaults to root (`/`) — no config needed for local dev, Netlify, Vercel, Cloudflare Pages, a custom domain, or a\nGitHub Pages **user** site. The whole site (links, assets, feeds, OG/canonical, manifest, Markdown links) is base-aware.\n\nFor a GitHub Pages **project** site (served from `/repo/`), the bundled `.github/workflows/deploy.yml` detects the\nsubpath and configures it automatically; the only manual step is **Settings → Pages → Source: GitHub Actions**. For a\nsubpath on any other host, build with `BASE_PATH=/sub pnpm build`.\n\n## Pulling theme updates\n\nTo keep tracking upstream changes after you've forked, add this repo as a second remote:\n\n```sh\ngit remote add theme https://github.com/AnjayGoel/astro-sienna.git\ngit fetch theme\ngit merge theme/main --allow-unrelated-histories\n```\n\nUse `.gitattributes` with a `merge=ours` driver on personal-content paths (e.g. `src/content/post/*`,\n`src/site.config.ts`, `public/avatar.png`) to keep your changes through the merge.\n\n## Credits\n\nOriginally forked from [astro-theme-cactus](https://github.com/chrismwilliams/astro-theme-cactus)\nby [Chris Williams](https://github.com/chrismwilliams), then heavily revamped into its current form.\n\n## License\n\n[MIT](./LICENSE).\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -2265,7 +2265,7 @@
       "stargazers_count": 0,
       "language": "TypeScript"
     },
-    "readme": "",
+    "readme": "# Audashio\n\n**Your homelab, auto-discovered.** A zero-config dashboard for Traefik users.\n\nAudashio reads your Docker labels and shows every Traefik-routed service in one place. No service list to hand-curate.\n\n- **Free and open source** — AGPL-3.0\n- **Single container** — mount the Docker socket and go\n- **Traefik-native** — parses standard Traefik v3 labels you already have\n- **Optional overrides** — polish names, descriptions, icons, and categories with `audashio.*` labels\n\n## Quick start\n\n```yaml\n# compose.yaml\nservices:\n  audashio:\n    image: ghcr.io/audashio/audashio:latest\n    restart: unless-stopped\n    environment:\n      AUDASHIO_SOURCE: docker\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock:ro\n    ports:\n      - \"8080:8080\"\n```\n\n```sh\ndocker compose up -d\n```\n\nThen open <http://localhost:8080>.\n\n## Docs and live demo\n\n- **Live demo & docs:** <https://audashio.lovable.app>\n- **Getting started:** <https://audashio.lovable.app/docs/getting-started>\n- **Labels reference:** <https://audashio.lovable.app/docs/labels>\n\n## Development\n\nAudashio is one TanStack Start app. The same source ships in the Docker image and powers the public live demo (with a mock data source).\n\n```sh\nbun install\nbun run dev\n```\n\n## License\n\n[AGPL-3.0](./LICENSE)",
     "issues": [],
     "prs": [],
     "commits": [
@@ -2476,7 +2476,7 @@
       "stargazers_count": 0,
       "language": "TypeScript"
     },
-    "readme": "",
+    "readme": "# Audashio\n\n**Your homelab, auto-discovered.** A zero-config dashboard for Traefik users.\n\nAudashio reads your Docker labels and shows every Traefik-routed service in one place. No service list to hand-curate.\n\n- **Free and open source** — AGPL-3.0\n- **Single container** — mount the Docker socket and go\n- **Traefik-native** — parses standard Traefik v3 labels you already have\n- **Optional overrides** — polish names, descriptions, icons, and categories with `audashio.*` labels\n\n## Quick start\n\n```yaml\n# compose.yaml\nservices:\n  audashio:\n    image: ghcr.io/audashio/audashio:latest\n    restart: unless-stopped\n    environment:\n      AUDASHIO_SOURCE: docker\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock:ro\n    ports:\n      - \"8080:8080\"\n```\n\n```sh\ndocker compose up -d\n```\n\nThen open <http://localhost:8080>.\n\n## Docs and live demo\n\n- **Live demo & docs:** <https://audashio.lovable.app>\n- **Getting started:** <https://audashio.lovable.app/docs/getting-started>\n- **Labels reference:** <https://audashio.lovable.app/docs/labels>\n\n## Development\n\nAudashio is one TanStack Start app. The same source ships in the Docker image and powers the public live demo (with a mock data source).\n\n```sh\nbun install\nbun run dev\n```\n\n## License\n\n[AGPL-3.0](./LICENSE)",
     "issues": [],
     "prs": [],
     "commits": [
@@ -2687,7 +2687,7 @@
       "stargazers_count": 0,
       "language": "CSS"
     },
-    "readme": "",
+    "readme": "# Cross-Browser WebExtension Template\n\nA template for developing WebExtensions that are compatible with both Firefox and Chrome, using Deno and Bext.\n\n## Features\n\n- Cross-Browser support (Priority: Firefox)\n- Uses Promise-based APIs through Bext's unified browser API\n- Hot reloading and automatic rebuilding when files change\n- Automatic type checking, linting, and formatting via Deno\n- Unit testing with Bext's mock browser APIs\n- W3.CSS for styling\n\n## Getting Started\n\n### Prerequisites\n\n- [Deno](https://deno.land/) installed (version 1.34.0 or later)\n- Firefox and/or Chrome for testing\n\n### Quick Start\n\n1. Clone this repository:\n   ```sh\n   git clone https://github.com/yourusername/webextension-template.git\n   cd webextension-template\n   ```\n\n2. Build the extension:\n   ```sh\n   deno task build\n   ```\n\n3. Load the extension in your browser:\n   - **Firefox**: Go to `about:debugging` > This Firefox > Load Temporary Add-on > select `dist/firefox/manifest.json`\n   - **Chrome**: Go to `chrome://extensions` > Enable \"Developer mode\" > Load unpacked > select `dist/chrome` directory\n\n### Development Workflow\n\nStart the development server with hot reload:\n```sh\ndeno task dev\n```\n\nThis will:\n- Build the extension for both browsers\n- Watch for file changes and rebuild automatically\n- Output to the `dist` directory\n\n## Project Structure\n\n- `src/` - Source code\n  - `background.ts` - Background service worker\n  - `content_script.ts` - Content script\n  - `popup.ts` - Extension popup UI\n  - `options.ts` - Options page\n  - `manifest.json` - WebExtension manifest\n- `static/` - Static assets\n  - `icons/` - Extension icons\n  - `styles/` - CSS styles\n- `dist/` - Build output\n- `tests/` - Unit tests\n\n## Usage\n\n| Commands                  | What they Do                               |\n| ------------------------- | ------------------------------------------ |\n| `deno task install`       | install bext CLI                           |\n| `deno task dev`           | build and watch for changes                |\n| `deno task build`         | bundles extension for Chrome and Firefox   |\n| `deno task build:chrome`  | bundles extension only for Chrome          |\n| `deno task build:firefox` | bundles extension only for Firefox         |\n| `deno task test`          | run fmt, lint, check types, and unit tests |\n\n## Promise-Based APIs\n\nThis template uses Promise-based APIs throughout the codebase for better async handling:\n\n```typescript\n// Example from options.ts\ntry {\n  const result = await browserAPI.storage.sync.get(['enableFeature']);\n  checkbox.checked = !!result.enableFeature;\n} catch (error) {\n  console.error('Error loading options:', error);\n}\n```\n\nBenefits of using the Promise-based approach:\n- Better error handling with try/catch blocks\n- Cleaner code with async/await syntax\n- Avoids \"callback hell\" when chaining multiple operations\n- Consistent with modern JavaScript practices\n\n## Loading in Browsers\n\nAfter building, you can load the extension in your browser:\n\n### Firefox\n1. Go to `about:debugging`\n2. Click \"This Firefox\"\n3. Click \"Load Temporary Add-on\"\n4. Select the `manifest.json` file in the `dist/firefox` directory\n\n### Chrome\n1. Go to `chrome://extensions`\n2. Enable \"Developer mode\"\n3. Click \"Load unpacked\"\n4. Select the `dist/chrome` directory\n\n## Development\n\nThis template uses:\n- **Bext**: Cross-browser extension bundler with unified API\n- **Deno**: For runtime, linting, formatting, and testing\n- **TypeScript**: For type safety\n- **W3.CSS**: For styling\n\n## Troubleshooting\n\n### Command Not Found Issues\n\nThe deno.json tasks directly use the Bext module instead of relying on the installed CLI tool. If you'd prefer to install the CLI tool globally, use:\n\n```sh\ndeno install --name=bext -Agf jsr:@bpev/bext/bin\n```\n\nThen add the Deno bin directory to your PATH:\n\n```sh\necho 'export PATH=\"$HOME/.deno/bin:$PATH\"' >> ~/.zshrc  # or .bashrc\nsource ~/.zshrc  # reload your shell config\n```\n\n### Permissions Issues\n\nIf you encounter permissions errors when using Deno, make sure to run the commands with the necessary permissions:\n\n```sh\ndeno task -A build\n```\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -2742,7 +2742,7 @@
       "stargazers_count": 0,
       "language": "C#"
     },
-    "readme": "",
+    "readme": "# CMPT 306 - Game Mechanics\n\n### Assignment 1: Develop a Standalone Mechanic\n\n### Chosen Feature: A power grid mechanic that can toggle entities on/off\n\n## Research\n\n- I tried playing Factorio for a bit but didn't get far enough to see the poweer grid mechanic\n- My understanding of the mechanic so far is as follows:\n  - Many electrically powered components can be connected to a power source directly or indirectly\n  - Components are powered on as long as:\n    - they are connected to the power grid\n    - the power source has fuel\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -2919,7 +2919,7 @@
       "stargazers_count": 0,
       "language": "JavaScript"
     },
-    "readme": "",
+    "readme": "# cmpt353\n\n`docker build -t spencer/node .`\n\n`docker run -p 8080:8080 -v \"/Volumes/MainSSD/docs/Programming/VS Code/353/cmpt353\":/usr/src/app --rm --name a1 -it spencer/node`\n",
     "issues": [
       {
         "number": 1,
@@ -3549,7 +3549,7 @@
       "stargazers_count": 0,
       "language": "C#"
     },
-    "readme": "",
+    "readme": "# cs_practice\n",
     "issues": [],
     "prs": [],
     "commits": [],
@@ -3573,7 +3573,7 @@
       "stargazers_count": 0,
       "language": "TypeScript"
     },
-    "readme": "",
+    "readme": "# dashome\n\nA simple Fresh-based homelab dashboard driven by one TOML config file.\n\n## Config\n\nThe app reads `./dashome.toml` by default. Every service URL is derived from:\n\n- `protocol`\n- `domain`\n- `sub`\n- `icons_base`\n\nExample:\n\n```toml\ntitle = \"home\"\ndomain = \"my.domain\"\nprotocol = \"https\"\nicons_base = \"https://cdn.jsdelivr.net/gh/selfhst/icons@main/webp/\"\n```\n\nThis produces service URLs like `https://media.my.domain` and icon URLs like\n`https://cdn.jsdelivr.net/gh/selfhst/icons@main/webp/jellyfin.webp`.\n\nSet `DASHOME_CONFIG` if you want to use a different config path.\n\n## Usage\n\nMake sure Deno is installed.\n\nThen start the project:\n\n```sh\ndeno task start\n```\n\nThis watches `routes/`, `static/`, `lib/`, and `dashome.toml`, so config edits\nhot reload the server in development.\n\nFor a non-watching run:\n\n```sh\ndeno task preview\n```\n",
     "issues": [],
     "prs": [
       {
@@ -3630,7 +3630,7 @@
       "stargazers_count": 0,
       "language": null
     },
-    "readme": "",
+    "readme": "# 👋 Welcome\n\nWelcome to **Avalonia Docs**! \n\nLearn how to create .NET GUI applications for Windows, macOS, Linux, iOS, Android and Web Assembly from a single codebase. \n\n## Supported .NET Version\n\nAvalonia is supported on [all platforms that support .NET Standard 2.0](https://docs.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0#select-net-standard-version)\n\n## Supported Platforms\n\nAvalonia is supported on the following platforms:\n\n* Windows 8 and higher\n  * **Note**: Avalonia works correctly on Windows 7 also, but not supported _officially_\n* MacOS High Sierra 10.13 and higher\n* for Linux:\n  * Debian 9 (Stretch) and higher\n  * Ubuntu 16.04 and higher\n  * Fedora 30 and higher\n\n## Supported Development Environments\n\nThe following environments support Avalonia XAML with IntelliSense:\n\n* Visual Studio 2017 and higher (with or without Resharper 2020.3). Avalonia Visual Designer is also supported.\n* JetBrains Rider 2020.3 and higher.\n\n[Installing Avalonia Extension for Visual Studio](docs/getting-started/ide-support/)\n\n[JetBrains Rider Setup](docs/getting-started/ide-support/jetbrains-rider-setup.md)\n\n## How to get help\n\n### Community Support \nIf you've found a bug or issue in the framework, you should create an issue on [GitHub](https://github.com/AvaloniaUI/Avalonia). \n\nIf you're looking for help with your app, try engaging our active developer community on [Telegram](https://t.me/Avalonia). \n\n### Commercial Support\nWe have a range of commercial support plans that provide priority assistance from the core contributors. You can learn more from [our website](https://avaloniaui.net/support.html). \n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -4432,7 +4432,7 @@
       "stargazers_count": 0,
       "language": null
     },
-    "readme": "",
+    "readme": "# GatheryApp\nA planner/calendar app to coordinate get-togethers with friends\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -4500,7 +4500,7 @@
       "stargazers_count": 0,
       "language": "Shell"
     },
-    "readme": "",
+    "readme": "# Docker VM Home Server Configuration\n\nMy personal Docker stacks setup. Not intended for public use.\n\n\n## Overview\n\n- Running on a Debian 13 (bookworm) VM in Proxmox\n- Accesses storage over NFS mounts on my NAS\n- Uses [Arcane](https://getarcane.app/) for Docker Compose management.\n  - It's actually useful on the scale I'm currently working at, i.e., a single environment.\n  - It has the right level of control for me, where I can directly edit the `compose.yaml`s (or any files now after a recent update).\n  - The right amount of monitoring and visibility.\n  - And a nice looking UI which provides most functionality you need without having to ssh in for everything, which is handy even when I'm away from the computer, because the mobile version is fully usable. I have spun up a new stack from my phone while laying in bed.\n- Even though I use Arcane, everything still works without using Arcane, so I can still manage my stacks from the command line.\n\n## Stacks & Services:\n\n\n- `arcane` -- The arcane web UI for managing Docker Compose stacks.\n  - 2 containers: arcane, docker socket proxy\n\n- `bentopdf` -- Tools for working with PDF documents, but local. I mainly use it for splitting and merging. Smaller docker image size compared to sterlingPDF.\n  - 1 container: bentopdf\n\n- `immich` -- The main photo management app I use every day.\n  - 4 containers: immich app, immich Machine learning backend, postgres database, redis cache\n\n- `it-tools` -- Some handy IT-related utilities. So I don't have to google to find some specific tool, find random website, and then enter my data into said random website.\n  - 1 container: it-tools\n\n- `jellyfin` -- Media server, for serving media.\n  - 2 containers: jellyfin app, tizen tv app installer/updater (only for docker profile: tv-app)\n\n- `ntfy` --  Currently not actually being used for anything.\n  - 1 container: ntfy\n\n- `omnitools` -- Same story as it-tools, but more general purpose.\n  - 1 container: omnitools\n\n- `servarr` -- My media management and torrenting stack.\n  - 8 containers: sonarr, radarr, lidarr, bazarr, qbittorrent, prowlarr, gluetun, qb port updater\n\n- `traefik` -- Reverse proxy and SSL termination for my services. Moved from `nginx-proxy-manager` because the config is declarative and lives in each service's compose file, for containers anyway. Some are outside of this VM, and are configured separately.\n  - 1 container: traefik\n\n- `uptime-kuma` -- Monitoring my containers, and other services on other hosts, as well as the proxied URLs.\n  - 1 container: uptime-kuma\n\n## Setup\n\nClone the repo to the directory where you want your Compose projects to live.\n\nFor each service, copy the `*.example` file(s) and remove the `.example` suffix, then fill in the values for the environment.\n\nFor example, to set up `immich`,\n- copy `immich/.env.example` to `immich/.env` and fill in the values for the environment\n- copy `immich/secrets/postgres_username.txt.example` to `immich/secrets/postgres_username.txt` and fill in the real username\n- copy `immich/secrets/postgres_password.txt.example` to `immich/secrets/postgres_password.txt` and fill in the real password\n- run `docker compose up -d`\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -4813,7 +4813,7 @@
       "stargazers_count": 0,
       "language": "Ruby"
     },
-    "readme": "",
+    "readme": "# homebrew-rogueamoeba\n\n`sdpilon`'s personal Homebrew tap for Rogue Amoeba apps. Currently holds one cask, `soundsource@5`, pinning [SoundSource](https://rogueamoeba.com/soundsource/) to the last 5.x release rather than the official tap's 6.x line.\n\n## Why\n\nHomebrew's official `homebrew/cask` tap tracks the current `soundsource` (6.x), which requires macOS 15+. Rogue Amoeba still publishes older [legacy builds](https://rogueamoeba.com/legacy/#soundsource) for older macOS versions. This tap pins SoundSource 5.9.0 (macOS 14.5+) under the separate token `soundsource@5` so it can be installed alongside — or instead of — the official cask without colliding.\n\n## Install\n\n```\nbrew trust sdpilon/rogueamoeba\nbrew tap sdpilon/rogueamoeba\nbrew install --cask sdpilon/rogueamoeba/soundsource@5\n```\n\n## Casks\n\n| Token | Pinned version | macOS floor |\n|---|---|---|\n| `soundsource@5` | 5.9.0 | 14.5+ |\n\nSee `.claude/CLAUDE.md` for cask authoring conventions and validation steps.\n\n## Disclaimer\n\nThis is an unofficial, personal tap and is not affiliated with, endorsed by,\nor sponsored by Rogue Amoeba Software, LLC. SoundSource and its installer are\nproprietary software copyright Rogue Amoeba; this repository only contains a\nHomebrew Cask definition that downloads SoundSource directly from Rogue\nAmoeba's own servers. The cask definition itself is MIT licensed — see\n`LICENSE`.\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -5116,7 +5116,7 @@
       "stargazers_count": 0,
       "language": null
     },
-    "readme": "",
+    "readme": "# Mobius_App",
     "issues": [],
     "prs": [],
     "commits": [],
@@ -5377,7 +5377,7 @@
       "stargazers_count": 0,
       "language": "TypeScript"
     },
-    "readme": "",
+    "readme": "# Pygame Project Helper\n\nA VS Code extension that provides a simple sidebar panel to configure and run Pygame projects.\n\n## Features\n\n- **Sidebar Panel**: Configure Pygame window settings (width, height, fullscreen)\n- **Persistent Settings**: Settings are saved to `game_settings.json` in your project root\n- **Run Game**: One-click button to execute `python main.py`\n\n## Usage\n\n1. Open a workspace in VS Code\n2. The \"Pygame Project Assistant\" panel will appear in the Explorer sidebar\n3. Configure your window settings:\n   - Set window width and height\n   - Toggle fullscreen mode\n4. Click \"Run Game\" to execute `python main.py`\n\n## Settings File\n\nThe extension creates and manages `game_settings.json` in your workspace root:\n\n```json\n{\n  \"width\": 800,\n  \"height\": 600,\n  \"fullscreen\": false\n}\n```\n\nYour `main.py` should read this file to configure the Pygame window.\n\n## Development\n\n```bash\nnpm install\nnpm run compile\n```\n\nPress F5 to launch a new Extension Development Host window with the extension loaded.\n\n## Requirements\n\n- VS Code 1.74.0 or higher\n- Python installed and available in PATH\n\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -5414,7 +5414,7 @@
       "stargazers_count": 0,
       "language": "TypeScript"
     },
-    "readme": "",
+    "readme": "# pyodedit\n\nA quiet, mobile-first Python playground that runs entirely in your browser. No install, no backend, works offline.\n\n- **Landing page:** [https://pyodedit.lovable.app](https://pyodedit.lovable.app)\n- **Playground:** [https://pyodedit.lovable.app/play](https://pyodedit.lovable.app/play)\n\n## Development\n\nThis project uses [Bun](https://bun.sh/) and [Vite](https://vitejs.dev/).\n\n```bash\n# Install dependencies\nbun install\n\n# Start the dev server\nbun run dev\n```\n\n## Testing\n\nEnd-to-end tests are written with [Playwright](https://playwright.dev/).\n\n### Run tests locally\n\n```bash\n# Install Playwright browsers (one-time setup)\nbunx playwright install --with-deps chromium\n\n# Run the E2E suite\nbun run test:e2e\n\n# Run in UI mode for debugging\nbun run test:e2e:ui\n```\n\n### Run tests in a container\n\nThe repo ships a `Dockerfile` (Playwright image + `unzip` + Bun) and a `docker-compose.yml` that runs the full E2E suite in one command:\n\n```bash\ndocker compose run --rm e2e\n```\n\nThe first invocation builds the image automatically. Subsequent runs reuse it. The compose command installs dependencies and runs the suite in the same container. Playwright launches Vite via its `webServer` config, binding Vite to `0.0.0.0` and waiting on `127.0.0.1` so readiness checks work reliably inside Docker. `node_modules` and Bun's install cache are kept in named volumes so reruns are fast.\n\n> Use the compose service command as shown above. If you run `docker compose run e2e bun install && bun run test:e2e`, the `bun run test:e2e` part runs in your host shell, not inside Docker.\n\nForce a rebuild after changing the `Dockerfile` or `package.json` / lockfile:\n\n```bash\ndocker compose build e2e\n```\n\nTo target an already-running dev server instead of letting Playwright start one:\n\n```bash\ndocker compose run --rm -e PLAYWRIGHT_BASE_URL=http://host.docker.internal:5173 e2e\n```\n\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -6039,7 +6039,7 @@
       "stargazers_count": 0,
       "language": "JavaScript"
     },
-    "readme": "",
+    "readme": "# Feedback App\n\nTo run:\n\n`cd feedback-app`\n\n`npm start`",
     "issues": [],
     "prs": [],
     "commits": [
@@ -6094,7 +6094,7 @@
       "stargazers_count": 0,
       "language": null
     },
-    "readme": "",
+    "readme": "# Rebus\r\n\r\n[![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)\r\n[![Build Status](https://travis-ci.org/ollelauribostrom/rebus.svg?branch=master)](https://travis-ci.org/ollelauribostrom/rebus)\r\n[![Coverage Status](https://coveralls.io/repos/github/ollelauribostrom/rebus/badge.svg?branch=master)](https://coveralls.io/github/ollelauribostrom/rebus?branch=master)\r\n[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/rebus-contributors/Lobby)\r\n[![first-timers-only](https://img.shields.io/badge/first--timers--only-friendly-blue.svg?style=flat-square)](https://www.firsttimersonly.com/) \r\n\r\nContributing to an open source project for the first time can be a scary thing. The goal of this repo is to help you take your first steps as an open source contributor by developing a simple (but hopefully fun) rebus game together. 💖\r\n\r\n#### Try the live version of the game: https://ollelauribostrom.github.io/rebus/\r\n\r\n## Who can contribute?\r\n\r\nEveryone can! (and I mean everyone) 💫\r\n\r\n💻 **You don’t have to contribute code**. Add a new rebus, fix a typo, report a bug, add some documentation, do some re-design or add a translation. This project just like most open source projects are in need of all sorts of different contributions. Not just code.\r\n\r\n🌟 **You are good enough**. Start off easy by fixing something small (like adding a new rebus). This will help you orient yourself in the project and increase your confidence and experience. No one will judge you if you make a mistake, and you can't break anything! Ask for some pointers if you get stuck. You got this!\r\n\r\n➡️ Have a look at the [open issues](https://github.com/ollelauribostrom/rebus/issues) to see what needs to be done in this project.\r\n\r\nThe only thing that is required to get started is git. Make sure you have it installed on your computer by running `git --version` in your terminal. If you do not have git installed, [install it](https://help.github.com/articles/set-up-git/).\r\n\r\nIf you are an experienced developer, look at the [CONTRIBUTING file](https://github.com/ollelauribostrom/rebus/blob/master/.github/CONTRIBUTING.md) to see how you can contribute.\r\n\r\n## Why contribute to open source?\r\n\r\nWhen you contribute to Open Source, you are taking part in the collaborative effort of a vast community of passionate developers and contributors! Open Source software allows you to see, use, and more importantly modify its source code. Contributing to Open Source is a great way to develop a deeper understanding of software, and the best part is being able to learn and teach alongside a community of contributors.\r\n\r\n## How to contribute\r\n\r\nFollow this step-by-step guide to make your first open source contribution. The steps you will perform in this guide is a somewhat standard workflow that you will encounter in most projects: `Fork -> Clone -> Install dependencies -> Make your changes -> Run tests -> Commit -> PR`\r\n\r\n### 1. Fork\r\n\r\nThe first step is to create a fork of this repo. Do so by clicking on the fork button on the top of this page. A fork is basically your own working copy of this repository.\r\n\r\n<img src=\".github/fork.png\" alt=\"Forking the repo\" />\r\n\r\n### 2. Clone\r\n\r\nThe next step is to clone the forked repo to your machine.\r\n\r\nGo to your GitHub repositories and open the forked repository called Rebus (_forked from ollelauribostrom/rebus_). Click on the \"Clone or download\" button and then click the copy to clipboard icon to get your url.\r\n\r\n<img align=\"right\" width=\"300\" src=\".github/clone.png\" alt=\"Cloning the repo\" />\r\n\r\nFinally run the following git command in your terminal:\r\n\r\n```sh\r\ngit clone \"the copied url\"\r\n```\r\n\r\nFor example:\r\n\r\n```\r\ngit clone https://github.com/username/rebus.git\r\n```\r\n\r\n### 3. Register the upstream repository\r\n\r\nYou have now created a local clone on you computer. This clone will point to your forked repository. It's also useful to have\r\nthe upstream repository (the source that you forked) registered as well to be able to stay up to date with the latest changes.\r\n\r\nIf you haven't already, start by changing your directory to the rebus repository that was created when you ran `git clone`:\r\n\r\n```sh\r\ncd rebus\r\n```\r\n\r\nThen add `ollelauribostrom/rebus` as the upstream remote:\r\n\r\n```\r\ngit remote add upstream https://github.com/ollelauribostrom/rebus.git\r\n```\r\n\r\n### 4. Create a branch\r\n\r\nIt's common practice to create a new branch for each new feature or bugfix you are working on. Let's go ahead and create one!\r\n\r\nFirst, lets make sure we have the latest version of the upstream repository by running (do this before each time you create a new branch):\r\n\r\n```sh\r\ngit fetch upstream\r\n```\r\n\r\nCreate your new branch by running:\r\n\r\n```sh\r\ngit checkout -b <your-new-branch-name> upstream/master\r\n```\r\n\r\n> Note: Replace `<your-new-branch-name>` with something that describes the changes you are about to make\r\n\r\nFor example:\r\n\r\n```sh\r\ngit checkout -b add-new-rebus upstream/master\r\n```\r\n\r\n> Note: By specifying `upstream/master` we're saying that our new branch should be created from the latest upstream version\r\n\r\n### 5. Install the dependencies\r\n\r\nBefore we begin making our changes, let's install the projects dependencies:\r\n\r\n```sh\r\nnpm install\r\n```\r\n\r\n### 6. Make your changes\r\n\r\nNow it's time to make your changes. Let's add a new rebus to the game.\r\n\r\n1. Open the file `src/js/rebuses.js` in your favourite editor (preferable VSCode 😉).\r\n1. Add a new rebus object to the end of the `rebuses` array.\r\n1. Save the file when you are done.\r\n\r\n### 7. Run the game locally\r\n\r\nIf you want, you can run the game locally to try out your changes:\r\n\r\n```sh\r\nnpm start\r\n```\r\n\r\n### 8. Run the tests\r\n\r\nBefore your commit your changes, run the tests to make sure you didn't break anything:\r\n\r\n```sh\r\nnpm run test:all\r\n```\r\n\r\n### 9. Commit your changes\r\n\r\nRun `git status` to see which changes you have made. This will look something like:\r\n\r\n<img width=\"300\" src=\".github/status.png\" alt=\"Git status\" />\r\n\r\nAdd these changes to your next commit by running:\r\n\r\n```sh\r\ngit add src/js/rebuses.js\r\n```\r\n\r\nAnd then commit them by running:\r\n\r\n```sh\r\ngit commit -m \"Your message\"\r\n```\r\n\r\nFor example:\r\n\r\n```sh\r\ngit commit -m \"Adding a new rebus\"\r\n```\r\n\r\n### 10. Push your changes to Github\r\n\r\nPush your changes to GitHub by running:\r\n\r\n```sh\r\ngit push origin <your-new-branch-name>\r\n```\r\n\r\n> Note: Replace `<your-new-branch-name>` with the name of your branch\r\n\r\n### 11. Open a Pull Request\r\n\r\nHead over to your repository on GitHub and click on the green \"Compare and pull request\" button.\r\n\r\n<img src=\".github/pr.png\" alt=\"Compare and pull request\" />\r\n\r\nDescribe your changes and submit your pull request\r\n\r\n<img src=\".github/pr2.png\" alt=\"Submit pull request\" />\r\n\r\n## What's next?\r\n\r\n🎉 Congratulations 🎉\r\n\r\nYou just took your first step as an open source contributor. Your pull request will be reviewed as soon as possible.\r\nJoin us on [gitter](https://gitter.im/rebus-contributors/Lobby) if you have questions or need any help. If you feel like\r\nit, please give this repository a star ⭐.\r\n\r\nIf you want something more to work on, look at [the open issues](https://github.com/ollelauribostrom/rebus/issues) for\r\ninspiration. Also, take a look the [Further Reading](https://github.com/ollelauribostrom/rebus#further-reading) section for more great learning resources.\r\n\r\n## FAQ\r\n\r\n### Resolve Merge Conflicts ###\r\n\r\nOnce changes have been committed and staged it's time to manage conflicts by running: \r\n\r\n```sh\r\ngit pull upstream master\r\n```\r\n\r\nHead back to your favourite code editor and review any conflicts.  Generally `current` changes will be highlighted in one color and `incoming` changes will be highlighted in a different color. `Accept` the `current` or `incoming` changes.  \r\n\r\nCommit changes again as outlined in step #9 and #10 above or by running: \r\n\r\n```sh\r\ngit add -A\r\n```\r\n```sh\r\ngit commit -m \"Your message\"\r\n```\r\n```sh\r\ngit push origin <your-new-branch-name>\r\n```\r\n\r\n### Linebreaks ###\r\n\r\nIt is important to note that Windows and Linux operating systems deal with line endings differently. If you are getting an error where the program expects linebreaks to be \"lf\" but are finding \"crlf\" linebreak styles,\r\n\r\n<img src=\".github/linebreak-error.png\" alt=\"Terminal linebreak error\" />\r\n\r\nthen you can run the following command in your terminal:\r\n\r\n```sh\r\nnpm run lint -- --fix \r\n```\r\n\r\nTo avoid this problem in the future, you can change your editor to use an end of line sequence of 'lf'. To do this in Visual Studio Code, simply click on the lf/crlf button on the bottom right and then select 'lf' from the drop-down menu that appears.\r\n\r\n<img src=\".github/vsc-endline.png\" alt=\"Visual Studio Code linebreaks\" />\r\n\r\n## Further Reading\r\n\r\n- [GitHub Open Source Guide](https://opensource.guide/)\r\n- [Resource To learn Git](https://try.github.io/)\r\n- [Git Tutorial Part 1: What is Version Control?](https://www.youtube.com/watch?v=9GKpbI1siow&feature=youtu.be)\r\n- [Git Tutorial Part 2: Vocab (Repo, Staging, Commit, Push, Pull)](https://www.youtube.com/watch?v=n-p1RUmdl9M)\r\n- [Git Tutorial Part 3: Installation, Command-line & Clone](https://www.youtube.com/watch?v=UFEby2zo-9E)\r\n- [Git Tutorial Part 4: GitHub (Pushing to a Server)](https://www.youtube.com/watch?v=ol_UCWox9kc)\r\n- [Git & GitHub Crash Course For Beginners](https://www.youtube.com/watch?v=SWYqp7iY_Tc)\r\n- [Git Magic](http://www-cs-students.stanford.edu/~blynn/gitmagic/index.html)\r\n- [Friendly Beginner Repos](https://github.com/MunGell/awesome-for-beginners)\r\n- [GitHub Endorsed Beginning Contributer Repos](https://github.com/showcases/great-for-new-contributors)\r\n- [Sourcetree - Git GUI for macOS and Windows](https://www.sourcetreeapp.com/)\r\n- [VS Code - extensible code editor](https://code.visualstudio.com/)\r\n- [GitHub Atom - Hackable Text Editor for the 21st Century](https://atom.io/)\r\n\r\n## Support\r\n\r\nPlease [open an issue](https://github.com/ollelauribostrom/rebus/issues/new) for support, or join us on [gitter](https://gitter.im/rebus-contributors/Lobby).\r\n\r\n## Code of Conduct\r\n\r\nThis project adheres to the [JS Foundation Code of Conduct](https://js.foundation/community/code-of-conduct).\r\nPlease read the full text so that you can understand what actions will and will not be tolerated.\r\n\r\n## License\r\n\r\nLicensed under the MIT License.\r\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -6174,7 +6174,7 @@
       "stargazers_count": 0,
       "language": "TypeScript"
     },
-    "readme": "",
+    "readme": "<div align='center'>\n  <a href='https://github.com/spencerpilon/simpletabs' target='_blank' rel='noopener noreferrer'>\n    <img src='./public/icons/128.png' alt='Logo' style='width:128px;height:128px;'/>\n  </a>\n  <h1 margin: 20px 0;'>SimpleTabs</h1>\n</div>\n\nA browser extension for decluttering your browser with a single click. SimpleTabs helps you manage your tabs by saving them and providing a clean interface to view and restore them later.\n\n## Features\n\n- One-click tab saving and window decluttering. This means no popup with a load of options to distract you, just click the icon and your browser will be left clean and tidy again.\n- Clean, simple interface to view saved tabs\n- Ability to restore and clear tabs individually, in groups, or all at once\n- Automatic tab data persistence using browser's storage API (Not implemented yet)\n\n## Browser Support\n\n- Firefox (and Gecko-based browsers)\n- Chrome (and Chromium-based browsers)\n\n## Installation\n\n### Build From Source\nClone the repository, navigate to the project directory, and install dependencies:\n```sh\ngit clone https://github.com/spencerpilon/simpletabs.git\ncd simpletabs\npnpm install\n```\n\nTo compile the extension for Chrome (and Chromium-based browsers):\n```sh\npnpm build\n```\n\nTo compile the extension for Firefox (and Gecko-based browsers):\n```sh\npnpm build:firefox\n```\n\nThe compiled extension files will be found in the `_dist_/` directory.\n\n## Usage\n\n- Click the SimpleTabs extension icon in your browser toolbar.\n\n    The extension will save all tabs in your current window.\n    Your tabs will appear in a clean, organized interface.\n\n- Restore or close tabs from the list.\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -6747,7 +6747,7 @@
       "stargazers_count": 0,
       "language": "HTML"
     },
-    "readme": "",
+    "readme": "# slack-site-clone\n\nA clone of the slack.com homepage.\n\nFor demonstration purposes only.\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -6796,7 +6796,7 @@
       "stargazers_count": 0,
       "language": "TypeScript"
     },
-    "readme": "",
+    "readme": "# Solid SCOPE\n\nScope is a simple, interactive component previewer with real-time inspection, and resizable UI. Inspired by Preview.js, but build specifically for Solid.\n\n## Features\n\n- **Live Preview**: See your Solid components in action as you code.\n- **Real-time Inspection**: Inspect component props and state in real-time.\n- **Resizable UI**: Adjust the layout to your liking with a resizable interface.\n- **Hot Reloading**: Changes are reflected immediately without a full page reload.\n- **TypeScript Support**: Write your components in TypeScript for better type safety.\n- **Zero Config**: Works with Solid out of the box.\n\n## Installation\n\n### GitHub (temporary)\n\n```bash\ngit clone https://github.com/spencerpilon/solid-component-preview.git\nnpm install file:./solid-component-preview\n```\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -6845,7 +6845,7 @@
       "stargazers_count": 0,
       "language": "TypeScript"
     },
-    "readme": "",
+    "readme": "# Fresh project\n\n### Usage\n\nMake sure to install Deno:\nhttps://docs.deno.com/runtime/getting_started/installation\n\nThen start the project in development mode:\n\n```\ndeno task dev\n```\n\nThis will watch the project directory and restart as necessary.\n",
     "issues": [],
     "prs": [
       {
@@ -6982,7 +6982,7 @@
       "stargazers_count": 0,
       "language": null
     },
-    "readme": "",
+    "readme": "# tsidp\nMy tsidp compose.yaml for Arcane\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -7019,7 +7019,7 @@
       "stargazers_count": 0,
       "language": "Typst"
     },
-    "readme": "",
+    "readme": "# October\n\nThis template generates a monthly calendar, designed to be printed in landscape.\n\n## Usage\n\nThe calendar function accepts one parameter for the year, which should be formatted as an integer.\n\n```typst\n#show: calendar.with(\n  year: 2026\n)\n```\n\nOtherwise, the current year can be passed in with `datetime.today().year()`.\n\n```typst\n#show: calendar.with(\n  year: datetime.today().year()\n)\n```\n\nWhen printed on A4 paper there isn't much space for writing in each day box, the calendar is more suited to blocking out days with a highlighter.\nFor example, to mark days of rest in a variable pattern of work shifts.\n\n## License\n\n[MIT No Attribution](https://github.com/extua/october/blob/main/LICENSE) © Pierre Marshall.\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -7338,7 +7338,7 @@
       "stargazers_count": 0,
       "language": "Dockerfile"
     },
-    "readme": "",
+    "readme": "# Typst project template\n\nA devcontainer-ready starting point for Typst documents, with the\nClaude Code CLI preinstalled. Works locally (Zed + a Docker-API-\ncompatible engine like OrbStack) and in GitHub Codespaces.\n\n## Using this template\n\nClick **Use this template** → **Create a new repository** above, then on\nthe new repo: **Code** → **Codespaces** → **Create codespace on main**.\n\nFirst boot takes a minute or two (installing Typst + tinymist). After that,\nopen the terminal and run `claude`, or `typst compile main.typ`.\n\n### Auth for Claude Code on Codespaces\n\nEach new Codespace starts fresh, so just run `claude` in the terminal\nafter it boots and follow the browser login prompt — one login per new\nproject, no standing secret to manage.\n\n## Using this locally instead\n\nSee `.devcontainer/README.md` for the Zed + OrbStack workflow.\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -7369,7 +7369,7 @@
       "stargazers_count": 0,
       "language": "Dockerfile"
     },
-    "readme": "",
+    "readme": "# Typst project template\n\nA devcontainer-ready starting point for Typst documents, with the\nClaude Code CLI preinstalled. Works locally (Zed + a Docker-API-\ncompatible engine like OrbStack) and in GitHub Codespaces.\n\n## Using this template\n\nClick **Use this template** → **Create a new repository** above, then on\nthe new repo: **Code** → **Codespaces** → **Create codespace on main**.\n\nFirst boot takes a minute or two (installing Typst + tinymist). After that,\nopen the terminal and run `claude`, or `typst compile main.typ`.\n\n### Auth for Claude Code on Codespaces\n\nEach new Codespace starts fresh, so just run `claude` in the terminal\nafter it boots and follow the browser login prompt — one login per new\nproject, no standing secret to manage.\n\n## Using this locally instead\n\nSee `.devcontainer/README.md` for the Zed + OrbStack workflow.\n",
     "issues": [],
     "prs": [],
     "commits": [
@@ -7406,7 +7406,7 @@
       "stargazers_count": 0,
       "language": "Python"
     },
-    "readme": "",
+    "readme": "# word-counter-program",
     "issues": [
       {
         "number": 1,
@@ -7673,7 +7673,7 @@
       "stargazers_count": 0,
       "language": "CSS"
     },
-    "readme": "",
+    "readme": "# WXT Custom Starter Template\n\nA browser extension template built with [WXT](https://wxt.dev/) and TypeScript. Includes a few nice customizations.\n\n## Features\n\n- 🚀 Built with WXT - a modern browser extension framework\n- 🍦 Modern HTML and CSS\n- 🌓 Dark/light theme support with system preference detection\n- 📝 Unified main/options page with tab-based navigation, persistent state using browser storage\n\n## Getting Started\n\n### Prerequisites\n\n- [Node.js](https://nodejs.org/) (v14 or newer recommended)\n- [pnpm](https://pnpm.io/) (or npm/yarn)\n\n### Installation\n\n1. Clone this repository\n\n```bash\ngit clone https://github.com/yourusername/wxt-custom-starter.git\ncd wxt-custom-starter\n```\n\n2. Install dependencies\n\n```bash\npnpm install\n```\n\n### Development\n\nStart the development server with hot reloading:\n\n```bash\n# For Chrome (default)\npnpm dev\n\n# For Firefox\npnpm dev:ff\n```\n\n## Extension Structure\n\n```\npublic/             # Assets to be copied as-is\n└── icon/               # PNGs for the favicon and extension icon\nsrc/                # Source directory\n├── assets/             # Assets to be handled by the bundler\n│   ├── icons/              # SVG icons for the extension\n│   └── style/              # CSS stylesheets\n├── entrypoints/        # WXT entry points\n│   ├── background.ts       # Extension background script\n│   └── options/            # Options page\n│       ├── index.html          # Main HTML structure\n│       ├── main.ts             # Main page script\n│       └── options.ts          # Options page script\n└── util/               # Utility functions\n    ├── tab-nav.ts          # Tab navigation logic\n    └── theme.ts            # Theme management\n```\n\n## Navigation System\n\nThe extension uses a unified options page with two main sections:\n\n- **Main Tab**: Accessible via the extension icon click\n- **Options Tab**: Accessible via browser's extension menu\n\nThe navigation system uses browser storage to maintain state and ensure proper tab activation.\n\n## Configuration\n\nThe extension can be configured by modifying:\n\n- `wxt.config.ts` - Main WXT configuration\n- `web-ext.config.ts` - Browser-specific configuration\n\n## Browser Support\n\n- Chrome/Chromium-based browsers\n- Firefox\n",
     "issues": [],
     "prs": [],
     "commits": [

@@ -1,9 +1,13 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 const { openDb, ensureSchema } = require("./db");
 const { buildRepoRecord } = require("./publish");
 const { enrichRepo } = require("./enrich");
+const { writeBronze } = require("./extract");
 
 test("buildRepoRecord shapes DB rows into the existing repos.json record format", async () => {
   const db = openDb(":memory:");
@@ -63,5 +67,32 @@ test("buildRepoRecord includes the latest repo_assessments row when one exists",
   assert.equal(record.assessment.label, "Not yet assessed by a real reviewer");
   assert.ok(record.assessment.text.startsWith("Placeholder assessment for sdpilon/spilon.dev"));
   assert.deepEqual(record.assessment.gaps, ["real LLM assessment not implemented yet"]);
+  await db.close();
+});
+
+test("buildRepoRecord reads the real README text from bronze when runId/bronzeDir are given", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, first_seen_at, last_seen_at)
+     VALUES (1, 'sdpilon/spilon.dev', 'site', 'https://github.com/sdpilon/spilon.dev', 'main', 'Astro', 2, false, false, false, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
+  );
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-test-"));
+  writeBronze(bronzeDir, "run_1", 1, "readme", "# Hello\n\nReal readme text.");
+  const record = await buildRepoRecord(db, 1, "run_1", bronzeDir);
+  assert.equal(record.readme, "# Hello\n\nReal readme text.");
+  await db.close();
+  fs.rmSync(bronzeDir, { recursive: true, force: true });
+});
+
+test("buildRepoRecord falls back to an empty readme when runId/bronzeDir are omitted", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, first_seen_at, last_seen_at)
+     VALUES (1, 'sdpilon/spilon.dev', 'site', 'https://github.com/sdpilon/spilon.dev', 'main', 'Astro', 2, false, false, false, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
+  );
+  const record = await buildRepoRecord(db, 1);
+  assert.equal(record.readme, "");
   await db.close();
 });
