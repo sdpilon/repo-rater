@@ -17,6 +17,10 @@ async function buildRepoRecord(db, repoId) {
     `SELECT number, title, state, created_at, closed_at, labels FROM issues WHERE repo_id = ? ORDER BY created_at DESC`,
     repoId,
   );
+  const prs = await db.all(
+    `SELECT number, title, state, created_at, merged_at FROM pull_requests WHERE repo_id = ? ORDER BY created_at DESC`,
+    repoId,
+  );
   return {
     name: repoRow.full_name,
     meta: {
@@ -36,7 +40,13 @@ async function buildRepoRecord(db, repoId) {
       closed_at: i.closed_at,
       labels: i.labels,
     })),
-    prs: [],
+    prs: prs.map((p) => ({
+      number: p.number,
+      title: p.title,
+      state: p.state,
+      created_at: p.created_at,
+      merged_at: p.merged_at,
+    })),
     commits: commits.map((c) => ({
       sha: c.sha.slice(0, 7),
       date: c.authored_at,

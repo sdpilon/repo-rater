@@ -49,6 +49,18 @@ function writeFixtureBronze(bronzeDir, runId, repoId) {
       },
     ]),
   );
+  fs.writeFileSync(
+    path.join(dir, `${repoId}_prs.json`),
+    JSON.stringify([
+      {
+        number: 5,
+        title: "Add feature",
+        state: "closed",
+        createdAt: "2026-07-01T00:00:00Z",
+        mergedAt: "2026-07-02T00:00:00Z",
+      },
+    ]),
+  );
 }
 
 test("loadRun upserts repo, commits, and issues, and advances watermarks on success", async () => {
@@ -85,6 +97,14 @@ test("loadRun upserts repo, commits, and issues, and advances watermarks on succ
       since: "2020-01-01T00:00:00Z",
       fetchedAt: "2026-07-22T00:00:00.000Z",
     },
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "prs",
+      status: "ok",
+      since: "2020-01-01T00:00:00Z",
+      fetchedAt: "2026-07-22T00:00:00.000Z",
+    },
   ];
   const summary = await loadRun({
     db,
@@ -102,8 +122,16 @@ test("loadRun upserts repo, commits, and issues, and advances watermarks on succ
   assert.equal(commits.length, 1);
   const issues = await db.all("SELECT labels FROM issues WHERE repo_id = 1");
   assert.deepEqual(issues[0].labels, ["bug"]);
+  const prs = await db.all(
+    "SELECT title, merged_at FROM pull_requests WHERE repo_id = 1",
+  );
+  assert.equal(prs.length, 1);
+  assert.equal(prs[0].title, "Add feature");
+  assert.ok(prs[0].merged_at instanceof Date);
   const watermark = await getWatermark(db, 1, "commits");
   assert.ok(watermark instanceof Date);
+  const prsWatermark = await getWatermark(db, 1, "prs");
+  assert.ok(prsWatermark instanceof Date);
   await db.close();
 });
 
@@ -243,6 +271,14 @@ test("loadRun loads a successful data type and records a failure for a different
       status: "error",
       error: "issues endpoint timed out",
     },
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "prs",
+      status: "ok",
+      since: "2020-01-01T00:00:00Z",
+      fetchedAt: "2026-07-22T00:00:00.000Z",
+    },
   ];
   const summary = await loadRun({
     db,
@@ -258,10 +294,16 @@ test("loadRun loads a successful data type and records a failure for a different
     "SELECT COUNT(*)::INTEGER AS n FROM issues WHERE repo_id = 1",
   );
   assert.equal(issues[0].n, 0);
+  const prs = await db.all(
+    "SELECT COUNT(*)::INTEGER AS n FROM pull_requests WHERE repo_id = 1",
+  );
+  assert.equal(prs[0].n, 1);
   const commitsWatermark = await getWatermark(db, 1, "commits");
   assert.ok(commitsWatermark instanceof Date);
   const issuesWatermark = await getWatermark(db, 1, "issues");
   assert.equal(issuesWatermark, null);
+  const prsWatermark = await getWatermark(db, 1, "prs");
+  assert.ok(prsWatermark instanceof Date);
   await db.close();
 });
 

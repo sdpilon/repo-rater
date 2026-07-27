@@ -137,9 +137,18 @@ test("parseArgs recognizes --limit N", () => {
 });
 
 test("parseArgs rejects a non-positive-integer --limit value", () => {
-  assert.throws(() => parseArgs(["--limit", "abc"]), /--limit requires a positive integer/);
-  assert.throws(() => parseArgs(["--limit", "0"]), /--limit requires a positive integer/);
-  assert.throws(() => parseArgs(["--limit", "-3"]), /--limit requires a positive integer/);
+  assert.throws(
+    () => parseArgs(["--limit", "abc"]),
+    /--limit requires a positive integer/,
+  );
+  assert.throws(
+    () => parseArgs(["--limit", "0"]),
+    /--limit requires a positive integer/,
+  );
+  assert.throws(
+    () => parseArgs(["--limit", "-3"]),
+    /--limit requires a positive integer/,
+  );
 });
 
 test("buildRepoList maps discovered repo objects to their fullName", () => {

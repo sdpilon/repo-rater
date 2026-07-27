@@ -19,6 +19,10 @@ test("buildRepoRecord shapes DB rows into the existing repos.json record format"
     `INSERT INTO issues (repo_id, number, title, state, created_at, closed_at, labels, last_updated_run_id)
      VALUES (1, 1, 'Bug', 'open', '2026-07-01T00:00:00Z', NULL, list_value('bug'), 'run_1')`,
   );
+  await db.run(
+    `INSERT INTO pull_requests (repo_id, number, title, state, created_at, merged_at, last_updated_run_id)
+     VALUES (1, 5, 'Add feature', 'closed', '2026-07-01T00:00:00Z', '2026-07-02T00:00:00Z', 'run_1')`,
+  );
   const record = await buildRepoRecord(db, 1);
   assert.equal(record.name, "sdpilon/spilon.dev");
   assert.equal(record.meta.language, "Astro");
@@ -26,6 +30,10 @@ test("buildRepoRecord shapes DB rows into the existing repos.json record format"
   assert.equal(record.commits[0].sha, "aaaaaaa");
   assert.equal(record.commits[0].message, "fix bug");
   assert.deepEqual(record.issues[0].labels, ["bug"]);
-  assert.deepEqual(record.prs, []);
+  assert.equal(record.prs.length, 1);
+  assert.equal(record.prs[0].number, 5);
+  assert.equal(record.prs[0].title, "Add feature");
+  assert.equal(record.prs[0].state, "closed");
+  assert.ok(record.prs[0].merged_at instanceof Date);
   await db.close();
 });

@@ -3,7 +3,11 @@ const { openDb, ensureSchema } = require("./db");
 const { fetchAccountRepos, defaultGhApiJson } = require("./github");
 const { upsertRepo } = require("./load");
 const { DB_PATH } = require("./config");
-const { makeRunId, recordRunStart, recordRunFinish } = require("./run-tracking");
+const {
+  makeRunId,
+  recordRunStart,
+  recordRunFinish,
+} = require("./run-tracking");
 
 async function recordDiscovery(db, runId, repoId, seenAt) {
   await db.run(

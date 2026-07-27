@@ -49,10 +49,22 @@ function fakeGhApiJson(pathAndQuery) {
       },
     ];
   }
+  if (pathAndQuery.startsWith("repos/sdpilon/spilon.dev/pulls")) {
+    return [
+      {
+        number: 2,
+        title: "Add feature",
+        state: "open",
+        created_at: "2026-07-01T00:00:00Z",
+        merged_at: null,
+        updated_at: "2026-07-01T00:00:00Z",
+      },
+    ];
+  }
   throw new Error(`unexpected path: ${pathAndQuery}`);
 }
 
-test("extractRepo writes bronze files for meta, readme, commits, and issues on first run", async () => {
+test("extractRepo writes bronze files for meta, readme, commits, issues, and prs on first run", async () => {
   const db = openDb(":memory:");
   await ensureSchema(db);
   const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
@@ -63,12 +75,13 @@ test("extractRepo writes bronze files for meta, readme, commits, and issues on f
     bronzeDir,
     ghApiJson: fakeGhApiJson,
   });
-  assert.equal(results.filter((r) => r.status === "ok").length, 3);
+  assert.equal(results.filter((r) => r.status === "ok").length, 4);
   const runDir = path.join(bronzeDir, "run_1");
   assert.ok(fs.existsSync(path.join(runDir, "1_meta.json")));
   assert.ok(fs.existsSync(path.join(runDir, "1_readme.json")));
   assert.ok(fs.existsSync(path.join(runDir, "1_commits.json")));
   assert.ok(fs.existsSync(path.join(runDir, "1_issues.json")));
+  assert.ok(fs.existsSync(path.join(runDir, "1_prs.json")));
   const readme = JSON.parse(
     fs.readFileSync(path.join(runDir, "1_readme.json"), "utf8"),
   );
@@ -211,6 +224,6 @@ test("extractAll continues with the remaining repos when one repo throws unexpec
   const okResults = results.filter(
     (r) => r.fullName === "sdpilon/spilon.dev" && r.status === "ok",
   );
-  assert.equal(okResults.length, 3);
+  assert.equal(okResults.length, 4);
   await db.close();
 });

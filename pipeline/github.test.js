@@ -6,6 +6,7 @@ const {
   fetchReadme,
   fetchCommitsSince,
   fetchIssuesSince,
+  fetchPrsSince,
   fetchAccountRepos,
 } = require("./github");
 
@@ -134,6 +135,107 @@ test("fetchIssuesSince filters out pull requests and maps labels to names", () =
       labels: ["bug"],
     },
   ]);
+});
+
+function makeRawPr({ number, title, state = "open", createdAt, mergedAt = null, updatedAt }) {
+  return {
+    number,
+    title,
+    state,
+    created_at: createdAt,
+    merged_at: mergedAt,
+    updated_at: updatedAt,
+  };
+}
+
+test("fetchPrsSince keeps PRs created or merged since the cutoff and maps fields, dropping ones untouched since then", () => {
+  const fakeGhApiJson = () => [
+    makeRawPr({
+      number: 1,
+      title: "New feature",
+      state: "open",
+      createdAt: "2026-07-05T00:00:00Z",
+      updatedAt: "2026-07-05T00:00:00Z",
+    }),
+    makeRawPr({
+      number: 2,
+      title: "Old PR merged late",
+      state: "closed",
+      createdAt: "2026-06-01T00:00:00Z",
+      mergedAt: "2026-07-03T00:00:00Z",
+      updatedAt: "2026-07-03T00:00:00Z",
+    }),
+    makeRawPr({
+      number: 3,
+      title: "Stale, untouched since the cutoff",
+      state: "closed",
+      createdAt: "2026-05-01T00:00:00Z",
+      updatedAt: "2026-05-01T00:00:00Z",
+    }),
+  ];
+  const prs = fetchPrsSince(
+    "sdpilon/spilon.dev",
+    "2026-07-01T00:00:00Z",
+    fakeGhApiJson,
+  );
+  assert.deepEqual(prs, [
+    {
+      number: 1,
+      title: "New feature",
+      state: "open",
+      createdAt: "2026-07-05T00:00:00Z",
+      mergedAt: null,
+    },
+    {
+      number: 2,
+      title: "Old PR merged late",
+      state: "closed",
+      createdAt: "2026-06-01T00:00:00Z",
+      mergedAt: "2026-07-03T00:00:00Z",
+    },
+  ]);
+});
+
+test("fetchPrsSince stops paginating once a page is entirely older than the watermark cursor", () => {
+  const since = "2026-07-01T00:00:00Z";
+  const page1 = Array.from({ length: 100 }, (_, i) =>
+    makeRawPr({
+      number: i + 1,
+      title: `pr ${i + 1}`,
+      createdAt: "2026-07-15T00:00:00Z",
+      updatedAt: "2026-07-15T00:00:00Z",
+    }),
+  );
+  const page2 = [
+    makeRawPr({
+      number: 200,
+      title: "still recent",
+      createdAt: "2026-07-10T00:00:00Z",
+      updatedAt: "2026-07-10T00:00:00Z",
+    }),
+    makeRawPr({
+      number: 201,
+      title: "now stale",
+      createdAt: "2026-05-01T00:00:00Z",
+      updatedAt: "2026-05-01T00:00:00Z",
+    }),
+  ];
+  const calledPaths = [];
+  const fakeGhApiJson = (pathAndQuery) => {
+    calledPaths.push(pathAndQuery);
+    const page = Number(
+      new URL(`https://x/${pathAndQuery}`).searchParams.get("page"),
+    );
+    if (page === 1) return page1;
+    if (page === 2) return page2;
+    throw new Error(
+      `should not fetch page ${page} — page 2 already crossed the watermark`,
+    );
+  };
+  const prs = fetchPrsSince("sdpilon/spilon.dev", since, fakeGhApiJson);
+  assert.equal(calledPaths.length, 2);
+  assert.equal(prs.length, 101);
+  assert.ok(!prs.some((p) => p.number === 201));
 });
 
 function makeRawRepo(n) {

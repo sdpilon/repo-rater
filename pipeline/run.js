@@ -8,7 +8,11 @@ const { enrichRepo } = require("./enrich");
 const { publish } = require("./publish");
 const { discoverRepos } = require("./discover");
 const { DB_PATH, BRONZE_DIR } = require("./config");
-const { makeRunId, recordRunStart, recordRunFinish } = require("./run-tracking");
+const {
+  makeRunId,
+  recordRunStart,
+  recordRunFinish,
+} = require("./run-tracking");
 
 function computeRunCounts(extractResults) {
   const failedFullNames = new Set(
@@ -189,7 +193,9 @@ async function main(argv = process.argv.slice(2)) {
   console.log(
     `run ${runId}: ${reposFetchedOk} repos ok, ${reposFailed} repos with fetch errors, ` +
       `${loadSummary.failuresRecorded} failures recorded, ${llmCallsMade} enrichment calls made, ${llmCallsSkipped} skipped` +
-      (args.limit ? ` (limited to ${args.limit} of ${discoveredCount} discovered repos)` : ""),
+      (args.limit
+        ? ` (limited to ${args.limit} of ${discoveredCount} discovered repos)`
+        : ""),
   );
   await db.close();
 }

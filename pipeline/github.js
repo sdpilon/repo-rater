@@ -9,7 +9,7 @@ function defaultGhApiJson(pathAndQuery) {
 function mapRawRepo(raw) {
   return {
     repoId: raw.id,
-    fullName: raw.full_name,
+    fullName: raw.full_name, // full_name = 'owner.login/name'
     description: raw.description,
     htmlUrl: raw.html_url,
     defaultBranch: raw.default_branch,
@@ -58,6 +58,36 @@ function fetchIssuesSince(fullName, since, ghApiJson = defaultGhApiJson) {
     }));
 }
 
+// The /pulls endpoint has no server-side `since=` support (unlike /commits
+// and /issues), so incremental fetching has to be done by hand: paginate
+// through results sorted by updated_at desc, and keep only PRs created or
+// merged on/after `since`.
+function fetchPrsSince(fullName, since, ghApiJson = defaultGhApiJson) {
+  const perPage = 100;
+  const kept = [];
+  let page = 1;
+  for (;;) {
+    const raw = ghApiJson(
+      `repos/${fullName}/pulls?state=all&per_page=${perPage}&page=${page}&sort=updated&direction=desc`,
+    );
+    for (const pr of raw) {
+      if (pr.created_at >= since || (pr.merged_at && pr.merged_at >= since)) {
+        kept.push(pr);
+      }
+    }
+    const pageIsFullyStale = raw.every((pr) => pr.updated_at < since);
+    if (raw.length < perPage || pageIsFullyStale) break;
+    page += 1;
+  }
+  return kept.map((pr) => ({
+    number: pr.number,
+    title: pr.title,
+    state: pr.state,
+    createdAt: pr.created_at,
+    mergedAt: pr.merged_at,
+  }));
+}
+
 function fetchAccountRepos(ghApiJson = defaultGhApiJson) {
   const perPage = 100;
   let page = 1;
@@ -78,6 +108,7 @@ module.exports = {
   fetchReadme,
   fetchCommitsSince,
   fetchIssuesSince,
+  fetchPrsSince,
   fetchAccountRepos,
   defaultGhApiJson,
 };

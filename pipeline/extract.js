@@ -7,10 +7,11 @@ const {
   fetchReadme,
   fetchCommitsSince,
   fetchIssuesSince,
+  fetchPrsSince,
   defaultGhApiJson,
 } = require("./github");
 
-const DATA_TYPES = ["commits", "issues"];
+const DATA_TYPES = ["commits", "issues", "prs"];
 const DEFAULT_SINCE = "2020-01-01T00:00:00Z";
 
 function writeBronze(bronzeDir, runId, repoId, name, payload) {
@@ -77,7 +78,9 @@ async function extractRepo({
       const rows =
         dataType === "commits"
           ? fetchCommitsSince(fullName, since, ghApiJson)
-          : fetchIssuesSince(fullName, since, ghApiJson);
+          : dataType === "issues"
+            ? fetchIssuesSince(fullName, since, ghApiJson)
+            : fetchPrsSince(fullName, since, ghApiJson);
       writeBronze(bronzeDir, runId, meta.repoId, dataType, rows);
       results.push({
         fullName,

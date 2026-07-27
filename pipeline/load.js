@@ -76,6 +76,20 @@ async function upsertIssue(db, repoId, issue, runId) {
   );
 }
 
+async function upsertPr(db, repoId, pr, runId) {
+  await db.run(
+    `INSERT OR REPLACE INTO pull_requests (repo_id, number, title, state, created_at, merged_at, last_updated_run_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    repoId,
+    pr.number,
+    pr.title,
+    pr.state,
+    pr.createdAt,
+    pr.mergedAt,
+    runId,
+  );
+}
+
 async function recordFailure(
   db,
   runId,
@@ -121,14 +135,20 @@ async function loadRun({ db, runId, bronzeDir, extractResults, now }) {
       summary.failuresRecorded += 1;
       continue;
     }
-    if (result.dataType === "commits" || result.dataType === "issues") {
+    if (
+      result.dataType === "commits" ||
+      result.dataType === "issues" ||
+      result.dataType === "prs"
+    ) {
       const rows = readBronze(bronzeDir, runId, result.repoId, result.dataType);
       if (result.dataType === "commits") {
         for (const commit of rows)
           await upsertCommit(db, result.repoId, commit, runId);
-      } else {
+      } else if (result.dataType === "issues") {
         for (const issue of rows)
           await upsertIssue(db, result.repoId, issue, runId);
+      } else {
+        for (const pr of rows) await upsertPr(db, result.repoId, pr, runId);
       }
       // Watermark advances to run time, not max-event time in the data — GitHub's
       // since= semantics vary slightly by endpoint, and run-time is a safe, simple
@@ -153,5 +173,6 @@ module.exports = {
   upsertRepo,
   upsertCommit,
   upsertIssue,
+  upsertPr,
   recordFailure,
 };

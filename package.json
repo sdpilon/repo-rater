@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "type": "commonjs",
   "scripts": {
     "test": "node --test \"pipeline/**/*.test.js\"",
     "dev": "serve .",
