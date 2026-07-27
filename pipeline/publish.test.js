@@ -3,6 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { openDb, ensureSchema } = require("./db");
 const { buildRepoRecord } = require("./publish");
+const { enrichRepo } = require("./enrich");
 
 test("buildRepoRecord shapes DB rows into the existing repos.json record format", async () => {
   const db = openDb(":memory:");
@@ -35,5 +36,32 @@ test("buildRepoRecord shapes DB rows into the existing repos.json record format"
   assert.equal(record.prs[0].title, "Add feature");
   assert.equal(record.prs[0].state, "closed");
   assert.ok(record.prs[0].merged_at instanceof Date);
+  assert.equal(record.assessment, null);
+  await db.close();
+});
+
+test("buildRepoRecord includes the latest repo_assessments row when one exists", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, first_seen_at, last_seen_at)
+     VALUES (1, 'sdpilon/spilon.dev', 'site', 'https://github.com/sdpilon/spilon.dev', 'main', 'Astro', 2, false, false, false, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
+  );
+  await enrichRepo({
+    db,
+    repoId: 1,
+    fullName: "sdpilon/spilon.dev",
+    runId: "run_1",
+    readmeText: "hello",
+    commitMessages: ["fix bug"],
+    issueTitles: ["Bug"],
+    now: "2026-07-22T00:00:00.000Z",
+  });
+  const record = await buildRepoRecord(db, 1);
+  assert.equal(record.assessment.pct, 50);
+  assert.equal(record.assessment.band, "unknown");
+  assert.equal(record.assessment.label, "Not yet assessed by a real reviewer");
+  assert.ok(record.assessment.text.startsWith("Placeholder assessment for sdpilon/spilon.dev"));
+  assert.deepEqual(record.assessment.gaps, ["real LLM assessment not implemented yet"]);
   await db.close();
 });

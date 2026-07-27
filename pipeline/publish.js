@@ -21,6 +21,10 @@ async function buildRepoRecord(db, repoId) {
     `SELECT number, title, state, created_at, merged_at FROM pull_requests WHERE repo_id = ? ORDER BY created_at DESC`,
     repoId,
   );
+  const [assessmentRow] = await db.all(
+    `SELECT pct, band, label, text, gaps FROM repo_assessments WHERE repo_id = ? ORDER BY created_at DESC LIMIT 1`,
+    repoId,
+  );
   return {
     name: repoRow.full_name,
     meta: {
@@ -53,6 +57,15 @@ async function buildRepoRecord(db, repoId) {
       message: c.message,
       author: c.author_name,
     })),
+    assessment: assessmentRow
+      ? {
+          pct: assessmentRow.pct,
+          band: assessmentRow.band,
+          label: assessmentRow.label,
+          text: assessmentRow.text,
+          gaps: assessmentRow.gaps,
+        }
+      : null,
   };
 }
 

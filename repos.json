@@ -12,7 +12,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/270_6 (input hash e3b0c442).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/270_a4",
@@ -27,7 +36,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/270_a4 (input hash e3b0c442).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/280",
@@ -42,7 +60,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/280 (input hash e3b0c442).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/317",
@@ -555,7 +582,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon (spp689)"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/317 (input hash f4bb9e02).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/340",
@@ -938,7 +974,16 @@
         "message": "Init commit",
         "author": "Spencer Pilon (spp689)"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/340 (input hash 65262e3e).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/350-a4",
@@ -984,7 +1029,16 @@
         "message": "initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/350-a4 (input hash 679d3833).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/353-fall2023",
@@ -1501,7 +1555,16 @@
         "message": "Initial commit: add basic nodejs express server",
         "author": "Spencer Pilon (spp689)"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/353-fall2023 (input hash 8aa9530e).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/381a3",
@@ -1589,7 +1652,16 @@
         "message": "initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/381a3 (input hash 5b6a8e56).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/381_A4",
@@ -1617,7 +1689,16 @@
         "message": "FIRST COMMIT",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/381_A4 (input hash 85e706f9).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/384a1",
@@ -1632,7 +1713,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/384a1 (input hash e3b0c442).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/470",
@@ -2099,7 +2189,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon (spp689)"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/470 (input hash cbf0c023).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/a5",
@@ -2114,7 +2213,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/a5 (input hash e3b0c442).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/astro-sienna",
@@ -2136,7 +2244,16 @@
         "message": "Initial commit",
         "author": "spilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/astro-sienna (input hash 36e87586).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/audashio",
@@ -2338,7 +2455,16 @@
         "message": "template: tanstack_start_ts_2026-06-17",
         "author": "Lovable"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/audashio (input hash 19719400).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/audashio-2a113e85",
@@ -2540,7 +2666,16 @@
         "message": "template: tanstack_start_ts_2026-06-17",
         "author": "Lovable"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/audashio-2a113e85 (input hash 19719400).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/bext-testdrive",
@@ -2586,7 +2721,16 @@
         "message": "initial commit",
         "author": "Ben Pevsner"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/bext-testdrive (input hash af45c070).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/cmpt306_a1",
@@ -2638,7 +2782,16 @@
         "message": "initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/cmpt306_a1 (input hash e34ada3c).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/cmpt317-2022",
@@ -2696,7 +2849,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/cmpt317-2022 (input hash bcc4c1af).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/CMPT332-A1",
@@ -2736,7 +2898,16 @@
         "message": "Initial commit",
         "author": "spencerpilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/CMPT332-A1 (input hash baa29d97).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/cmpt353",
@@ -2779,7 +2950,16 @@
         "message": "initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/cmpt353 (input hash 39460ede).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/cmpt434",
@@ -2793,7 +2973,15 @@
     },
     "readme": "",
     "issues": [],
-    "prs": [],
+    "prs": [
+      {
+        "number": 1,
+        "title": "Create cmake-multi-platform.yml",
+        "state": "closed",
+        "created_at": "2025-01-10T18:18:30.000Z",
+        "merged_at": null
+      }
+    ],
     "commits": [
       {
         "sha": "66b541f",
@@ -2957,7 +3145,16 @@
         "message": "initial",
         "author": "Spencer Pilon (spp689)"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/cmpt434 (input hash cce7fb75).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/cmpt470",
@@ -2971,7 +3168,15 @@
     },
     "readme": "",
     "issues": [],
-    "prs": [],
+    "prs": [
+      {
+        "number": 1,
+        "title": "Add A3Q1 via upload",
+        "state": "closed",
+        "created_at": "2022-04-06T01:57:48.000Z",
+        "merged_at": "2022-04-06T01:58:00.000Z"
+      }
+    ],
     "commits": [
       {
         "sha": "70bcd24",
@@ -3165,7 +3370,16 @@
         "message": "initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/cmpt470 (input hash c096107a).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/cmpt470a3",
@@ -3193,7 +3407,16 @@
         "message": "Initial commit",
         "author": "spencerpilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/cmpt470a3 (input hash df1b5471).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/cmpt487",
@@ -3305,7 +3528,16 @@
         "message": "add a0",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/cmpt487 (input hash 62ba769b).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/cs_practice",
@@ -3320,7 +3552,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/cs_practice (input hash 2db22e27).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/dashome",
@@ -3334,7 +3575,15 @@
     },
     "readme": "",
     "issues": [],
-    "prs": [],
+    "prs": [
+      {
+        "number": 1,
+        "title": "implement basic app",
+        "state": "closed",
+        "created_at": "2026-03-22T18:13:46.000Z",
+        "merged_at": "2026-03-22T18:14:10.000Z"
+      }
+    ],
     "commits": [
       {
         "sha": "9fcdea5",
@@ -3360,7 +3609,16 @@
         "message": "Initial commit: Deno+Fresh Docker container",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/dashome (input hash 6cdca5db).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/Documentation",
@@ -3976,7 +4234,16 @@
         "message": "Merge pull request #283 from michalwitek1232/patch-4",
         "author": "Max Katz"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/Documentation (input hash 798d7642).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/dotfiles",
@@ -4022,7 +4289,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon (spp689)"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/dotfiles (input hash 2afa3a02).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/dotfiles-2024",
@@ -4074,7 +4350,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon (spp689)"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/dotfiles-2024 (input hash 86e00bbc).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/finance-tracker",
@@ -4102,7 +4387,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/finance-tracker (input hash 99aad244).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/fun",
@@ -4117,7 +4411,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/fun (input hash e3b0c442).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/GatheryApp",
@@ -4139,7 +4442,16 @@
         "message": "Initial commit",
         "author": "spencerpilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/GatheryApp (input hash d0b74006).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/GroceryListBuilderApp",
@@ -4167,7 +4479,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/GroceryListBuilderApp (input hash 7215219a).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/home-server",
@@ -4471,7 +4792,16 @@
         "message": "Initial commit of docker compose stacks",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/home-server (input hash 43acfc9f).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/homebrew-rogueamoeba",
@@ -4529,7 +4859,16 @@
         "message": "chore: initial commit",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/homebrew-rogueamoeba (input hash b378cb34).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/hospital-system",
@@ -4677,7 +5016,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/hospital-system (input hash f6b3382a).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/LearningReactJS",
@@ -4699,7 +5047,16 @@
         "message": "initial commit",
         "author": "Spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/LearningReactJS (input hash 3344e34f).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/lib",
@@ -4714,7 +5071,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/lib (input hash e3b0c442).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/MobiusApp",
@@ -4729,7 +5095,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/MobiusApp (input hash e3b0c442).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/Mobius_App",
@@ -4744,7 +5119,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/Mobius_App (input hash 6b85d0b2).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/new-linux",
@@ -4759,7 +5143,16 @@
     "readme": "",
     "issues": [],
     "prs": [],
-    "commits": []
+    "commits": [],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/new-linux (input hash e3b0c442).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/nixconfig",
@@ -4781,7 +5174,16 @@
         "message": "initial commit",
         "author": "Spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/nixconfig (input hash 3344e34f).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/obsidian-notes",
@@ -4827,7 +5229,16 @@
         "message": "Initial commit",
         "author": "Spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/obsidian-notes (input hash 061ae29c).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/old_dotfiles",
@@ -4945,7 +5356,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon (spp689)"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/old_dotfiles (input hash b6bb313e).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/pygame-project-helper",
@@ -4973,7 +5393,16 @@
         "message": "Add initial implementation of Pygame Project Helper extension",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/pygame-project-helper (input hash dc8182ba).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/pyodedit",
@@ -5589,7 +6018,16 @@
         "message": "Changes",
         "author": "gpt-engineer-app[bot]"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/pyodedit (input hash a37c58fa).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/ReactCourse2022-FeedbackApp",
@@ -5635,7 +6073,16 @@
         "message": "initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/ReactCourse2022-FeedbackApp (input hash a4176b38).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/rebus",
@@ -5669,7 +6116,16 @@
         "message": "adding new rebus x2 (#589)",
         "author": "zameer fouzan"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/rebus (input hash 5600dc57).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/remnote-export-fixer",
@@ -5697,7 +6153,16 @@
         "message": "initial commit",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/remnote-export-fixer (input hash 3715014d).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/simpletabs",
@@ -5899,7 +6364,16 @@
         "message": "Initialize new WXT project with Solid.js template.",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/simpletabs (input hash 40b9c116).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/simpletabs_-1",
@@ -5927,7 +6401,16 @@
         "message": "Initial commit",
         "author": "spencerpilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/simpletabs_-1 (input hash 4fc34052).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/skill-spotlight-scan",
@@ -6243,7 +6726,16 @@
         "message": "template: tanstack_start_ts_2026-06-17",
         "author": "Lovable"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/skill-spotlight-scan (input hash 90bf9899).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/slack-site-clone",
@@ -6283,7 +6775,16 @@
         "message": "Initial commit",
         "author": "spencerpilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/slack-site-clone (input hash f15913b5).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/solid-component-preview",
@@ -6323,7 +6824,16 @@
         "message": "Initial commit: SolidJS Component Playground",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/solid-component-preview (input hash dc5ae27f).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/spilon.dev",
@@ -6337,7 +6847,15 @@
     },
     "readme": "",
     "issues": [],
-    "prs": [],
+    "prs": [
+      {
+        "number": 1,
+        "title": "Update fresh version",
+        "state": "closed",
+        "created_at": "2026-07-08T23:35:34.000Z",
+        "merged_at": "2026-07-08T23:36:52.000Z"
+      }
+    ],
     "commits": [
       {
         "sha": "7ed716a",
@@ -6363,7 +6881,16 @@
         "message": "Initial commit",
         "author": "spencerpilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/spilon.dev (input hash ebe7f553).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/subtracker",
@@ -6391,7 +6918,16 @@
         "message": "Initial commit: blank jetpack compose project",
         "author": "Spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/subtracker (input hash 988a77a2).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/treyfique-ext",
@@ -6425,7 +6961,16 @@
         "message": "Initial commit of wxt starter",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/treyfique-ext (input hash 5a2eb976).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/tsidp",
@@ -6453,7 +6998,16 @@
         "message": "Initial commit",
         "author": "spencerpilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/tsidp (input hash 98bedaf5).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/typst-calendar",
@@ -6763,7 +7317,16 @@
         "message": "Initial commit",
         "author": "Pierre"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/typst-calendar (input hash fd311c50).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/typst-resume",
@@ -6785,7 +7348,16 @@
         "message": "Initial commit",
         "author": "sdpilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/typst-resume (input hash 8f11a579).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/typst-template",
@@ -6813,7 +7385,16 @@
         "message": "chore: create .gitignore",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/typst-template (input hash 61381226).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/word-counter-program",
@@ -6838,7 +7419,15 @@
         ]
       }
     ],
-    "prs": [],
+    "prs": [
+      {
+        "number": 2,
+        "title": "bullet_point_fix",
+        "state": "closed",
+        "created_at": "2022-05-14T02:26:44.000Z",
+        "merged_at": "2022-05-14T04:00:33.000Z"
+      }
+    ],
     "commits": [
       {
         "sha": "cc73696",
@@ -6960,7 +7549,16 @@
         "message": "Initial commit",
         "author": "spencerpilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/word-counter-program (input hash 6f5b18ad).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/wordcounter",
@@ -7054,7 +7652,16 @@
         "message": "Initial commit",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/wordcounter (input hash dee8757b).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/wxt-template",
@@ -7112,7 +7719,16 @@
         "message": "Initialize wxt vanilla template project with background script and basic HTML structure for app and options pages. Open app on browser action.",
         "author": "spencer"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/wxt-template (input hash 58d706b9).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   },
   {
     "name": "sdpilon/yahtzeezy",
@@ -7164,6 +7780,15 @@
         "message": "First commit.",
         "author": "Spencer Pilon"
       }
-    ]
+    ],
+    "assessment": {
+      "pct": 50,
+      "band": "unknown",
+      "label": "Not yet assessed by a real reviewer",
+      "text": "Placeholder assessment for sdpilon/yahtzeezy (input hash 13c39a22).",
+      "gaps": [
+        "real LLM assessment not implemented yet"
+      ]
+    }
   }
 ]

@@ -207,9 +207,15 @@ scope is independent of `--limit`. `repos.json` now has 65 entries (was 2);
 `tracker.html`'s injected `DATA` block was verified to parse as valid JSON
 with 65 entries.
 
-**Not yet implemented:** the `prs` data type, and wiring `repo_assessments`
-into `tracker.html` (would require extending `inject.js`'s splice markers
-to a second marker pair).
+**Done since this slice was written:** the `prs` data type, and wiring
+`repo_assessments` into `tracker.html`. The wiring turned out not to need a
+second `inject.js` splice marker — `pipeline/publish.js`'s `buildRepoRecord()`
+includes each repo's latest `repo_assessments` row as an `assessment` field
+inside the existing `DATA` payload, and `tracker.html`'s render code falls
+back to it (`ASSESS[r.name] || r.assessment || {...}`) only when there's no
+hand-authored `ASSESS` entry for that repo. This is intentional: until
+`generateAssessment()` in `pipeline/enrich.js` is a real LLM call instead of
+a stub, the hand-authored entries stay authoritative wherever they exist.
 
 **Publish writes directly to the production dataset — deliberately.**
 `pipeline/publish.js` writes directly to `repos.json` and shells out to the

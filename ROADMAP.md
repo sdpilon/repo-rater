@@ -13,8 +13,11 @@ completes.
 
 ## Now
 
-- **`prs` data type** — the pipeline currently extracts readme/issues/
-  commits/meta but not pull requests, unlike `fetch.sh` which does.
+- **Retire `fetch.sh`** — now that `pipeline/` is the real project and
+  `publish.js` writing to `repos.json`/`tracker.html` is accepted behavior,
+  `fetch.sh` is legacy rather than a production path to protect. Retire it
+  once Discovery's widening (above) restores at least the repo coverage
+  `fetch.sh` currently provides.
 
 ## Next
 
@@ -22,17 +25,23 @@ completes.
 
 ## Later
 
-- **Wire `repo_assessments` into `tracker.html`** — replace the
-  hand-authored `ASSESS` block with `pipeline/enrich.js`'s generated
-  assessments. Requires extending `inject.js`'s splice markers to a second
-  marker pair.
-- **Retire `fetch.sh`** — now that `pipeline/` is the real project and
-  `publish.js` writing to `repos.json`/`tracker.html` is accepted behavior,
-  `fetch.sh` is legacy rather than a production path to protect. Retire it
-  once Discovery's widening (above) restores at least the repo coverage
-  `fetch.sh` currently provides.
+(nothing queued here right now)
 
 ## Done
+
+- **`prs` data type** — the pipeline now extracts/loads/publishes pull
+  requests (`fetchPrsSince` and the full extract/load/publish wiring),
+  matching what `fetch.sh` already provided. Live-verified.
+
+- **Wire `repo_assessments` into `tracker.html`.** `pipeline/publish.js`'s
+  `buildRepoRecord()` includes each repo's latest `repo_assessments` row as
+  an `assessment` field; `tracker.html` falls back to it
+  (`ASSESS[r.name] || r.assessment || {...}`) only when there's no
+  hand-authored `ASSESS` entry. No second `inject.js` splice marker was
+  needed — the assessment rides along inside the existing `DATA` payload.
+  Deliberately not a full replacement of the hand-authored block: until
+  `generateAssessment()` is a real LLM call instead of a stub, the 9
+  existing hand-written entries stay authoritative.
 
 - **Wire Discovery into `run.js`'s `main()`, widen from 2 repos to the full
   account.** No filter policy applied — `main()` extracts/loads/enriches/
