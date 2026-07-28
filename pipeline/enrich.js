@@ -31,15 +31,29 @@ Return an assessment with these fields:
 - text: 2-5 sentences, evidence-based — cite specific commits, issues, README claims. Be direct and concrete, no filler.
 - gaps: array of short actionable gap strings, or [] if none.`;
 
-function buildUserContent({ fullName, readmeText, commitMessages, issueTitles }) {
+function buildUserContent({
+  fullName,
+  readmeText,
+  commitMessages,
+  issueTitles,
+  issueStates,
+  prTitles,
+  prStates,
+}) {
   const commitsBlock =
     commitMessages.length > 0
       ? commitMessages.map((m) => `- ${m}`).join("\n")
       : "(no commits)";
   const issuesBlock =
     issueTitles.length > 0
-      ? issueTitles.map((t) => `- ${t}`).join("\n")
+      ? issueTitles
+          .map((title, idx) => `- ${title} (${issueStates[idx]})`)
+          .join("\n")
       : "(no issues)";
+  const prsBlock =
+    prTitles.length > 0
+      ? prTitles.map((title, idx) => `- ${title} (${prStates[idx]})`).join("\n")
+      : "(no pull requests)";
   return `Repo: ${fullName}
 
 README:
@@ -49,18 +63,33 @@ Recent commits:
 ${commitsBlock}
 
 Issues:
-${issuesBlock}`;
+${issuesBlock}
+
+Pull requests:
+${prsBlock}`;
 }
 
 async function generateAssessment(
   client,
-  { fullName, inputHash, readmeText, commitMessages, issueTitles },
+  {
+    fullName,
+    inputHash,
+    readmeText,
+    commitMessages,
+    issueTitles,
+    issueStates,
+    prTitles,
+    prStates,
+  },
 ) {
   const userContent = buildUserContent({
     fullName,
     readmeText,
     commitMessages,
     issueTitles,
+    issueStates,
+    prTitles,
+    prStates,
   });
   const response = await client.messages.create({
     model: "claude-opus-4-8",
@@ -86,6 +115,9 @@ async function enrichRepo({
   readmeText,
   commitMessages,
   issueTitles,
+  issueStates,
+  prTitles,
+  prStates,
   now,
 }) {
   const inputHash = computeInputHash(
@@ -107,6 +139,9 @@ async function enrichRepo({
     readmeText,
     commitMessages,
     issueTitles,
+    issueStates,
+    prTitles,
+    prStates,
   });
   const gapsFragment =
     assessment.gaps.length === 0

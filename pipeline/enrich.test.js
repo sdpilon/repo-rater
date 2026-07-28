@@ -38,6 +38,9 @@ test("enrichRepo inserts a new assessment on first run for a repo", async () => 
     readmeText: "hello",
     commitMessages: ["fix bug"],
     issueTitles: ["Bug"],
+    issueStates: ["open"],
+    prTitles: [],
+    prStates: [],
     now: "2026-07-22T00:00:00.000Z",
   });
   assert.equal(result.called, true);
@@ -65,6 +68,9 @@ test("enrichRepo skips the LLM call when the input hash has not changed since th
     readmeText: "hello",
     commitMessages: ["fix bug"],
     issueTitles: ["Bug"],
+    issueStates: ["open"],
+    prTitles: [],
+    prStates: [],
   };
   await enrichRepo({
     ...args,
@@ -98,6 +104,9 @@ test("enrichRepo inserts a second, distinct assessment row when the input hash c
     readmeText: "hello",
     commitMessages: ["fix bug"],
     issueTitles: ["Bug"],
+    issueStates: ["open"],
+    prTitles: [],
+    prStates: [],
     now: "2026-07-22T00:00:00.000Z",
   });
   const second = await enrichRepo({
@@ -109,6 +118,9 @@ test("enrichRepo inserts a second, distinct assessment row when the input hash c
     readmeText: "hello",
     commitMessages: ["fix bug", "add feature"],
     issueTitles: ["Bug"],
+    issueStates: ["open"],
+    prTitles: [],
+    prStates: [],
     now: "2026-07-23T00:00:00.000Z",
   });
   assert.equal(second.called, true);
@@ -132,6 +144,9 @@ test("enrichRepo round-trips a stub response's fields into the repo_assessments 
     readmeText: "hello",
     commitMessages: ["fix bug"],
     issueTitles: ["Bug"],
+    issueStates: ["open"],
+    prTitles: [],
+    prStates: [],
     now: "2026-07-22T00:00:00.000Z",
   });
   const rows = await db.all(
@@ -144,5 +159,48 @@ test("enrichRepo round-trips a stub response's fields into the repo_assessments 
   assert.equal(row.label, STUB_ASSESSMENT.label);
   assert.equal(row.text, STUB_ASSESSMENT.text);
   assert.deepEqual(row.gaps, STUB_ASSESSMENT.gaps);
+  await db.close();
+});
+
+test("enrichRepo includes PR titles/states and issue states in the LLM prompt", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  let capturedRequest = null;
+  const client = {
+    messages: {
+      create: async (params) => {
+        capturedRequest = params;
+        return {
+          content: [{ type: "text", text: JSON.stringify(STUB_ASSESSMENT) }],
+        };
+      },
+    },
+  };
+  await enrichRepo({
+    client,
+    db,
+    repoId: 1,
+    fullName: "sdpilon/spilon.dev",
+    runId: "run_1",
+    readmeText: "hello",
+    commitMessages: ["fix bug"],
+    issueTitles: ["Authentication Bug", "Documentation"],
+    issueStates: ["open", "closed"],
+    prTitles: ["Add feature", "Fix typo"],
+    prStates: ["merged", "open"],
+    now: "2026-07-22T00:00:00.000Z",
+  });
+  assert(capturedRequest, "client.messages.create should have been called");
+  const userMessage = capturedRequest.messages[0];
+  assert.equal(userMessage.role, "user");
+  const content = userMessage.content;
+  // Verify issue titles and states are in the prompt
+  assert(content.includes("Authentication Bug (open)"), "prompt should include issue title and state");
+  assert(content.includes("Documentation (closed)"), "prompt should include closed issue");
+  // Verify PR titles and states are in the prompt
+  assert(content.includes("Add feature (merged)"), "prompt should include PR title and state");
+  assert(content.includes("Fix typo (open)"), "prompt should include open PR");
+  // Verify PR section exists
+  assert(content.includes("Pull requests:"), "prompt should include Pull requests section");
   await db.close();
 });

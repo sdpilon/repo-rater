@@ -103,6 +103,10 @@ test("readEnrichInputs reads commits/issues from the silver layer's full accumul
     `INSERT INTO issues (repo_id, number, title, state, created_at, closed_at, labels, last_updated_run_id)
      VALUES (1, 1, 'Bug', 'open', '2026-07-01T00:00:00Z', NULL, [], 'run_1')`,
   );
+  await db.run(
+    `INSERT INTO pull_requests (repo_id, number, title, state, created_at, merged_at, last_updated_run_id)
+     VALUES (1, 1, 'Add feature', 'merged', '2026-07-01T00:00:00Z', '2026-07-02T00:00:00Z', 'run_1')`,
+  );
 
   const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
   const runDir = path.join(bronzeDir, "run_2");
@@ -112,6 +116,7 @@ test("readEnrichInputs reads commits/issues from the silver layer's full accumul
   // history (inserted above) already lives in the silver tables from run_1.
   fs.writeFileSync(path.join(runDir, "1_commits.json"), "[]");
   fs.writeFileSync(path.join(runDir, "1_issues.json"), "[]");
+  fs.writeFileSync(path.join(runDir, "1_pull_requests.json"), "[]");
   fs.writeFileSync(
     path.join(runDir, "1_readme.json"),
     JSON.stringify("# Hello"),
@@ -120,6 +125,9 @@ test("readEnrichInputs reads commits/issues from the silver layer's full accumul
   const inputs = await readEnrichInputs(db, bronzeDir, "run_2", 1);
   assert.deepEqual(inputs.commitMessages, ["first commit"]);
   assert.deepEqual(inputs.issueTitles, ["Bug"]);
+  assert.deepEqual(inputs.issueStates, ["open"]);
+  assert.deepEqual(inputs.prTitles, ["Add feature"]);
+  assert.deepEqual(inputs.prStates, ["merged"]);
   assert.equal(inputs.readmeText, "# Hello");
   await db.close();
 });

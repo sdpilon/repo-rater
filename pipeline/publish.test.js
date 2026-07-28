@@ -76,6 +76,9 @@ test("buildRepoRecord includes the latest repo_assessments row when one exists",
     readmeText: "hello",
     commitMessages: ["fix bug"],
     issueTitles: ["Bug"],
+    issueStates: ["open"],
+    prTitles: [],
+    prStates: [],
     now: "2026-07-22T00:00:00.000Z",
   });
   const record = await buildRepoRecord(db, 1);

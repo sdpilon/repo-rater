@@ -45,13 +45,20 @@ async function readEnrichInputs(db, bronzeDir, runId, repoId) {
     repoId,
   );
   const issues = await db.all(
-    "SELECT title FROM issues WHERE repo_id = ?",
+    "SELECT title, state FROM issues WHERE repo_id = ?",
+    repoId,
+  );
+  const prs = await db.all(
+    "SELECT title, state FROM pull_requests WHERE repo_id = ?",
     repoId,
   );
   return {
     readmeText,
     commitMessages: commits.map((c) => c.message),
     issueTitles: issues.map((i) => i.title),
+    issueStates: issues.map((i) => i.state),
+    prTitles: prs.map((p) => p.title),
+    prStates: prs.map((p) => p.state),
   };
 }
 
@@ -167,8 +174,14 @@ async function main(argv = process.argv.slice(2)) {
     }
     try {
       const meta = readBronzeJson(BRONZE_DIR, runId, repoId, "meta");
-      const { readmeText, commitMessages, issueTitles } =
-        await readEnrichInputs(db, BRONZE_DIR, runId, repoId);
+      const {
+        readmeText,
+        commitMessages,
+        issueTitles,
+        issueStates,
+        prTitles,
+        prStates,
+      } = await readEnrichInputs(db, BRONZE_DIR, runId, repoId);
       const result = await enrichRepo({
         client: anthropicClient,
         db,
@@ -178,6 +191,9 @@ async function main(argv = process.argv.slice(2)) {
         readmeText,
         commitMessages,
         issueTitles,
+        issueStates,
+        prTitles,
+        prStates,
         now: new Date().toISOString(),
       });
       if (result.called) llmCallsMade += 1;
