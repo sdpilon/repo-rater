@@ -1,7 +1,7 @@
 "use strict";
 const { openDb, ensureSchema, getIgnoredRepoIds } = require("./db");
 const { extractAll, readBronzeJson } = require("./extract");
-const { loadRun } = require("./load");
+const { loadRun, applySuggestedIgnoreDefaults } = require("./load");
 const { enrichRepo } = require("./enrich");
 const { publish } = require("./publish");
 const { discoverRepos } = require("./discover");
@@ -147,6 +147,11 @@ async function main(argv = process.argv.slice(2)) {
 
   const { repoIds, reposFetchedOk, reposFailed } =
     computeRunCounts(extractResults);
+
+  await applySuggestedIgnoreDefaults(db, Array.from(repoIds), {
+    bronzeDir: BRONZE_DIR,
+    runId,
+  });
 
   const ignoredRepoIds = await getIgnoredRepoIds(db, Array.from(repoIds));
 

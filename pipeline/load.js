@@ -2,6 +2,8 @@
 const fs = require("fs");
 const path = require("path");
 const { setWatermark } = require("./db");
+const { readBronzeJson } = require("./extract");
+const { computeSuggestedIgnore } = require("./ignore-rules");
 
 function readBronze(bronzeDir, runId, repoId, name) {
   return JSON.parse(
@@ -170,6 +172,45 @@ async function loadRun({ db, runId, bronzeDir, extractResults, now }) {
   return summary;
 }
 
+async function applySuggestedIgnoreDefaults(db, repoIds, { bronzeDir, runId }) {
+  for (const repoId of repoIds) {
+    const [repoRow] = await db.all(
+      "SELECT is_fork, is_archived, ignore_source FROM repos WHERE repo_id = ?",
+      repoId,
+    );
+    if (!repoRow || repoRow.ignore_source === "manual") continue;
+
+    const readme = readBronzeJson(bronzeDir, runId, repoId, "readme") || "";
+    const commits = await db.all(
+      "SELECT 1 FROM commits WHERE repo_id = ?",
+      repoId,
+    );
+    const issues = await db.all(
+      "SELECT 1 FROM issues WHERE repo_id = ?",
+      repoId,
+    );
+    const prs = await db.all(
+      "SELECT 1 FROM pull_requests WHERE repo_id = ?",
+      repoId,
+    );
+
+    const { ignored } = computeSuggestedIgnore({
+      isFork: repoRow.is_fork,
+      isArchived: repoRow.is_archived,
+      readme,
+      commitCount: commits.length,
+      issueCount: issues.length,
+      prCount: prs.length,
+    });
+
+    await db.run(
+      "UPDATE repos SET is_ignored = ?, ignore_source = 'auto' WHERE repo_id = ? AND ignore_source != 'manual'",
+      ignored,
+      repoId,
+    );
+  }
+}
+
 module.exports = {
   loadRun,
   upsertRepo,
@@ -177,4 +218,5 @@ module.exports = {
   upsertIssue,
   upsertPr,
   recordFailure,
+  applySuggestedIgnoreDefaults,
 };

@@ -90,7 +90,7 @@ async function handleIgnoreRequest(req, res, db, repoId) {
     }
 
     await db.run(
-      "UPDATE repos SET is_ignored = ? WHERE repo_id = ?",
+      "UPDATE repos SET is_ignored = ?, ignore_source = 'manual' WHERE repo_id = ?",
       body.ignored,
       repoId,
     );

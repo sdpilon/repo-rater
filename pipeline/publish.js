@@ -3,10 +3,11 @@ const fs = require("fs");
 const path = require("path");
 const { execFileSync } = require("child_process");
 const { readBronzeJson } = require("./extract");
+const { computeSuggestedIgnore } = require("./ignore-rules");
 
 async function buildRepoRecord(db, repoId, runId, bronzeDir) {
   const [repoRow] = await db.all(
-    `SELECT full_name, description, html_url, default_branch, stargazers_count, is_private, is_ignored, language
+    `SELECT full_name, description, html_url, default_branch, stargazers_count, is_private, is_ignored, is_fork, is_archived, ignore_source, language
      FROM repos WHERE repo_id = ?`,
     repoId,
   );
@@ -26,22 +27,35 @@ async function buildRepoRecord(db, repoId, runId, bronzeDir) {
     `SELECT pct, band, label, text, gaps FROM repo_assessments WHERE repo_id = ? ORDER BY created_at DESC LIMIT 1`,
     repoId,
   );
+  const readme =
+    runId && bronzeDir
+      ? readBronzeJson(bronzeDir, runId, repoId, "readme") || ""
+      : "";
+  const ignoreReasons =
+    repoRow.is_ignored && repoRow.ignore_source === "auto"
+      ? computeSuggestedIgnore({
+          isFork: repoRow.is_fork,
+          isArchived: repoRow.is_archived,
+          readme,
+          commitCount: commits.length,
+          issueCount: issues.length,
+          prCount: prs.length,
+        }).reasons
+      : [];
   return {
     name: repoRow.full_name,
     repo_id: repoId,
     meta: {
       private: repoRow.is_private,
       ignored: repoRow.is_ignored,
+      ignoreReasons,
       description: repoRow.description,
       html_url: repoRow.html_url,
       default_branch: repoRow.default_branch,
       stargazers_count: repoRow.stargazers_count,
       language: repoRow.language,
     },
-    readme:
-      runId && bronzeDir
-        ? readBronzeJson(bronzeDir, runId, repoId, "readme") || ""
-        : "",
+    readme,
     issues: issues.map((i) => ({
       number: i.number,
       title: i.title,

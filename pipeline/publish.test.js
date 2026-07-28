@@ -98,3 +98,46 @@ test("buildRepoRecord falls back to an empty readme when runId/bronzeDir are omi
   assert.equal(record.readme, "");
   await db.close();
 });
+
+test("buildRepoRecord includes ignoreReasons when auto-ignored", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, is_ignored, ignore_source, first_seen_at, last_seen_at)
+     VALUES (1, 'sdpilon/a-fork', null, 'https://github.com/sdpilon/a-fork', 'main', null, 0, false, true, false, true, 'auto', '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
+  );
+  await db.run(
+    `INSERT INTO commits (repo_id, sha, author_name, authored_at, message, first_ingested_run_id)
+     VALUES (1, 'aaaaaaaaaaaaaaaaaaaa', 'Spencer', '2026-07-01T00:00:00Z', 'fix', 'run_1')`,
+  );
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-test-"));
+  writeBronze(bronzeDir, "run_1", 1, "readme", "# real readme");
+  const record = await buildRepoRecord(db, 1, "run_1", bronzeDir);
+  assert.deepEqual(record.meta.ignoreReasons, ["fork"]);
+  await db.close();
+  fs.rmSync(bronzeDir, { recursive: true, force: true });
+});
+
+test("buildRepoRecord omits ignoreReasons when the repo was manually ignored", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, is_ignored, ignore_source, first_seen_at, last_seen_at)
+     VALUES (1, 'sdpilon/a-fork', null, 'https://github.com/sdpilon/a-fork', 'main', null, 0, false, true, false, true, 'manual', '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
+  );
+  const record = await buildRepoRecord(db, 1);
+  assert.deepEqual(record.meta.ignoreReasons, []);
+  await db.close();
+});
+
+test("buildRepoRecord has no ignoreReasons for a repo that isn't ignored at all", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, first_seen_at, last_seen_at)
+     VALUES (1, 'sdpilon/spilon.dev', 'site', 'https://github.com/sdpilon/spilon.dev', 'main', 'Astro', 2, false, false, false, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
+  );
+  const record = await buildRepoRecord(db, 1);
+  assert.deepEqual(record.meta.ignoreReasons, []);
+  await db.close();
+});

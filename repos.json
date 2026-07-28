@@ -4,7 +4,8 @@
     "repo_id": 112231308,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/270_6",
       "default_branch": "master",
@@ -30,7 +31,8 @@
     "repo_id": 109436900,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/270_a4",
       "default_branch": "master",
@@ -56,7 +58,8 @@
     "repo_id": 119887862,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/280",
       "default_branch": "master",
@@ -82,7 +85,8 @@
     "repo_id": 743156029,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/317",
       "default_branch": "main",
@@ -606,7 +610,8 @@
     "repo_id": 749558484,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": "CMPT340",
       "html_url": "https://github.com/sdpilon/340",
       "default_branch": "main",
@@ -1000,7 +1005,8 @@
     "repo_id": 247801976,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/350-a4",
       "default_branch": "master",
@@ -1057,7 +1063,10 @@
     "repo_id": 696989157,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/353-fall2023",
       "default_branch": "main",
@@ -1585,7 +1594,8 @@
     "repo_id": 243177304,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/381a3",
       "default_branch": "master",
@@ -1684,7 +1694,8 @@
     "repo_id": 251460205,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/381_A4",
       "default_branch": "master",
@@ -1723,7 +1734,8 @@
     "repo_id": 209932820,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/384a1",
       "default_branch": "master",
@@ -1749,7 +1761,8 @@
     "repo_id": 747339942,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/470",
       "default_branch": "main",
@@ -2227,7 +2240,8 @@
     "repo_id": 111133097,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/a5",
       "default_branch": "master",
@@ -2253,7 +2267,8 @@
     "repo_id": 1292668165,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/astro-sienna",
       "default_branch": "main",
@@ -2287,6 +2302,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/audashio",
       "default_branch": "main",
@@ -2499,7 +2515,8 @@
     "repo_id": 1281654390,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": "Superseded — consolidated into sdpilon/audashio",
       "html_url": "https://github.com/sdpilon/audashio-2a113e85",
       "default_branch": "main",
@@ -2713,6 +2730,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/bext-testdrive",
       "default_branch": "main",
@@ -2769,7 +2787,8 @@
     "repo_id": 299750892,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/cmpt306_a1",
       "default_branch": "master",
@@ -2832,7 +2851,8 @@
     "repo_id": 450257506,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/cmpt317-2022",
       "default_branch": "main",
@@ -2901,7 +2921,8 @@
     "repo_id": 508888744,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/CMPT332-A1",
       "default_branch": "main",
@@ -2953,6 +2974,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/cmpt353",
       "default_branch": "main",
@@ -3006,7 +3028,8 @@
     "repo_id": 914950515,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/cmpt434",
       "default_branch": "main",
@@ -3203,7 +3226,8 @@
     "repo_id": 450257725,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/cmpt470",
       "default_branch": "main",
@@ -3430,7 +3454,8 @@
     "repo_id": 478371763,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/cmpt470a3",
       "default_branch": "main",
@@ -3469,7 +3494,10 @@
     "repo_id": 881609465,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/cmpt487",
       "default_branch": "main",
@@ -3592,7 +3620,8 @@
     "repo_id": 230664063,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/cs_practice",
       "default_branch": "master",
@@ -3619,6 +3648,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": "A simple dashboard for homelab services",
       "html_url": "https://github.com/sdpilon/dashome",
       "default_branch": "main",
@@ -3677,7 +3707,8 @@
     "repo_id": 543376929,
     "meta": {
       "private": false,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/Documentation",
       "default_branch": "master",
@@ -4304,7 +4335,10 @@
     "repo_id": 922680855,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/dotfiles",
       "default_branch": "main",
@@ -4361,7 +4395,10 @@
     "repo_id": 796441369,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/dotfiles-2024",
       "default_branch": "main",
@@ -4424,7 +4461,10 @@
     "repo_id": 628818528,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/finance-tracker",
       "default_branch": "master",
@@ -4463,7 +4503,11 @@
     "repo_id": 211798117,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README",
+        "no activity"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/fun",
       "default_branch": "master",
@@ -4490,6 +4534,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": "A planner/calendar app to coordinate get-togethers with friends",
       "html_url": "https://github.com/sdpilon/GatheryApp",
       "default_branch": "master",
@@ -4522,7 +4567,10 @@
     "repo_id": 390477817,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/GroceryListBuilderApp",
       "default_branch": "main",
@@ -4562,6 +4610,7 @@
     "meta": {
       "private": false,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/home-server",
       "default_branch": "main",
@@ -4877,6 +4926,7 @@
     "meta": {
       "private": false,
       "ignored": false,
+      "ignoreReasons": [],
       "description": "Personal Homebrew tap pinning SoundSource to the last macOS-14-compatible 5.x release, since the official tap now requires macOS 15+",
       "html_url": "https://github.com/sdpilon/homebrew-rogueamoeba",
       "default_branch": "main",
@@ -4945,7 +4995,10 @@
     "repo_id": 595335898,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": "School project redone in dotnet/c# and heavily refactored",
       "html_url": "https://github.com/sdpilon/hospital-system",
       "default_branch": "main",
@@ -5104,7 +5157,10 @@
     "repo_id": 243466902,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/LearningReactJS",
       "default_branch": "master",
@@ -5137,7 +5193,11 @@
     "repo_id": 119928912,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README",
+        "no activity"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/lib",
       "default_branch": "master",
@@ -5163,7 +5223,11 @@
     "repo_id": 192032509,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README",
+        "no activity"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/MobiusApp",
       "default_branch": "master",
@@ -5189,7 +5253,10 @@
     "repo_id": 192031940,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no activity"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/Mobius_App",
       "default_branch": "master",
@@ -5215,7 +5282,11 @@
     "repo_id": 532340083,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README",
+        "no activity"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/new-linux",
       "default_branch": "main",
@@ -5241,7 +5312,10 @@
     "repo_id": 842258734,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/nixconfig",
       "default_branch": "main",
@@ -5274,7 +5348,10 @@
     "repo_id": 855415227,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/obsidian-notes",
       "default_branch": "main",
@@ -5331,7 +5408,10 @@
     "repo_id": 714102551,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/old_dotfiles",
       "default_branch": "main",
@@ -5461,6 +5541,7 @@
     "meta": {
       "private": false,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/pygame-project-helper",
       "default_branch": "main",
@@ -5500,6 +5581,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": "Just trying out this agentic coding thing",
       "html_url": "https://github.com/sdpilon/pyodedit",
       "default_branch": "main",
@@ -6127,6 +6209,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/ReactCourse2022-FeedbackApp",
       "default_branch": "master",
@@ -6183,7 +6266,8 @@
     "repo_id": 344289566,
     "meta": {
       "private": false,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [],
       "description": "🌟 👣 Take your first steps as an open source contributor",
       "html_url": "https://github.com/sdpilon/rebus",
       "default_branch": "master",
@@ -6228,7 +6312,10 @@
     "repo_id": 976168855,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/remnote-export-fixer",
       "default_branch": "main",
@@ -6268,6 +6355,7 @@
     "meta": {
       "private": false,
       "ignored": false,
+      "ignoreReasons": [],
       "description": "Browser extension for managing and organizing tabs. Save your open tabs with one click and restore them later from a clean interface.",
       "html_url": "https://github.com/sdpilon/simpletabs",
       "default_branch": "main",
@@ -6480,7 +6568,10 @@
     "repo_id": 966351856,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/simpletabs_-1",
       "default_branch": "main",
@@ -6519,7 +6610,10 @@
     "repo_id": 1283407278,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/skill-spotlight-scan",
       "default_branch": "main",
@@ -6847,6 +6941,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/slack-site-clone",
       "default_branch": "main",
@@ -6898,6 +6993,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": "A simple, interactive component playground for SolidJS with real-time inspection, and resizable UI.",
       "html_url": "https://github.com/sdpilon/solid-component-preview",
       "default_branch": "main",
@@ -6949,6 +7045,7 @@
     "meta": {
       "private": false,
       "ignored": false,
+      "ignoreReasons": [],
       "description": "Personal site starter template",
       "html_url": "https://github.com/sdpilon/spilon.dev",
       "default_branch": "main",
@@ -7007,7 +7104,10 @@
     "repo_id": 846300675,
     "meta": {
       "private": false,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/subtracker",
       "default_branch": "main",
@@ -7046,7 +7146,10 @@
     "repo_id": 1171022382,
     "meta": {
       "private": false,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/treyfique-ext",
       "default_branch": "main",
@@ -7092,6 +7195,7 @@
     "meta": {
       "private": false,
       "ignored": false,
+      "ignoreReasons": [],
       "description": "My tsidp compose.yaml for Arcane",
       "html_url": "https://github.com/sdpilon/tsidp",
       "default_branch": "main",
@@ -7130,7 +7234,10 @@
     "repo_id": 1226122121,
     "meta": {
       "private": false,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "fork"
+      ],
       "description": "Typst template for a simple printable calendar",
       "html_url": "https://github.com/sdpilon/typst-calendar",
       "default_branch": "main",
@@ -7452,6 +7559,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/typst-resume",
       "default_branch": "main",
@@ -7485,6 +7593,7 @@
     "meta": {
       "private": false,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/typst-template",
       "default_branch": "main",
@@ -7524,6 +7633,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/word-counter-program",
       "default_branch": "main",
@@ -7689,7 +7799,10 @@
     "repo_id": 648355618,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": null,
       "html_url": "https://github.com/sdpilon/wordcounter",
       "default_branch": "main",
@@ -7795,6 +7908,7 @@
     "meta": {
       "private": true,
       "ignored": false,
+      "ignoreReasons": [],
       "description": null,
       "html_url": "https://github.com/sdpilon/wxt-template",
       "default_branch": "main",
@@ -7863,7 +7977,10 @@
     "repo_id": 376969625,
     "meta": {
       "private": true,
-      "ignored": false,
+      "ignored": true,
+      "ignoreReasons": [
+        "no README"
+      ],
       "description": "A yahtzee clone written in python",
       "html_url": "https://github.com/sdpilon/yahtzeezy",
       "default_branch": "master",

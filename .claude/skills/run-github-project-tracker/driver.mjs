@@ -54,13 +54,26 @@ try {
   await page.screenshot({ path: `${SCREENSHOT_DIR}dashboard-expanded.png`, fullPage: false });
 
   // Drive the ignore-toggle checkbox: click it, wait for the server round-trip
-  // to mark the card is-ignored, then click it back off so the run is idempotent.
-  const firstCheckbox = page.locator(".ignore-toggle input").first();
+  // to flip that card's is-ignored class, then click it back to its original
+  // state so the run is idempotent. Checks the specific card, not "any
+  // .repo.is-ignored on the page" — smart defaults mean many repos are
+  // legitimately already ignored on a real account, so a global check would
+  // never settle either way.
+  const firstCard = page.locator(".repo").first();
+  const firstCheckbox = firstCard.locator(".ignore-toggle input");
+  const cardHandle = await firstCard.elementHandle();
+  const wasIgnored = await firstCheckbox.isChecked();
   await firstCheckbox.click();
-  await page.waitForSelector(".repo.is-ignored");
+  await page.waitForFunction(
+    ([card, expected]) => card.classList.contains("is-ignored") === expected,
+    [cardHandle, !wasIgnored],
+  );
   await page.screenshot({ path: `${SCREENSHOT_DIR}dashboard-ignored.png`, fullPage: false });
   await firstCheckbox.click();
-  await page.waitForFunction(() => !document.querySelector(".repo.is-ignored"));
+  await page.waitForFunction(
+    ([card, expected]) => card.classList.contains("is-ignored") === expected,
+    [cardHandle, wasIgnored],
+  );
 
   console.log(errors.length ? `console errors:\n${errors.join("\n")}` : "console: no errors");
 

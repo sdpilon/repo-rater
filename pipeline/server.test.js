@@ -59,6 +59,22 @@ test("handleIgnoreRequest updates is_ignored and responds 200 for an existing re
   await db.close();
 });
 
+test("handleIgnoreRequest marks ignore_source as manual, even when the pipeline previously set it to auto", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await seedRepo(db, 1);
+  await db.run("UPDATE repos SET ignore_source = 'auto' WHERE repo_id = 1");
+  const res = makeRes();
+  await handleIgnoreRequest(makeReq({ ignored: false }), res, db, 1);
+  assert.equal(res.statusCode, 200);
+  const [row] = await db.all(
+    "SELECT is_ignored, ignore_source FROM repos WHERE repo_id = 1",
+  );
+  assert.equal(row.is_ignored, false);
+  assert.equal(row.ignore_source, "manual");
+  await db.close();
+});
+
 test("handleIgnoreRequest responds 404 for a repo id that doesn't exist", async () => {
   const db = openDb(":memory:");
   await ensureSchema(db);

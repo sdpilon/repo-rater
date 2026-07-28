@@ -5,7 +5,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { openDb, ensureSchema, getWatermark } = require("./db");
-const { loadRun } = require("./load");
+const { loadRun, applySuggestedIgnoreDefaults } = require("./load");
 
 function writeFixtureBronze(bronzeDir, runId, repoId) {
   const dir = path.join(bronzeDir, runId);
@@ -219,6 +219,51 @@ test("loadRun preserves is_ignored across repeated runs instead of resetting it"
   await db.close();
 });
 
+test("loadRun preserves ignore_source across repeated runs instead of resetting it to auto", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  writeFixtureBronze(bronzeDir, "run_1", 1);
+  const extractResults = [
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "meta",
+      status: "ok",
+    },
+  ];
+  await loadRun({
+    db,
+    runId: "run_1",
+    bronzeDir,
+    extractResults,
+    now: "2026-07-20T00:00:00.000Z",
+  });
+  await db.run(
+    "UPDATE repos SET is_ignored = true, ignore_source = 'manual' WHERE repo_id = 1",
+  );
+  writeFixtureBronze(bronzeDir, "run_2", 1);
+  await loadRun({
+    db,
+    runId: "run_2",
+    bronzeDir,
+    extractResults: [
+      {
+        fullName: "sdpilon/spilon.dev",
+        repoId: 1,
+        dataType: "meta",
+        status: "ok",
+      },
+    ],
+    now: "2026-07-22T00:00:00.000Z",
+  });
+  const rows = await db.all(
+    "SELECT ignore_source FROM repos WHERE repo_id = 1",
+  );
+  assert.equal(rows[0].ignore_source, "manual");
+  await db.close();
+});
+
 test("loadRun records a fetch_failures row and does not advance the watermark when extract failed", async () => {
   const db = openDb(":memory:");
   await ensureSchema(db);
@@ -404,5 +449,106 @@ test("loadRun preserves first_ingested_run_id across repeated loads of the same 
     "SELECT first_ingested_run_id FROM commits WHERE repo_id = 1 AND sha = 'aaa'",
   );
   assert.equal(rows[0].first_ingested_run_id, "run_1");
+  await db.close();
+});
+
+async function insertRepo(db, repoId, { isFork = false, isArchived = false } = {}) {
+  await db.run(
+    `INSERT INTO repos
+      (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, is_ignored, first_seen_at, last_seen_at)
+     VALUES (?, 'sdpilon/x', null, null, 'main', null, 0, false, ?, ?, false, '2026-07-20T00:00:00.000Z', '2026-07-20T00:00:00.000Z')`,
+    repoId,
+    isFork,
+    isArchived,
+  );
+}
+
+function writeReadmeBronze(bronzeDir, runId, repoId, readme) {
+  const dir = path.join(bronzeDir, runId);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, `${repoId}_readme.json`),
+    JSON.stringify(readme),
+  );
+}
+
+test("applySuggestedIgnoreDefaults ignores a fork and marks ignore_source auto", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await insertRepo(db, 1, { isFork: true });
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  writeReadmeBronze(bronzeDir, "run_1", 1, "# real readme");
+
+  await applySuggestedIgnoreDefaults(db, [1], { bronzeDir, runId: "run_1" });
+
+  const rows = await db.all(
+    "SELECT is_ignored, ignore_source FROM repos WHERE repo_id = 1",
+  );
+  assert.equal(rows[0].is_ignored, true);
+  assert.equal(rows[0].ignore_source, "auto");
+  await db.close();
+});
+
+test("applySuggestedIgnoreDefaults leaves a real, active repo not ignored", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await insertRepo(db, 1);
+  await db.run(
+    `INSERT INTO commits (repo_id, sha, author_name, authored_at, message, first_ingested_run_id)
+     VALUES (1, 'aaa', 'Spencer', '2026-07-01T00:00:00Z', 'fix', 'run_1')`,
+  );
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  writeReadmeBronze(bronzeDir, "run_1", 1, "# real readme");
+
+  await applySuggestedIgnoreDefaults(db, [1], { bronzeDir, runId: "run_1" });
+
+  const rows = await db.all(
+    "SELECT is_ignored, ignore_source FROM repos WHERE repo_id = 1",
+  );
+  assert.equal(rows[0].is_ignored, false);
+  assert.equal(rows[0].ignore_source, "auto");
+  await db.close();
+});
+
+test("applySuggestedIgnoreDefaults does not touch a repo whose ignore_source is manual, even if signals match", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await insertRepo(db, 1, { isFork: true });
+  await db.run(
+    "UPDATE repos SET is_ignored = false, ignore_source = 'manual' WHERE repo_id = 1",
+  );
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  writeReadmeBronze(bronzeDir, "run_1", 1, "# real readme");
+
+  await applySuggestedIgnoreDefaults(db, [1], { bronzeDir, runId: "run_1" });
+
+  const rows = await db.all(
+    "SELECT is_ignored, ignore_source FROM repos WHERE repo_id = 1",
+  );
+  assert.equal(rows[0].is_ignored, false);
+  assert.equal(rows[0].ignore_source, "manual");
+  await db.close();
+});
+
+test("applySuggestedIgnoreDefaults flips a previously auto-ignored repo back to not-ignored once its signals stop matching", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await insertRepo(db, 1, { isFork: true });
+  await db.run(
+    `INSERT INTO commits (repo_id, sha, author_name, authored_at, message, first_ingested_run_id)
+     VALUES (1, 'aaa', 'Spencer', '2026-07-01T00:00:00Z', 'fix', 'run_1')`,
+  );
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  writeReadmeBronze(bronzeDir, "run_1", 1, "# real readme");
+  await applySuggestedIgnoreDefaults(db, [1], { bronzeDir, runId: "run_1" });
+
+  await db.run("UPDATE repos SET is_fork = false WHERE repo_id = 1");
+  await applySuggestedIgnoreDefaults(db, [1], { bronzeDir, runId: "run_1" });
+
+  const rows = await db.all(
+    "SELECT is_ignored, ignore_source FROM repos WHERE repo_id = 1",
+  );
+  assert.equal(rows[0].is_ignored, false);
+  assert.equal(rows[0].ignore_source, "auto");
   await db.close();
 });

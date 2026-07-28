@@ -21,11 +21,38 @@ completes.
 
 ## Later
 
-- **UI-based per-repo select-to-assess** — narrower follow-up: let the
-  user filter/select which of the ~65 repos are worth assessing at all
-  (vs. today's binary ignore toggle), directly from `tracker.html`.
+(nothing queued here right now — see "Done" below for the latest shipped item)
 
 ## Done
+
+- **Smart-default ignore state.** Scoped down from the original "let the
+  user filter/select" framing during brainstorming: the actual pain point
+  was that forks, archived repos, repos with no README, and repos with
+  zero tracked activity all defaulted to `is_ignored = false` (assessed)
+  until a human noticed and manually unchecked each one. A new
+  `ignore_source` column (`'auto'` | `'manual'`) on `repos` tracks whether
+  a repo's `is_ignored` value came from the pipeline's computed default or
+  a deliberate checkbox toggle. `pipeline/ignore-rules.js`'s
+  `computeSuggestedIgnore()` flags fork/archived/no-README/no-activity;
+  `pipeline/load.js`'s new `applySuggestedIgnoreDefaults()` runs every
+  pipeline run (after `loadRun`, before enrichment) and recomputes
+  `is_ignored` for every repo still on `'auto'` — manually-toggled repos
+  (`ignore_source = 'manual'`) are never touched, checking or unchecking
+  the UI checkbox always marks a repo `'manual'`. `tracker.html` shows
+  *why* a repo was auto-ignored (e.g. "auto: no README") next to the
+  checkbox, sourced from `pipeline/publish.js`'s new `meta.ignoreReasons`.
+  Required the same kind of one-time manual `ALTER TABLE` migration as
+  `is_ignored` originally did (see `CLAUDE.md`'s Gotcha section) — that
+  migration doubled as the "one-time bulk apply" to the existing ~65
+  repos, since any repo already `is_ignored = true` could only have gotten
+  there manually and was marked `'manual'` accordingly, leaving everything
+  else to be freshly computed on the very next run. Live-verified against
+  the real account: 22 pre-existing manually-ignored repos preserved
+  exactly, 24 repos newly auto-ignored (no forks/archived among them —
+  all no-README or no-activity), 19 auto repos correctly left assessed; a
+  second consecutive run left all three counts unchanged; the browser
+  checkbox toggle and its reason label were confirmed visually via
+  Playwright.
 
 - **UI-based per-repo assess/ignore toggle** — each repo card in
   `tracker.html` now has a real "Ignore" checkbox. Toggling it
