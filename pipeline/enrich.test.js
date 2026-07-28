@@ -2,7 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { openDb, ensureSchema } = require("./db");
-const { enrichRepo } = require("./enrich");
+const { computeInputHash, enrichRepo } = require("./enrich");
 
 function makeStubClient(assessment, { onCall } = {}) {
   return {
@@ -202,5 +202,147 @@ test("enrichRepo includes PR titles/states and issue states in the LLM prompt", 
   assert(content.includes("Fix typo (open)"), "prompt should include open PR");
   // Verify PR section exists
   assert(content.includes("Pull requests:"), "prompt should include Pull requests section");
+  await db.close();
+});
+
+test("computeInputHash differs when issueStates differs", () => {
+  const repoId = 1;
+  const readmeText = "hello";
+  const commitMessages = ["fix bug"];
+  const issueTitles = ["Bug"];
+  const prTitles = [];
+  const prStates = [];
+
+  const hash1 = computeInputHash(
+    repoId,
+    readmeText,
+    commitMessages,
+    issueTitles,
+    ["open"],
+    prTitles,
+    prStates,
+  );
+  const hash2 = computeInputHash(
+    repoId,
+    readmeText,
+    commitMessages,
+    issueTitles,
+    ["closed"],
+    prTitles,
+    prStates,
+  );
+
+  assert.notEqual(hash1, hash2, "hash should differ when issueStates changes");
+});
+
+test("computeInputHash differs when prTitles differs", () => {
+  const repoId = 1;
+  const readmeText = "hello";
+  const commitMessages = ["fix bug"];
+  const issueTitles = ["Bug"];
+  const issueStates = ["open"];
+  const prStates = [];
+
+  const hash1 = computeInputHash(
+    repoId,
+    readmeText,
+    commitMessages,
+    issueTitles,
+    issueStates,
+    [],
+    prStates,
+  );
+  const hash2 = computeInputHash(
+    repoId,
+    readmeText,
+    commitMessages,
+    issueTitles,
+    issueStates,
+    ["Add feature"],
+    prStates,
+  );
+
+  assert.notEqual(hash1, hash2, "hash should differ when prTitles changes");
+});
+
+test("computeInputHash differs when prStates differs", () => {
+  const repoId = 1;
+  const readmeText = "hello";
+  const commitMessages = ["fix bug"];
+  const issueTitles = ["Bug"];
+  const issueStates = ["open"];
+  const prTitles = ["Add feature"];
+
+  const hash1 = computeInputHash(
+    repoId,
+    readmeText,
+    commitMessages,
+    issueTitles,
+    issueStates,
+    prTitles,
+    ["merged"],
+  );
+  const hash2 = computeInputHash(
+    repoId,
+    readmeText,
+    commitMessages,
+    issueTitles,
+    issueStates,
+    prTitles,
+    ["open"],
+  );
+
+  assert.notEqual(hash1, hash2, "hash should differ when prStates changes");
+});
+
+test("enrichRepo triggers new assessment when only issue state changes", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  let callCount = 0;
+  const client = makeStubClient(STUB_ASSESSMENT, {
+    onCall: () => {
+      callCount += 1;
+    },
+  });
+
+  // First call: seed an assessment
+  await enrichRepo({
+    client,
+    db,
+    repoId: 1,
+    fullName: "sdpilon/spilon.dev",
+    runId: "run_1",
+    readmeText: "hello",
+    commitMessages: ["fix bug"],
+    issueTitles: ["Bug"],
+    issueStates: ["open"],
+    prTitles: [],
+    prStates: [],
+    now: "2026-07-22T00:00:00.000Z",
+  });
+  assert.equal(callCount, 1, "first call should invoke LLM");
+
+  // Second call: same as first except issueStates changed
+  const second = await enrichRepo({
+    client,
+    db,
+    repoId: 1,
+    fullName: "sdpilon/spilon.dev",
+    runId: "run_2",
+    readmeText: "hello",
+    commitMessages: ["fix bug"],
+    issueTitles: ["Bug"],
+    issueStates: ["closed"],
+    prTitles: [],
+    prStates: [],
+    now: "2026-07-23T00:00:00.000Z",
+  });
+
+  assert.equal(second.called, true, "state-only change should trigger new assessment");
+  assert.equal(callCount, 2, "dedup gate should not suppress on state change");
+  const rows = await db.all(
+    "SELECT COUNT(*)::INTEGER AS n FROM repo_assessments WHERE repo_id = 1",
+  );
+  assert.equal(rows[0].n, 2, "should have two assessment rows");
   await db.close();
 });
