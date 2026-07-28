@@ -8,20 +8,77 @@ function computeInputHash(repoId, readmeText, commitMessages, issueTitles) {
   return crypto.createHash("sha256").update(combined).digest("hex");
 }
 
-// Stub: proves the hash-gate and append-only history pattern. Replace with a
-// real LLM call in a later stage — that's an AI-engineering concern, explicitly
-// out of scope for ARCHITECTURE.md and for this slice.
-function generateAssessment(fullName, inputHash) {
-  return {
-    pct: 50,
-    band: "unknown",
-    label: "Not yet assessed by a real reviewer",
-    text: `Placeholder assessment for ${fullName} (input hash ${inputHash.slice(0, 8)}).`,
-    gaps: ["real LLM assessment not implemented yet"],
-  };
+const ASSESSMENT_SCHEMA = {
+  type: "object",
+  properties: {
+    pct: { type: ["integer", "null"] },
+    band: { type: "string", enum: ["good", "warn", "crit", "none"] },
+    label: { type: "string" },
+    text: { type: "string" },
+    gaps: { type: "array", items: { type: "string" } },
+  },
+  required: ["pct", "band", "label", "text", "gaps"],
+  additionalProperties: false,
+};
+
+const SYSTEM_PROMPT = `You are assessing a GitHub repo's stated goals against its actual activity (README, commits, issues). Read the README against the commits and issue titles and produce a structured, evidence-based assessment.
+
+Return an assessment with these fields:
+
+- pct: 0-100 estimated completion against the README's stated goals, or null if there's no stated goal to measure against (e.g. no README, or a living-config repo with no endpoint).
+- band: "good" (pct >= 80 or clearly on track), "warn" (40-79 or a real gap), "crit" (< 40), "none" (archived/no assessment possible).
+- label: a short (2-5 word) status phrase.
+- text: 2-5 sentences, evidence-based — cite specific commits, issues, README claims. Be direct and concrete, no filler.
+- gaps: array of short actionable gap strings, or [] if none.`;
+
+function buildUserContent({ fullName, readmeText, commitMessages, issueTitles }) {
+  const commitsBlock =
+    commitMessages.length > 0
+      ? commitMessages.map((m) => `- ${m}`).join("\n")
+      : "(no commits)";
+  const issuesBlock =
+    issueTitles.length > 0
+      ? issueTitles.map((t) => `- ${t}`).join("\n")
+      : "(no issues)";
+  return `Repo: ${fullName}
+
+README:
+${readmeText || "(no README)"}
+
+Recent commits:
+${commitsBlock}
+
+Issues:
+${issuesBlock}`;
+}
+
+async function generateAssessment(
+  client,
+  { fullName, inputHash, readmeText, commitMessages, issueTitles },
+) {
+  const userContent = buildUserContent({
+    fullName,
+    readmeText,
+    commitMessages,
+    issueTitles,
+  });
+  const response = await client.messages.create({
+    model: "claude-opus-4-8",
+    max_tokens: 4096,
+    thinking: { type: "adaptive" },
+    output_config: {
+      effort: "medium",
+      format: { type: "json_schema", schema: ASSESSMENT_SCHEMA },
+    },
+    system: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userContent }],
+  });
+  const textBlock = response.content.find((block) => block.type === "text");
+  return JSON.parse(textBlock.text);
 }
 
 async function enrichRepo({
+  client,
   db,
   repoId,
   fullName,
@@ -44,7 +101,13 @@ async function enrichRepo({
   if (latest.length > 0 && latest[0].input_hash === inputHash) {
     return { repoId, called: false };
   }
-  const assessment = generateAssessment(fullName, inputHash);
+  const assessment = await generateAssessment(client, {
+    fullName,
+    inputHash,
+    readmeText,
+    commitMessages,
+    issueTitles,
+  });
   const gapsFragment =
     assessment.gaps.length === 0
       ? "[]"

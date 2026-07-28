@@ -21,6 +21,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "duckdb": "^1.4.4"
   },
   "devDependencies": {

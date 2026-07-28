@@ -53,7 +53,22 @@ test("buildRepoRecord includes the latest repo_assessments row when one exists",
     `INSERT INTO repos (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, first_seen_at, last_seen_at)
      VALUES (1, 'sdpilon/spilon.dev', 'site', 'https://github.com/sdpilon/spilon.dev', 'main', 'Astro', 2, false, false, false, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
   );
+  const stubAssessment = {
+    pct: 50,
+    band: "warn",
+    label: "Assessed by a stub reviewer",
+    text: "Stub assessment for sdpilon/spilon.dev.",
+    gaps: ["stub assessment, not a real LLM call"],
+  };
+  const client = {
+    messages: {
+      create: async () => ({
+        content: [{ type: "text", text: JSON.stringify(stubAssessment) }],
+      }),
+    },
+  };
   await enrichRepo({
+    client,
     db,
     repoId: 1,
     fullName: "sdpilon/spilon.dev",
@@ -64,11 +79,11 @@ test("buildRepoRecord includes the latest repo_assessments row when one exists",
     now: "2026-07-22T00:00:00.000Z",
   });
   const record = await buildRepoRecord(db, 1);
-  assert.equal(record.assessment.pct, 50);
-  assert.equal(record.assessment.band, "unknown");
-  assert.equal(record.assessment.label, "Not yet assessed by a real reviewer");
-  assert.ok(record.assessment.text.startsWith("Placeholder assessment for sdpilon/spilon.dev"));
-  assert.deepEqual(record.assessment.gaps, ["real LLM assessment not implemented yet"]);
+  assert.equal(record.assessment.pct, stubAssessment.pct);
+  assert.equal(record.assessment.band, stubAssessment.band);
+  assert.equal(record.assessment.label, stubAssessment.label);
+  assert.equal(record.assessment.text, stubAssessment.text);
+  assert.deepEqual(record.assessment.gaps, stubAssessment.gaps);
   await db.close();
 });
 

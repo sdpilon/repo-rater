@@ -66,6 +66,15 @@ else
 fi
 
 echo
+echo "== ANTHROPIC_API_KEY is set =="
+if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  echo "OK"
+else
+  echo "FAIL: ANTHROPIC_API_KEY is not set. pipeline/run.js constructs an Anthropic client with new Anthropic(), which resolves credentials from this env var (or an \`ant auth login\` profile) automatically — set it before running \`pnpm pipeline\` for real."
+  fail=1
+fi
+
+echo
 if [ "$fail" = "1" ]; then
   echo "One or more checks failed — see above."
   exit 1

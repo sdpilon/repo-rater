@@ -1,4 +1,5 @@
 "use strict";
+const Anthropic = require("@anthropic-ai/sdk");
 const { openDb, ensureSchema, getIgnoredRepoIds } = require("./db");
 const { extractAll, readBronzeJson } = require("./extract");
 const { loadRun, applySuggestedIgnoreDefaults } = require("./load");
@@ -155,6 +156,8 @@ async function main(argv = process.argv.slice(2)) {
 
   const ignoredRepoIds = await getIgnoredRepoIds(db, Array.from(repoIds));
 
+  const anthropicClient = new Anthropic();
+
   let llmCallsMade = 0;
   let llmCallsSkipped = 0;
   for (const repoId of repoIds) {
@@ -162,25 +165,27 @@ async function main(argv = process.argv.slice(2)) {
       llmCallsSkipped += 1;
       continue;
     }
-    const meta = readBronzeJson(BRONZE_DIR, runId, repoId, "meta");
-    const { readmeText, commitMessages, issueTitles } = await readEnrichInputs(
-      db,
-      BRONZE_DIR,
-      runId,
-      repoId,
-    );
-    const result = await enrichRepo({
-      db,
-      repoId,
-      fullName: meta.fullName,
-      runId,
-      readmeText,
-      commitMessages,
-      issueTitles,
-      now: new Date().toISOString(),
-    });
-    if (result.called) llmCallsMade += 1;
-    else llmCallsSkipped += 1;
+    try {
+      const meta = readBronzeJson(BRONZE_DIR, runId, repoId, "meta");
+      const { readmeText, commitMessages, issueTitles } =
+        await readEnrichInputs(db, BRONZE_DIR, runId, repoId);
+      const result = await enrichRepo({
+        client: anthropicClient,
+        db,
+        repoId,
+        fullName: meta.fullName,
+        runId,
+        readmeText,
+        commitMessages,
+        issueTitles,
+        now: new Date().toISOString(),
+      });
+      if (result.called) llmCallsMade += 1;
+      else llmCallsSkipped += 1;
+    } catch (err) {
+      console.error(`run ${runId}: enrichment failed for repo ${repoId}, skipping: ${err.message}`);
+      llmCallsSkipped += 1;
+    }
   }
 
   await publish({
