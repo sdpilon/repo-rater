@@ -13,31 +13,10 @@ completes.
 
 ## Now
 
-- **Wire a real AI call into `pipeline/enrich.js`.** `generateAssessment()`
-  is currently a hardcoded stub (50%/"unknown" placeholder) — all of
-  Extract→Load→Enrich→Publish is real and live-verified against the full
-  account, but it's plumbing around an empty core. This is the one item
-  that turns the last week of pipeline infrastructure into an actually-
-  working product loop. See `ARCHITECTURE.md`'s Enrich stage description
-  and Status section for the content-hash-gate machinery already built
-  around this stub. Design: `@anthropic-ai/sdk` + `ANTHROPIC_API_KEY`,
-  structured output matching `repo_assessments`'/`publish.js`'s existing
-  shape (`pct`/`band`/`label`/`text`/`gaps`), rubric ported from
-  `.claude/skills/update-tracker/SKILL.md` so automated and manual
-  assessments read consistently. `/update-tracker` stays as the manual
-  override path afterward (see Later) — not retired; `tracker.html`'s
-  `ASSESS[r.name] || r.assessment` precedence already supports this split
-  for free.
+Nothing currently queued — see Next for what's up.
 
 ## Next
 
-- Extend `readEnrichInputs`/`enrichRepo` (`pipeline/run.js`) to pass PR
-  titles+state and issue state into the assessment context, not just
-  commit messages + issue titles — thinner than what `/update-tracker`'s
-  manual process currently considers.
-- Expand `computeInputHash` (`pipeline/enrich.js`) to cover the new
-  PR/issue-state inputs above, so the content-hash gate doesn't
-  under-trigger once those inputs are added.
 - Dedupe ignore-reason derivation: `load.js`'s
   `applySuggestedIgnoreDefaults()` and `publish.js`'s `buildRepoRecord()`
   each independently run commit/issue/PR count queries before calling
@@ -68,6 +47,36 @@ completes.
   resolved.
 
 ## Done
+
+- **Wire a real AI call into `pipeline/enrich.js`.** `generateAssessment()`
+  now calls the Anthropic API (`claude-opus-4-8`, adaptive thinking,
+  structured JSON output via `output_config`'s `json_schema` format)
+  instead of the old hardcoded 50%/"unknown" stub, matching
+  `repo_assessments`'/`publish.js`'s existing shape
+  (`pct`/`band`/`label`/`text`/`gaps`). The Anthropic client is a plain
+  parameter threaded through `enrichRepo()` (constructed once in `run.js`'s
+  `main()` via `new Anthropic()`, which picks up `ANTHROPIC_API_KEY` from
+  the environment implicitly) — no SDK-specific injection framework, just
+  duck-typing `messages.create` — so `pipeline/enrich.test.js` exercises
+  the real assessment logic offline against a stub client instead of
+  hitting the API. `run.js`'s enrich loop wraps each repo's assessment call
+  in its own try/catch, so one repo's failure is logged and counted as
+  skipped rather than aborting the run for the rest of the account.
+  `/update-tracker` stays as the manual override path, not retired —
+  `tracker.html`'s `ASSESS[r.name] || r.assessment` precedence already
+  supported this split for free.
+
+- **Extend enrichment inputs with PR titles/state and issue state.**
+  `readEnrichInputs` (`pipeline/run.js`) now pulls each repo's live
+  `issues`/`pull_requests` rows from DuckDB into the assessment context,
+  not just commit messages and issue titles — closer to what
+  `/update-tracker`'s manual process already considers.
+
+- **Expand `computeInputHash` to cover PR/issue-state inputs.**
+  `computeInputHash` (`pipeline/enrich.js`) now hashes issue state and PR
+  title/state alongside README + commit messages + issue titles, so the
+  content-hash gate re-triggers when a PR or issue's state changes even if
+  no new commit or title text did.
 
 - **Smart-default ignore state.** Scoped down from the original "let the
   user filter/select" framing during brainstorming: the actual pain point

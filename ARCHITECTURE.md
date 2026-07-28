@@ -224,12 +224,29 @@ second `inject.js` splice marker — `pipeline/publish.js`'s `buildRepoRecord()`
 includes each repo's latest `repo_assessments` row as an `assessment` field
 inside the existing `DATA` payload, and `tracker.html`'s render code falls
 back to it (`ASSESS[r.name] || r.assessment || {...}`) only when there's no
-hand-authored `ASSESS` entry for that repo. This is intentional: until
-`generateAssessment()` in `pipeline/enrich.js` is a real LLM call instead of
-a stub, the hand-authored entries stay authoritative wherever they exist.
-**This stub is now the top item in `ROADMAP.md`'s "Now" section**
-(tracker-oz0) — wiring a real Anthropic API call here is the next planned
-milestone.
+hand-authored `ASSESS` entry for that repo. `generateAssessment()` in
+`pipeline/enrich.js` now makes a real Anthropic API call (`claude-opus-4-8`,
+adaptive thinking, structured JSON output via
+`output_config: { format: { type: "json_schema" } }` matching
+`repo_assessments`'/`publish.js`'s existing shape —
+`pct`/`band`/`label`/`text`/`gaps`) instead of the old hardcoded 50%/
+"unknown" stub. The client is a plain parameter threaded into `enrichRepo()`
+(constructed once in `run.js`'s `main()` via `new Anthropic()`, which picks
+up `ANTHROPIC_API_KEY` from the environment implicitly) — no SDK-specific
+injection framework, just duck-typing `messages.create`, so
+`pipeline/enrich.test.js` exercises the real assessment logic offline
+against a stub client instead of hitting the API. `run.js`'s enrich loop
+wraps each repo's `readEnrichInputs` + `enrichRepo` call in its own
+try/catch: one repo's assessment failure is logged and counted as skipped,
+not thrown, so it doesn't abort the run for the rest of the account.
+`readEnrichInputs` also now pulls issue state and PR title/state straight
+from `issues`/`pull_requests` in DuckDB (not just bronze commit messages
+and issue titles), and `computeInputHash` covers those same fields, so the
+content-hash gate re-triggers when a PR or issue's state changes even if no
+new commit or title text did. The hand-authored `ASSESS` entries still take
+precedence wherever they exist — `generateAssessment()` going live doesn't
+retire `/update-tracker`, it means an unmodified repo now gets a real
+machine-generated assessment instead of the old placeholder.
 
 **Publish writes directly to the production dataset — deliberately.**
 `pipeline/publish.js` writes directly to `repos.json` and shells out to
