@@ -452,6 +452,95 @@ test("loadRun preserves first_ingested_run_id across repeated loads of the same 
   await db.close();
 });
 
+test("loadRun throws a clear 'Required bronze file missing' error, not a raw ENOENT, when the meta bronze file is absent", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  // Deliberately do not write any fixture bronze files for this run/repo.
+  const extractResults = [
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "meta",
+      status: "ok",
+    },
+  ];
+  await assert.rejects(
+    () =>
+      loadRun({
+        db,
+        runId: "run_1",
+        bronzeDir,
+        extractResults,
+        now: "2026-07-22T00:00:00.000Z",
+      }),
+    (err) => {
+      assert.ok(err instanceof Error);
+      assert.match(err.message, /Required bronze file missing/);
+      assert.doesNotMatch(err.message, /ENOENT/);
+      return true;
+    },
+  );
+  await db.close();
+});
+
+test("loadRun throws a clear 'Required bronze file missing' error, not a raw ENOENT, when the commits bronze file is absent", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  const dir = path.join(bronzeDir, "run_1");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "1_meta.json"),
+    JSON.stringify({
+      repoId: 1,
+      fullName: "sdpilon/spilon.dev",
+      description: "site",
+      htmlUrl: "u",
+      defaultBranch: "main",
+      language: "Astro",
+      stargazersCount: 1,
+      isPrivate: false,
+      isFork: false,
+      isArchived: false,
+    }),
+  );
+  // Deliberately do not write the commits bronze file.
+  const extractResults = [
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "meta",
+      status: "ok",
+    },
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "commits",
+      status: "ok",
+      since: "2020-01-01T00:00:00Z",
+      fetchedAt: "2026-07-22T00:00:00.000Z",
+    },
+  ];
+  await assert.rejects(
+    () =>
+      loadRun({
+        db,
+        runId: "run_1",
+        bronzeDir,
+        extractResults,
+        now: "2026-07-22T00:00:00.000Z",
+      }),
+    (err) => {
+      assert.ok(err instanceof Error);
+      assert.match(err.message, /Required bronze file missing/);
+      assert.doesNotMatch(err.message, /ENOENT/);
+      return true;
+    },
+  );
+  await db.close();
+});
+
 async function insertRepo(db, repoId, { isFork = false, isArchived = false } = {}) {
   await db.run(
     `INSERT INTO repos

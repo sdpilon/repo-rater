@@ -1,18 +1,7 @@
 "use strict";
-const fs = require("fs");
-const path = require("path");
 const { setWatermark } = require("./db");
-const { readBronzeJson } = require("./extract");
+const { readBronzeJson, readBronzeJsonRequired } = require("./extract");
 const { computeSuggestedIgnore } = require("./ignore-rules");
-
-function readBronze(bronzeDir, runId, repoId, name) {
-  return JSON.parse(
-    fs.readFileSync(
-      path.join(bronzeDir, runId, `${repoId}_${name}.json`),
-      "utf8",
-    ),
-  );
-}
 
 async function upsertRepo(db, meta, now) {
   const existing = await db.all(
@@ -120,7 +109,7 @@ async function loadRun({ db, runId, bronzeDir, extractResults, now }) {
   );
 
   for (const repoId of repoIds) {
-    const meta = readBronze(bronzeDir, runId, repoId, "meta");
+    const meta = readBronzeJsonRequired(bronzeDir, runId, repoId, "meta");
     await upsertRepo(db, meta, now);
     summary.reposLoaded += 1;
   }
@@ -144,7 +133,12 @@ async function loadRun({ db, runId, bronzeDir, extractResults, now }) {
       result.dataType === "issues" ||
       result.dataType === "prs"
     ) {
-      const rows = readBronze(bronzeDir, runId, result.repoId, result.dataType);
+      const rows = readBronzeJsonRequired(
+        bronzeDir,
+        runId,
+        result.repoId,
+        result.dataType,
+      );
       if (result.dataType === "commits") {
         for (const commit of rows)
           await upsertCommit(db, result.repoId, commit, runId);

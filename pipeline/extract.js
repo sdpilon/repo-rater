@@ -28,6 +28,16 @@ function readBronzeJson(bronzeDir, runId, repoId, name) {
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null;
 }
 
+function readBronzeJsonRequired(bronzeDir, runId, repoId, name) {
+  const data = readBronzeJson(bronzeDir, runId, repoId, name);
+  if (data === null) {
+    throw new Error(
+      `Required bronze file missing: run=${runId} repo=${repoId} name="${name}"`,
+    );
+  }
+  return data;
+}
+
 async function extractRepo({
   fullName,
   db,
@@ -139,6 +149,7 @@ module.exports = {
   extractAll,
   writeBronze,
   readBronzeJson,
+  readBronzeJsonRequired,
   DATA_TYPES,
   DEFAULT_SINCE,
 };

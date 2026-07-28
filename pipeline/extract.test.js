@@ -5,7 +5,12 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { openDb, ensureSchema } = require("./db");
-const { extractRepo, extractAll } = require("./extract");
+const {
+  extractRepo,
+  extractAll,
+  readBronzeJson,
+  readBronzeJsonRequired,
+} = require("./extract");
 
 function fakeGhApiJson(pathAndQuery) {
   if (pathAndQuery === "repos/sdpilon/spilon.dev") {
@@ -226,4 +231,46 @@ test("extractAll continues with the remaining repos when one repo throws unexpec
   );
   assert.equal(okResults.length, 4);
   await db.close();
+});
+
+test("readBronzeJson returns null when the bronze file does not exist", () => {
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  const result = readBronzeJson(bronzeDir, "run_1", 1, "meta");
+  assert.equal(result, null);
+});
+
+test("readBronzeJson returns the parsed JSON when the bronze file exists", () => {
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  const dir = path.join(bronzeDir, "run_1");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "1_meta.json"),
+    JSON.stringify({ repoId: 1, fullName: "sdpilon/spilon.dev" }),
+  );
+  const result = readBronzeJson(bronzeDir, "run_1", 1, "meta");
+  assert.deepEqual(result, { repoId: 1, fullName: "sdpilon/spilon.dev" });
+});
+
+test("readBronzeJsonRequired throws a descriptive error when the bronze file does not exist", () => {
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  assert.throws(
+    () => readBronzeJsonRequired(bronzeDir, "run_1", 1, "meta"),
+    (err) => {
+      assert.ok(err instanceof Error);
+      assert.match(err.message, /Required bronze file missing/);
+      return true;
+    },
+  );
+});
+
+test("readBronzeJsonRequired returns the parsed JSON when the bronze file exists", () => {
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  const dir = path.join(bronzeDir, "run_1");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "1_meta.json"),
+    JSON.stringify({ repoId: 1, fullName: "sdpilon/spilon.dev" }),
+  );
+  const result = readBronzeJsonRequired(bronzeDir, "run_1", 1, "meta");
+  assert.deepEqual(result, { repoId: 1, fullName: "sdpilon/spilon.dev" });
 });
