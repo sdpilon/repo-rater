@@ -188,6 +188,10 @@ async function applySuggestedIgnoreDefaults(db, repoIds, { bronzeDir, runId }) {
       repoId,
     );
 
+    // See the SuggestedIgnoreInput typedef in ignore-rules.js for why this
+    // object is assembled inline rather than through a shared helper: the
+    // SQL here is intentionally count-only (`SELECT 1 ... WHERE repo_id = ?`)
+    // and differs from publish.js's full-column queries by design.
     const { ignored } = computeSuggestedIgnore({
       isFork: repoRow.is_fork,
       isArchived: repoRow.is_archived,

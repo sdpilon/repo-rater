@@ -31,6 +31,11 @@ async function buildRepoRecord(db, repoId, runId, bronzeDir) {
     runId && bronzeDir
       ? readBronzeJson(bronzeDir, runId, repoId, "readme") || ""
       : "";
+  // See the SuggestedIgnoreInput typedef in ignore-rules.js for why this
+  // object is assembled inline rather than through a shared helper: the
+  // counts here are a free `.length` byproduct of the full-column queries
+  // above (already needed for record.commits/issues/prs), not a re-query —
+  // unlike load.js's intentionally count-only SQL.
   const ignoreReasons =
     repoRow.is_ignored && repoRow.ignore_source === "auto"
       ? computeSuggestedIgnore({
