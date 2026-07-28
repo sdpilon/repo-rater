@@ -2,7 +2,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { openDb, ensureSchema } = require("./db");
-const { discoverRepos } = require("./discover");
+const { discoverRepos, runDiscoveryScaffold } = require("./discover");
+const { recordRunStart, recordRunFinish } = require("./run-tracking");
 
 function fakeGhApiJson(pathAndQuery) {
   const url = new URL(`https://x/${pathAndQuery}`);
@@ -176,5 +177,71 @@ test("discoverRepos returns an error result instead of throwing when the account
   assert.match(result.error, /rate limited/);
   const repos = await db.all("SELECT repo_id FROM repos");
   assert.equal(repos.length, 0);
+  await db.close();
+});
+
+test("runDiscoveryScaffold opens the db, ensures schema, generates a runId, and runs discovery against it", async () => {
+  const { db, runId, startedAt, repos, count, results, error } =
+    await runDiscoveryScaffold({
+      dbPath: ":memory:",
+      ghApiJson: fakeGhApiJson,
+    });
+
+  assert.equal(error, undefined);
+  assert.equal(count, 2);
+  assert.equal(repos.length, 2);
+  assert.equal(results.length, 2);
+  assert.ok(results.every((r) => r.status === "ok"));
+  assert.equal(typeof runId, "string");
+  assert.match(runId, /^run_/);
+  assert.equal(typeof startedAt, "string");
+
+  // Schema was ensured (not just opened) — repos/repo_discoveries exist and
+  // were actually written to by the discoverRepos call inside the scaffold.
+  const repoRows = await db.all(
+    "SELECT repo_id, full_name FROM repos ORDER BY repo_id",
+  );
+  assert.deepEqual(
+    repoRows.map((r) => r.full_name),
+    ["sdpilon/spilon.dev", "sdpilon/typst-resume"],
+  );
+
+  const discoveryRows = await db.all(
+    "SELECT run_id, repo_id FROM repo_discoveries WHERE run_id = ? ORDER BY repo_id",
+    runId,
+  );
+  assert.equal(discoveryRows.length, 2);
+
+  // The scaffold itself stops short of recordRunStart/recordRunFinish (see
+  // the comment above runDiscoveryScaffold in discover.js: the two callers
+  // record start/finish at different points with different semantics, so
+  // unifying that into the scaffold would change run.js's behavior on a
+  // discovery error). Confirm that's still true — no runs row yet — then
+  // exercise the full sequence the way a real caller (e.g. discover.js's
+  // own main()) does, layering recordRunStart/recordRunFinish on top, and
+  // confirm that writes a runs row as expected.
+  const runRowsBeforeRecord = await db.all(
+    "SELECT run_id FROM runs WHERE run_id = ?",
+    runId,
+  );
+  assert.equal(runRowsBeforeRecord.length, 0);
+
+  await recordRunStart(db, runId, startedAt, count);
+  await recordRunFinish(db, runId, new Date().toISOString(), {
+    status: "success",
+    reposFetchedOk: results.filter((r) => r.status === "ok").length,
+    reposFailed: results.filter((r) => r.status === "error").length,
+    llmCallsMade: 0,
+    llmCallsSkipped: 0,
+  });
+
+  const runRows = await db.all(
+    "SELECT run_id, status, repos_discovered FROM runs WHERE run_id = ?",
+    runId,
+  );
+  assert.equal(runRows.length, 1);
+  assert.equal(runRows[0].status, "success");
+  assert.equal(Number(runRows[0].repos_discovered), 2);
+
   await db.close();
 });

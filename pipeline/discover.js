@@ -48,16 +48,28 @@ async function discoverRepos({ db, runId, now, ghApiJson = defaultGhApiJson }) {
   return { repos, count: repos.length, results };
 }
 
-async function main() {
-  const db = openDb(DB_PATH);
+// Shared open→ensureSchema→runId→discoverRepos sequence used by both this
+// module's own CLI (below) and run.js's main(). Deliberately stops short of
+// recordRunStart/recordRunFinish: this main() records both unconditionally
+// (even on a discovery error, so the failure is visible in `runs`), while
+// run.js's main() only reaches recordRunStart when there was no discovery
+// error, and defers recordRunFinish until after the rest of its pipeline
+// (extract/load/enrich/publish) completes with different counts entirely.
+// Folding those calls in here would either add a run.js row that wasn't
+// there before or silently drop this module's failed-run bookkeeping — so
+// each caller keeps recording start/finish itself, on top of this scaffold.
+async function runDiscoveryScaffold({ dbPath, ghApiJson = defaultGhApiJson }) {
+  const db = openDb(dbPath);
   await ensureSchema(db);
   const runId = makeRunId();
   const startedAt = new Date().toISOString();
-  const { repos, count, results, error } = await discoverRepos({
-    db,
-    runId,
-    now: startedAt,
-  });
+  const result = await discoverRepos({ db, runId, now: startedAt, ghApiJson });
+  return { db, runId, startedAt, ...result };
+}
+
+async function main() {
+  const { db, runId, startedAt, repos, count, results, error } =
+    await runDiscoveryScaffold({ dbPath: DB_PATH });
 
   const reposRecordedOk = results.filter((r) => r.status === "ok").length;
   const reposFailed = results.filter((r) => r.status === "error").length;
@@ -94,4 +106,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { discoverRepos, recordDiscovery };
+module.exports = { discoverRepos, recordDiscovery, runDiscoveryScaffold };

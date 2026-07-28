@@ -171,6 +171,18 @@ per run_id (append-only, not overwritten) and `runs` has a matching row per
 run_id (`status: 'success', repos_discovered: 65, repos_fetched_ok: 65,
 repos_failed: 0`), rather than a dangling `run_id` with no `runs` entry.
 
+Both CLI entry points remain intentional — `pnpm pipeline:discover` (this
+module's own fork/archived-count + full-listing output) and `pnpm pipeline`
+/`--dry-run` (discovery folded into the pipeline's own "N unassessed"
+preview) serve genuinely different purposes and both stay. What's shared
+between them is only the open→ensureSchema→runId→discoverRepos scaffolding,
+now factored into `discover.js`'s exported `runDiscoveryScaffold({dbPath,
+ghApiJson})`, which both this module's own `main()` and `run.js`'s `main()`
+call before layering their own distinct summary-printing (and, for `run.js`,
+recordRunStart/recordRunFinish placement and the rest of the pipeline) on
+top — so the two `main()` functions no longer hand-roll the same four calls
+in parallel.
+
 **Discovery is now wired into `run.js`'s `main()`.** `pipeline/config.js`'s
 `REPOS` constant is deleted (`grep -rn "REPOS" pipeline/` returns nothing);
 `main()` calls `discoverRepos()` and extracts/loads/enriches/publishes the

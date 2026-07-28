@@ -1,17 +1,13 @@
 "use strict";
 const Anthropic = require("@anthropic-ai/sdk");
-const { openDb, ensureSchema, getIgnoredRepoIds } = require("./db");
+const { getIgnoredRepoIds } = require("./db");
 const { extractAll, readBronzeJson } = require("./extract");
 const { loadRun, applySuggestedIgnoreDefaults } = require("./load");
 const { enrichRepo } = require("./enrich");
 const { publish } = require("./publish");
-const { discoverRepos } = require("./discover");
+const { runDiscoveryScaffold } = require("./discover");
 const { DB_PATH, BRONZE_DIR } = require("./config");
-const {
-  makeRunId,
-  recordRunStart,
-  recordRunFinish,
-} = require("./run-tracking");
+const { recordRunStart, recordRunFinish } = require("./run-tracking");
 
 function computeRunCounts(extractResults) {
   const failedFullNames = new Set(
@@ -98,16 +94,14 @@ async function countUnassessedRepos(db, repoIds) {
 
 async function main(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
-  const db = openDb(DB_PATH);
-  await ensureSchema(db);
-  const runId = makeRunId();
-  const startedAt = new Date().toISOString();
-
   const {
+    db,
+    runId,
+    startedAt,
     repos: discovered,
     count: discoveredCount,
     error: discoverError,
-  } = await discoverRepos({ db, runId, now: startedAt });
+  } = await runDiscoveryScaffold({ dbPath: DB_PATH });
 
   if (discoverError) {
     console.error(`run ${runId}: discovery failed, aborting: ${discoverError}`);
