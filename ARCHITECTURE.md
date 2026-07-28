@@ -215,6 +215,9 @@ back to it (`ASSESS[r.name] || r.assessment || {...}`) only when there's no
 hand-authored `ASSESS` entry for that repo. This is intentional: until
 `generateAssessment()` in `pipeline/enrich.js` is a real LLM call instead of
 a stub, the hand-authored entries stay authoritative wherever they exist.
+**This stub is now the top item in `ROADMAP.md`'s "Now" section**
+(tracker-oz0) — wiring a real Anthropic API call here is the next planned
+milestone.
 
 **Publish writes directly to the production dataset — deliberately.**
 `pipeline/publish.js` writes directly to `repos.json` and shells out to

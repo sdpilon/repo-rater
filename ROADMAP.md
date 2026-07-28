@@ -13,15 +13,59 @@ completes.
 
 ## Now
 
-(nothing queued here right now — see "Next"/"Later" below)
+- **Wire a real AI call into `pipeline/enrich.js`.** `generateAssessment()`
+  is currently a hardcoded stub (50%/"unknown" placeholder) — all of
+  Extract→Load→Enrich→Publish is real and live-verified against the full
+  account, but it's plumbing around an empty core. This is the one item
+  that turns the last week of pipeline infrastructure into an actually-
+  working product loop. See `ARCHITECTURE.md`'s Enrich stage description
+  and Status section for the content-hash-gate machinery already built
+  around this stub. Design: `@anthropic-ai/sdk` + `ANTHROPIC_API_KEY`,
+  structured output matching `repo_assessments`'/`publish.js`'s existing
+  shape (`pct`/`band`/`label`/`text`/`gaps`), rubric ported from
+  `.claude/skills/update-tracker/SKILL.md` so automated and manual
+  assessments read consistently. `/update-tracker` stays as the manual
+  override path afterward (see Later) — not retired; `tracker.html`'s
+  `ASSESS[r.name] || r.assessment` precedence already supports this split
+  for free.
 
 ## Next
 
-(nothing queued here right now — see "Later" below)
+- Extend `readEnrichInputs`/`enrichRepo` (`pipeline/run.js`) to pass PR
+  titles+state and issue state into the assessment context, not just
+  commit messages + issue titles — thinner than what `/update-tracker`'s
+  manual process currently considers.
+- Expand `computeInputHash` (`pipeline/enrich.js`) to cover the new
+  PR/issue-state inputs above, so the content-hash gate doesn't
+  under-trigger once those inputs are added.
+- Dedupe ignore-reason derivation: `load.js`'s
+  `applySuggestedIgnoreDefaults()` and `publish.js`'s `buildRepoRecord()`
+  each independently run commit/issue/PR count queries before calling
+  `computeSuggestedIgnore()` — extract one shared helper.
+- Dedupe the bronze-read helper: `extract.js` and `load.js` each have
+  their own `readBronzeJson`/`readBronze` with different signatures (one
+  throws on missing file, one returns null) — unify to one shared,
+  well-defined contract.
+- Resolve `run.js` vs. `discover.js` overlapping CLI entry points —
+  `discover.js`'s standalone `main()` duplicates a subset of what
+  `run.js`'s `main()` does via `discoverRepos()`; decide whether
+  `discover.js` needs its own CLI entry at all or should just export the
+  function.
 
 ## Later
 
-(nothing queued here right now — see "Done" below for the latest shipped item)
+- Add an `assessment_source` column (`auto`/`manual`), mirroring the
+  existing `ignore_source` pattern, once auto-assessment has run for a
+  while — lets the UI show which repos have a human-reviewed vs.
+  machine-only assessment.
+- Reframe `/update-tracker` from "the real assessment path" to "manual
+  override for when the automated read is wrong" in `CLAUDE.md`'s "The
+  ASSESS block" section and the skill's own description — a docs/framing
+  update, not a code change, since `tracker.html`'s render precedence
+  already supports this.
+- Revisit whether the `pipeline:discover` standalone script is still
+  needed once the `run.js`/`discover.js` overlap (Next, above) is
+  resolved.
 
 ## Done
 
