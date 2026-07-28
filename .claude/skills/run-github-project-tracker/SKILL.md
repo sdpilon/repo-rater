@@ -5,10 +5,13 @@ description: Build, run, and screenshot the github-project-tracker dashboard (tr
 
 `tracker.html` is a static, single-file dashboard with the data baked
 directly into a `const DATA = [...]` / `const ASSESS = {...}` block —
-there's no client-side fetch, so "running" it means serving the file
-and rendering it in a browser. Drive it via
+initial load has no client-side fetch, so "running" it means serving
+the file and rendering it in a browser. Each repo card also has an
+"Ignore" checkbox that does make a real network call (see Gotchas
+below). Drive it via
 `.claude/skills/run-github-project-tracker/driver.mjs`, a Playwright
-script that starts `serve .`, loads the page, and screenshots it.
+script that starts `pipeline/server.js`, loads the page, and
+screenshots it.
 
 All paths below are relative to the repo root (not this skill dir).
 
@@ -52,14 +55,15 @@ in the common case, but it self-heals the case where `package.json`/
 merge/pull that this checkout's `node_modules` hasn't caught up to
 yet. (To skip the install check, run the driver directly:
 `node .claude/skills/run-github-project-tracker/driver.mjs`.) It
-starts `serve .` on port 3000, waits for it to respond, opens
-`http://localhost:3000/tracker` in headless Chromium, waits for
+starts `pipeline/server.js` on port 3000, waits for it to respond,
+opens `http://localhost:3000/tracker` in headless Chromium, waits for
 `.repo` cards to render, screenshots the page, expands the first
-repo's "Commits" `<details>` toggle (the only interactive element on
-the page), and screenshots again. It prints the repo count and any
-browser console errors, then kills the server on exit.
+repo's "Commits" `<details>` toggle and screenshots again, then
+clicks the first repo's "Ignore" checkbox, screenshots the dimmed
+`.is-ignored` state, and clicks it back off. It prints the repo count
+and any browser console errors, then kills the server on exit.
 
-Screenshots → `.claude/skills/run-github-project-tracker/screenshots/dashboard.png` and `dashboard-expanded.png`.
+Screenshots → `.claude/skills/run-github-project-tracker/screenshots/dashboard.png`, `dashboard-expanded.png`, and `dashboard-ignored.png`.
 
 Sample output:
 
@@ -71,7 +75,7 @@ console: no errors
 ## Run (human path)
 
 ```bash
-pnpm dev   # → serve . on http://localhost:3000, open /tracker in a browser. Ctrl-C to stop.
+pnpm dev   # → pipeline/server.js on http://localhost:3000, open /tracker in a browser. Ctrl-C to stop.
 ```
 
 ## Test
@@ -82,17 +86,27 @@ pnpm test   # node --test pipeline/**/*.test.js — covers the data pipeline, no
 
 ## Gotchas
 
-- **`serve .` redirects `.html` URLs.** `serve`'s default "clean URLs"
-  behavior 301s `/tracker.html` → `/tracker`. `curl -s` without `-L`
-  (or a `page.goto` to the `.html` path) silently gets an empty body —
-  hit `/tracker`, not `/tracker.html`.
-- **No client-side data fetch to fail.** `DATA`/`ASSESS` are spliced
-  directly into the HTML by `inject.js`, so there's no loading state,
-  no API call to mock, and no network-flake risk when driving this
-  page — `waitForSelector(".repo")` is the only readiness check needed.
-- **Only one real interaction exists.** Each repo card has four
-  `<details>`/`<summary>` toggles (Commits/PRs/Issues/README); there
-  is no other click target, filter, or sort control on the page.
+- **`pipeline/server.js` serves extensionless paths as `.html`.** A
+  request for `/tracker` resolves to `tracker.html` on disk directly
+  (no redirect, unlike the old `serve .`-based setup) — hit `/tracker`,
+  not `/tracker.html`, when driving this with Playwright or `curl`.
+- **Initial load has no client-side fetch to fail.** `DATA`/`ASSESS`
+  are spliced directly into the HTML by `inject.js`, so there's no
+  loading state or API call to mock on page load —
+  `waitForSelector(".repo")` is the only readiness check needed there.
+- **The "Ignore" checkbox is a real network call.** Unlike the rest of
+  the page, toggling it does a same-origin `fetch()` POST to
+  `pipeline/server.js`'s `/api/repos/:repoId/ignore` endpoint, which
+  writes straight to `tracker.duckdb`. This means: (a) the toggle only
+  works when the page is served via `pipeline/server.js` — opening
+  `tracker.html` as a `file://` URL leaves it non-functional; (b) it's
+  a second real interaction alongside the four `<details>`/`<summary>`
+  toggles (Commits/PRs/Issues/README) — there is still no filter or
+  sort control on the page.
+- **`pipeline/server.js` and `pnpm pipeline` can't run at once.**
+  DuckDB is single-writer per file — if the dev server is holding
+  `tracker.duckdb` open, a concurrent `node pipeline/run.js` will fail
+  to acquire the lock. Stop one before running the other.
 
 ## Troubleshooting
 
@@ -104,5 +118,5 @@ pnpm test   # node --test pipeline/**/*.test.js — covers the data pipeline, no
   cache has root-owned files from a past `sudo npm` invocation, which
   breaks `npx`. Use `pnpm exec <bin>` instead of `npx <bin>` — it
   doesn't touch that cache.
-- **`EADDRINUSE` on port 3000**: a previous `serve .` (from this driver
-  or `pnpm dev`) is still running. `lsof -tiTCP:3000 -sTCP:LISTEN | xargs kill`.
+- **`EADDRINUSE` on port 3000**: a previous `pipeline/server.js` (from
+  this driver or `pnpm dev`) is still running. `lsof -tiTCP:3000 -sTCP:LISTEN | xargs kill`.

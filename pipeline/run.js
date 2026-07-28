@@ -1,5 +1,5 @@
 "use strict";
-const { openDb, ensureSchema } = require("./db");
+const { openDb, ensureSchema, getIgnoredRepoIds } = require("./db");
 const { extractAll, readBronzeJson } = require("./extract");
 const { loadRun } = require("./load");
 const { enrichRepo } = require("./enrich");
@@ -148,9 +148,15 @@ async function main(argv = process.argv.slice(2)) {
   const { repoIds, reposFetchedOk, reposFailed } =
     computeRunCounts(extractResults);
 
+  const ignoredRepoIds = await getIgnoredRepoIds(db, Array.from(repoIds));
+
   let llmCallsMade = 0;
   let llmCallsSkipped = 0;
   for (const repoId of repoIds) {
+    if (ignoredRepoIds.has(repoId)) {
+      llmCallsSkipped += 1;
+      continue;
+    }
     const meta = readBronzeJson(BRONZE_DIR, runId, repoId, "meta");
     const { readmeText, commitMessages, issueTitles } = await readEnrichInputs(
       db,

@@ -239,3 +239,22 @@ copy (`readBronzeJson(bronzeDir, runId, repoId, "readme")`, exported from
 from `run.js`'s already-in-scope `runId`/`BRONZE_DIR`. `package.json`'s
 `build` script now runs `node pipeline/run.js` directly; there's no
 remaining `fetch.sh` path to fall back to.
+
+**`tracker.html` has its first live write path.** Each repo card has an
+"Ignore" checkbox that `fetch()`-POSTs to a new `pipeline/server.js` — a
+plain `node:http` static file server plus one JSON endpoint
+(`POST /api/repos/:repoId/ignore`), replacing `serve .` as `pnpm dev`. The
+endpoint writes straight to a new `repos.is_ignored` column in
+`tracker.duckdb`; `pipeline/run.js`'s enrichment loop reads it back via
+`getIgnoredRepoIds()` (`pipeline/db.js`) and skips `enrichRepo()` for
+ignored repos, so the next pipeline run stops re-assessing them (the repo
+still appears on the dashboard with its normal activity — just no
+assessment). `pipeline/load.js`'s `upsertRepo()` preserves `is_ignored`
+across `INSERT OR REPLACE` the same way it already preserved
+`first_seen_at`. Since `schema.sql` changes don't retrofit an existing
+DuckDB file (see `CLAUDE.md`'s Gotcha section), this required a one-time
+manual `ALTER TABLE repos ADD COLUMN is_ignored BOOLEAN DEFAULT false`
+against the live `tracker.duckdb`, run once before any of the above code
+landed. This is the project's first server-side write path — previously
+everything was one-directional (pipeline → DuckDB → `repos.json` → static
+`tracker.html`).

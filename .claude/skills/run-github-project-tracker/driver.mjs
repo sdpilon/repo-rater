@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Launches `serve .`, drives tracker.html with Playwright Chromium, screenshots it.
+// Launches pipeline/server.js, drives tracker.html with Playwright Chromium, screenshots it.
 // Usage: pnpm run tracker:screenshot
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
@@ -22,8 +22,9 @@ async function waitForServer(url, timeoutMs = 15000) {
   throw new Error(`server never came up at ${url}`);
 }
 
-const server = spawn("pnpm", ["exec", "serve", ".", "-l", String(PORT)], {
+const server = spawn("node", ["pipeline/server.js"], {
   cwd: new URL("../../../", import.meta.url).pathname,
+  env: { ...process.env, PORT: String(PORT) },
   stdio: "ignore",
 });
 
@@ -47,10 +48,19 @@ try {
 
   await page.screenshot({ path: `${SCREENSHOT_DIR}dashboard.png`, fullPage: false });
 
-  // Drive the one interactive element: expand a repo's "Commits" <details>.
+  // Drive the "Commits" <details> toggle.
   await page.locator(".raw summary").first().click();
   await page.waitForSelector(".raw details[open]");
   await page.screenshot({ path: `${SCREENSHOT_DIR}dashboard-expanded.png`, fullPage: false });
+
+  // Drive the ignore-toggle checkbox: click it, wait for the server round-trip
+  // to mark the card is-ignored, then click it back off so the run is idempotent.
+  const firstCheckbox = page.locator(".ignore-toggle input").first();
+  await firstCheckbox.click();
+  await page.waitForSelector(".repo.is-ignored");
+  await page.screenshot({ path: `${SCREENSHOT_DIR}dashboard-ignored.png`, fullPage: false });
+  await firstCheckbox.click();
+  await page.waitForFunction(() => !document.querySelector(".repo.is-ignored"));
 
   console.log(errors.length ? `console errors:\n${errors.join("\n")}` : "console: no errors");
 

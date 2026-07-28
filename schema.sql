@@ -17,6 +17,7 @@ CREATE TABLE repos (
     is_private       BOOLEAN,
     is_fork          BOOLEAN,
     is_archived      BOOLEAN,
+    is_ignored       BOOLEAN NOT NULL DEFAULT false, -- user-toggled, skips enrichRepo()
     first_seen_at    TIMESTAMP NOT NULL,       -- first discovery run
     last_seen_at     TIMESTAMP NOT NULL        -- most recent discovery run
 );

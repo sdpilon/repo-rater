@@ -178,6 +178,47 @@ test("loadRun preserves first_seen_at across repeated runs while advancing last_
   await db.close();
 });
 
+test("loadRun preserves is_ignored across repeated runs instead of resetting it", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  const bronzeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bronze-"));
+  writeFixtureBronze(bronzeDir, "run_1", 1);
+  const extractResults = [
+    {
+      fullName: "sdpilon/spilon.dev",
+      repoId: 1,
+      dataType: "meta",
+      status: "ok",
+    },
+  ];
+  await loadRun({
+    db,
+    runId: "run_1",
+    bronzeDir,
+    extractResults,
+    now: "2026-07-20T00:00:00.000Z",
+  });
+  await db.run("UPDATE repos SET is_ignored = true WHERE repo_id = 1");
+  writeFixtureBronze(bronzeDir, "run_2", 1);
+  await loadRun({
+    db,
+    runId: "run_2",
+    bronzeDir,
+    extractResults: [
+      {
+        fullName: "sdpilon/spilon.dev",
+        repoId: 1,
+        dataType: "meta",
+        status: "ok",
+      },
+    ],
+    now: "2026-07-22T00:00:00.000Z",
+  });
+  const rows = await db.all("SELECT is_ignored FROM repos WHERE repo_id = 1");
+  assert.equal(rows[0].is_ignored, true);
+  await db.close();
+});
+
 test("loadRun records a fetch_failures row and does not advance the watermark when extract failed", async () => {
   const db = openDb(":memory:");
   await ensureSchema(db);

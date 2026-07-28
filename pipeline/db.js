@@ -48,4 +48,20 @@ async function setWatermark(db, repoId, dataType, lastFetchedAt, runId) {
   );
 }
 
-module.exports = { openDb, ensureSchema, getWatermark, setWatermark };
+async function getIgnoredRepoIds(db, repoIds) {
+  if (repoIds.length === 0) return new Set();
+  const placeholders = repoIds.map(() => "?").join(",");
+  const rows = await db.all(
+    `SELECT repo_id FROM repos WHERE is_ignored = true AND repo_id IN (${placeholders})`,
+    ...repoIds,
+  );
+  return new Set(rows.map((r) => Number(r.repo_id)));
+}
+
+module.exports = {
+  openDb,
+  ensureSchema,
+  getWatermark,
+  setWatermark,
+  getIgnoredRepoIds,
+};

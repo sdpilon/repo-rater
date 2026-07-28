@@ -1,5 +1,6 @@
 node_modules/
 tracker.duckdb
+tracker.duckdb.wal
 bronze/
 .pnpm-store/
 .claude/skills/run-github-project-tracker/screenshots/

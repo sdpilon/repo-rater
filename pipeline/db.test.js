@@ -1,7 +1,13 @@
 "use strict";
 const test = require("node:test");
 const { equal, ok, rejects } = require("node:assert/strict");
-const { openDb, ensureSchema, getWatermark, setWatermark } = require("./db");
+const {
+  openDb,
+  ensureSchema,
+  getWatermark,
+  setWatermark,
+  getIgnoredRepoIds,
+} = require("./db");
 
 test("ensureSchema creates the repos table on a fresh in-memory database", async () => {
   const db = openDb(":memory:");
@@ -46,6 +52,35 @@ test("setWatermark replaces the existing row for the same (repoId, dataType) ins
     "SELECT COUNT(*)::INTEGER AS n FROM fetch_watermarks WHERE repo_id = 123 AND data_type = 'commits'",
   );
   equal(rows[0].n, 1);
+  await db.close();
+});
+
+test("getIgnoredRepoIds returns only the ignored repo ids among those given", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, is_private, is_fork, is_archived, is_ignored, first_seen_at, last_seen_at)
+     VALUES (1, 'sdpilon/a', false, false, false, true, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
+  );
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, is_private, is_fork, is_archived, is_ignored, first_seen_at, last_seen_at)
+     VALUES (2, 'sdpilon/b', false, false, false, false, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
+  );
+  await db.run(
+    `INSERT INTO repos (repo_id, full_name, is_private, is_fork, is_archived, is_ignored, first_seen_at, last_seen_at)
+     VALUES (3, 'sdpilon/c', false, false, false, true, '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z')`,
+  );
+  const ignored = await getIgnoredRepoIds(db, [1, 2]);
+  equal(ignored.size, 1);
+  ok(ignored.has(1));
+  await db.close();
+});
+
+test("getIgnoredRepoIds returns an empty set without querying when given no repo ids", async () => {
+  const db = openDb(":memory:");
+  await ensureSchema(db);
+  const ignored = await getIgnoredRepoIds(db, []);
+  equal(ignored.size, 0);
   await db.close();
 });
 

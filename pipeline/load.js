@@ -14,14 +14,15 @@ function readBronze(bronzeDir, runId, repoId, name) {
 
 async function upsertRepo(db, meta, now) {
   const existing = await db.all(
-    "SELECT first_seen_at FROM repos WHERE repo_id = ?",
+    "SELECT first_seen_at, is_ignored FROM repos WHERE repo_id = ?",
     meta.repoId,
   );
   const firstSeenAt = existing.length > 0 ? existing[0].first_seen_at : now;
+  const isIgnored = existing.length > 0 ? existing[0].is_ignored : false;
   await db.run(
     `INSERT OR REPLACE INTO repos
-      (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, first_seen_at, last_seen_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      (repo_id, full_name, description, html_url, default_branch, language, stargazers_count, is_private, is_fork, is_archived, is_ignored, first_seen_at, last_seen_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     meta.repoId,
     meta.fullName,
     meta.description,
@@ -32,6 +33,7 @@ async function upsertRepo(db, meta, now) {
     meta.isPrivate,
     meta.isFork,
     meta.isArchived,
+    isIgnored,
     firstSeenAt,
     now,
   );

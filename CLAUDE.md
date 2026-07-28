@@ -4,14 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A static, single-file dashboard (`tracker.html`) summarizing recent activity across the user's full GitHub account (discovered automatically, not a hardcoded list), plus an AI-written "stated goals vs. reality" assessment for each repo.
+A single-file dashboard (`tracker.html`) summarizing recent activity across the user's full GitHub account (discovered automatically, not a hardcoded list), plus an AI-written "stated goals vs. reality" assessment for each repo. Mostly static — the data is baked in at build time — except for one live control: each repo card has an "Ignore" checkbox that persists straight to DuckDB via `pipeline/server.js` (see below), so future pipeline runs skip generating an assessment for that repo.
 
 ## Pipeline
 
-1. `node pipeline/run.js` (or `pnpm pipeline`) — discovers every repo in the account via `gh api /user/repos`, then extracts/loads/enriches/publishes each one: pulls readme/issues/prs/commits/meta, upserts into a DuckDB-backed store, runs a content-hash-gated AI assessment, and writes `repos.json` + splices it into `tracker.html`'s `const DATA = ...` block. Requires `gh` authenticated. Use `--dry-run` to preview scope with no writes, or `--limit N` to restrict a real run to the first N discovered repos.
-2. Open `tracker.html` in a browser to view.
+1. `node pipeline/run.js` (or `pnpm pipeline`) — discovers every repo in the account via `gh api /user/repos`, then extracts/loads/enriches/publishes each one: pulls readme/issues/prs/commits/meta, upserts into a DuckDB-backed store, runs a content-hash-gated AI assessment (skipping any repo marked ignored), and writes `repos.json` + splices it into `tracker.html`'s `const DATA = ...` block. Requires `gh` authenticated. Use `--dry-run` to preview scope with no writes, or `--limit N` to restrict a real run to the first N discovered repos.
+2. `pnpm dev` (`node pipeline/server.js`) — serves `tracker.html` on `http://localhost:3000/tracker` and handles the ignore-toggle's `POST /api/repos/:repoId/ignore` endpoint. Opening `tracker.html` directly as a `file://` URL still works for viewing, but the ignore toggle needs this server to actually persist.
 
 `fetch.sh` (the original hardcoded 9-repo script this replaced) has been retired and deleted — `pipeline/run.js` is the only path that produces `repos.json`/`tracker.html` now.
+
+**DuckDB is single-writer per file.** `pipeline/server.js` (`pnpm dev`) and `pipeline/run.js` (`pnpm pipeline`) both open `tracker.duckdb` read-write — running both at once will contention/fail. Stop one before starting the other; not worth engineering around for a single-user tool.
 
 ## The ASSESS block
 
@@ -20,6 +22,8 @@ A static, single-file dashboard (`tracker.html`) summarizing recent activity acr
 ## Gotcha
 
 `inject.js` splices `repos.json` into `tracker.html` using slice-based string splicing, not `String.replace()` — README content can contain `$'`/`$$` sequences that `replace()` would interpret as substitution patterns and corrupt.
+
+`schema.sql` changes don't retrofit the live `tracker.duckdb` — `ensureSchema` (`pipeline/db.js`) only ever runs `schema.sql` once, when the `repos` table doesn't exist at all yet. Adding a column to `schema.sql` only affects brand-new/`:memory:` databases; the already-populated `tracker.duckdb` needs its own one-time manual `ALTER TABLE` (see the `is_ignored` column, added this way when the ignore-toggle feature shipped). There's no migration runner in this repo — if this pattern recurs, that's a signal to build one, not a reason to skip the manual step.
 
 ## Future direction
 

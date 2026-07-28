@@ -17,18 +17,36 @@ completes.
 
 ## Next
 
-- **UI-based per-repo assess/ignore selection** — let the user choose which
-  repos get an AI assessment (vs. ignored) directly from `tracker.html`,
-  instead of `update-tracker`'s `$ARGUMENTS` naming repos by hand each run.
-  Tracked as a separate beads issue, filed when `fetch.sh` was retired
-  (see "Done" below) — has real open design questions (where selections
-  get persisted, whether it needs a small local server) not yet worked out.
+(nothing queued here right now — see "Later" below)
 
 ## Later
 
-(nothing queued here right now)
+- **UI-based per-repo select-to-assess** — narrower follow-up: let the
+  user filter/select which of the ~65 repos are worth assessing at all
+  (vs. today's binary ignore toggle), directly from `tracker.html`.
 
 ## Done
+
+- **UI-based per-repo assess/ignore toggle** — each repo card in
+  `tracker.html` now has a real "Ignore" checkbox. Toggling it
+  `fetch()`-POSTs to a new `pipeline/server.js` (plain `node:http`,
+  replacing `serve .` as `pnpm dev`), which writes straight to a new
+  `is_ignored` column on `tracker.duckdb`'s `repos` table.
+  `pipeline/run.js`'s enrichment loop reads it back via
+  `getIgnoredRepoIds()` and skips `enrichRepo()` for ignored repos — the
+  repo still shows on the dashboard with its normal activity, just no
+  assessment. `pipeline/load.js`'s `upsertRepo()` preserves `is_ignored`
+  across `INSERT OR REPLACE` the same way it already preserved
+  `first_seen_at`. Live-verified against the real account: toggled a
+  repo's checkbox in a real browser, confirmed the POST persisted to
+  `tracker.duckdb` (not just DOM state — checked after the server was
+  stopped and reopened fresh), confirmed `getIgnoredRepoIds` against the
+  live DB returns exactly that repo, toggled it back off. This is the
+  project's first server-side write path — everything before this was
+  one-directional (pipeline → DuckDB → `repos.json` → static
+  `tracker.html`). Required a one-time manual `ALTER TABLE` migration
+  against the live `tracker.duckdb` (see `CLAUDE.md`'s Gotcha section) —
+  `schema.sql` alone doesn't retrofit an already-populated DB.
 
 - **Retire `fetch.sh`** — `pipeline/` is the real project and
   `publish.js` writing to `repos.json`/`tracker.html` is accepted behavior,

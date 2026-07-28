@@ -30,6 +30,8 @@ test("buildRepoRecord shapes DB rows into the existing repos.json record format"
   );
   const record = await buildRepoRecord(db, 1);
   assert.equal(record.name, "sdpilon/spilon.dev");
+  assert.equal(record.repo_id, 1);
+  assert.equal(record.meta.ignored, false);
   assert.equal(record.meta.language, "Astro");
   assert.equal(record.meta.stargazers_count, 2);
   assert.equal(record.commits[0].sha, "aaaaaaa");

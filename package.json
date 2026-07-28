@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test \"pipeline/**/*.test.js\"",
-    "dev": "serve .",
+    "dev": "node pipeline/server.js",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
@@ -25,7 +25,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.5",
-    "playwright": "^1.61.1",
-    "serve": "^14.2.6"
+    "playwright": "^1.61.1"
   }
 }

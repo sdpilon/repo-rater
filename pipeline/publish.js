@@ -6,7 +6,7 @@ const { readBronzeJson } = require("./extract");
 
 async function buildRepoRecord(db, repoId, runId, bronzeDir) {
   const [repoRow] = await db.all(
-    `SELECT full_name, description, html_url, default_branch, stargazers_count, is_private, language
+    `SELECT full_name, description, html_url, default_branch, stargazers_count, is_private, is_ignored, language
      FROM repos WHERE repo_id = ?`,
     repoId,
   );
@@ -28,8 +28,10 @@ async function buildRepoRecord(db, repoId, runId, bronzeDir) {
   );
   return {
     name: repoRow.full_name,
+    repo_id: repoId,
     meta: {
       private: repoRow.is_private,
+      ignored: repoRow.is_ignored,
       description: repoRow.description,
       html_url: repoRow.html_url,
       default_branch: repoRow.default_branch,
