@@ -1,10 +1,10 @@
 "use strict";
 const crypto = require("crypto");
 
-function computeInputHash(repoId, readmeText, commitMessages, issueTitles) {
-  const combined = [readmeText || "", ...commitMessages, ...issueTitles].join(
-    "\n---\n",
-  );
+function computeInputHash(repoId, readmeText, commitMessages, issueTitles, issueStates = [], prTitles = [], prStates = []) {
+  const combined = [
+    readmeText || "", ...commitMessages, ...issueTitles, ...issueStates, ...prTitles, ...prStates,
+  ].join("\n---\n");
   return crypto.createHash("sha256").update(combined).digest("hex");
 }
 
@@ -125,6 +125,9 @@ async function enrichRepo({
     readmeText,
     commitMessages,
     issueTitles,
+    issueStates,
+    prTitles,
+    prStates,
   );
   const latest = await db.all(
     "SELECT input_hash FROM repo_assessments WHERE repo_id = ? ORDER BY created_at DESC LIMIT 1",
