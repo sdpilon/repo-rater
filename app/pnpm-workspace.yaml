@@ -1,0 +1,5 @@
+# Isolates app/ as its own pnpm workspace root so `pnpm install` here
+# doesn't walk up to the repo-root pnpm-workspace.yaml and pull in the
+# old stack's dependencies (e.g. native duckdb rebuilds).
+packages:
+  - "."
