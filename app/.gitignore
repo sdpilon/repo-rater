@@ -1,0 +1,11 @@
+node_modules
+.output
+.vercel
+.netlify
+.vinxi
+dist
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
