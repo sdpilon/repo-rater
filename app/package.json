@@ -2,9 +2,9 @@
   "name": "app",
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "op run --environment awfmhhvd3m2pczed5p45annswa -- vite dev",
     "build": "vite build",
-    "start": "node .output/server/index.mjs",
+    "start": "op run --environment awfmhhvd3m2pczed5p45annswa -- node .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
