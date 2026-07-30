@@ -45,6 +45,15 @@ export const repos = pgTable("repos", {
   // IgnoreSource below), matching the old schema's VARCHAR + DEFAULT
   // pattern rather than a native Postgres enum.
   ignoreSource: varchar("ignore_source").notNull().default("auto"),
+  // Persisted reasons behind an 'auto' ignore decision (e.g. ["no README",
+  // "no activity"]), written by `applyIgnoreDefaultForRepo`
+  // (pipeline/ignore-rules.ts) at the same time it computes is_ignored.
+  // Added for the Phase 3 dashboard's ignore-reason label — the old
+  // dashboard recomputed this at display time from a freshly-fetched
+  // README, but the new schema never persists README for a currently-
+  // ignored repo (enrichment, and its input_snapshot, is skipped entirely
+  // for ignored repos), so display-time recomputation isn't possible here.
+  ignoreReasons: text("ignore_reasons").array(),
   // New column (not in the old DuckDB schema): mirrors ignoreSource's
   // pattern exactly for the same auto/manual override tracking, but for
   // AI-assessment freshness instead of ignore-state. Plain text for

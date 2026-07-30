@@ -117,7 +117,7 @@ async function insertRepo(
 }
 
 describe("applyIgnoreDefaultForRepo", () => {
-  it("sets is_ignored true and ignore_source 'auto' for a repo with no activity", async () => {
+  it("sets is_ignored true, ignore_source 'auto', and ignore_reasons for a repo with no activity", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
     await insertRepo(db);
@@ -129,16 +129,18 @@ describe("applyIgnoreDefaultForRepo", () => {
       prCount: 0,
     });
     expect(result.ignored).toBe(true);
+    expect(result.reasons).toEqual(["no README", "no activity"]);
 
     const [row] = await db.select().from(repos).where(eq(repos.repoId, 1));
     expect(row.isIgnored).toBe(true);
     expect(row.ignoreSource).toBe("auto");
+    expect(row.ignoreReasons).toEqual(["no README", "no activity"]);
   });
 
-  it("sets is_ignored false for an active repo", async () => {
+  it("sets is_ignored false and clears ignore_reasons for an active repo", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
-    await insertRepo(db, { isIgnored: true });
+    await insertRepo(db, { isIgnored: true, ignoreReasons: ["no activity"] });
 
     const result = await applyIgnoreDefaultForRepo(db, 1, {
       readme: "# hi",
@@ -147,9 +149,11 @@ describe("applyIgnoreDefaultForRepo", () => {
       prCount: 0,
     });
     expect(result.ignored).toBe(false);
+    expect(result.reasons).toEqual([]);
 
     const [row] = await db.select().from(repos).where(eq(repos.repoId, 1));
     expect(row.isIgnored).toBe(false);
+    expect(row.ignoreReasons).toEqual([]);
   });
 
   it("never recomputes or overwrites a manually-set ignore_source", async () => {
@@ -164,6 +168,7 @@ describe("applyIgnoreDefaultForRepo", () => {
       prCount: 0,
     });
     expect(result.ignored).toBe(false);
+    expect(result.reasons).toEqual([]);
 
     const [row] = await db.select().from(repos).where(eq(repos.repoId, 1));
     expect(row.isIgnored).toBe(false);

@@ -53,6 +53,7 @@ describe("repos", () => {
         "isArchived",
         "isIgnored",
         "ignoreSource",
+        "ignoreReasons",
         "assessmentSource",
         "firstSeenAt",
         "lastSeenAt",

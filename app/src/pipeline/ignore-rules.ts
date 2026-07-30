@@ -48,17 +48,17 @@ export async function applyIgnoreDefaultForRepo(
   db: DrizzleDb,
   repoId: number,
   input: Omit<SuggestedIgnoreInput, "isFork" | "isArchived">,
-): Promise<{ ignored: boolean }> {
+): Promise<{ ignored: boolean; reasons: string[] }> {
   const [repoRow] = await db
     .select({ isFork: repos.isFork, isArchived: repos.isArchived, ignoreSource: repos.ignoreSource, isIgnored: repos.isIgnored })
     .from(repos)
     .where(eq(repos.repoId, repoId));
 
   if (!repoRow || repoRow.ignoreSource === "manual") {
-    return { ignored: repoRow?.isIgnored ?? false };
+    return { ignored: repoRow?.isIgnored ?? false, reasons: [] };
   }
 
-  const { ignored } = computeSuggestedIgnore({
+  const { ignored, reasons } = computeSuggestedIgnore({
     isFork: repoRow.isFork ?? false,
     isArchived: repoRow.isArchived ?? false,
     ...input,
@@ -66,8 +66,8 @@ export async function applyIgnoreDefaultForRepo(
 
   await db
     .update(repos)
-    .set({ isIgnored: ignored, ignoreSource: "auto" })
+    .set({ isIgnored: ignored, ignoreSource: "auto", ignoreReasons: reasons })
     .where(and(eq(repos.repoId, repoId), ne(repos.ignoreSource, "manual")));
 
-  return { ignored };
+  return { ignored, reasons };
 }
