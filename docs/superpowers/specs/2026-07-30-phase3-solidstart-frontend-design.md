@@ -45,6 +45,21 @@ scope here, per the decisions below.
   collapsible section reads from there; repos with no assessment row yet
   show "not yet assessed" instead of a README block. No new fetch, no
   schema change.
+- **Ignore-reason label**: discovered during planning that this can't be
+  derived at display time the way `publish.js` did it. `enrichAll`
+  (`app/src/pipeline/enrich.ts`) fetches README fresh every run to
+  recompute `is_ignored` via `applyIgnoreDefaultForRepo`, but for a repo
+  that ends up ignored, that README is discarded — enrichment (and its
+  `repo_assessments`/`input_snapshot` row) is skipped entirely for ignored
+  repos, so there is no persisted README anywhere for a currently-ignored
+  repo. Resolution: add a small `ignore_reasons text[]` column to `repos`
+  (a proper `drizzle-kit` migration, not a manual `ALTER TABLE` like the
+  old DuckDB gotcha), written by `applyIgnoreDefaultForRepo` at the same
+  point it already computes `computeSuggestedIgnore()`'s reasons. This is
+  a small, deliberate touch to already-shipped Phase 1/2 code, done because
+  it's the only way to keep the reason label accurate without either a
+  live GitHub fetch on every dashboard page load or a display-time guess
+  that could mislabel a repo that actually has a README.
 
 ## Architecture & data flow
 
