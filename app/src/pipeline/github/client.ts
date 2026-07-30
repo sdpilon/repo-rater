@@ -1,4 +1,4 @@
-import type { Octokit } from "octokit";
+import { Octokit } from "octokit";
 
 /**
  * GitHub data-ingestion client backed by Octokit (REST + built-in pagination
@@ -6,6 +6,21 @@ import type { Octokit } from "octokit";
  * `pipeline/github.js`. Function-for-function port: same names, same
  * shapes, same behavior — only the transport changed.
  */
+
+/**
+ * Builds an Octokit instance authenticated from the `GITHUB_TOKEN`
+ * environment variable. Throws a clear, actionable error rather than
+ * constructing an unauthenticated client if the token is missing — callers
+ * (namely `run.ts`'s `main()`) are expected to fail fast on a missing token
+ * rather than let it surface later as a cryptic 401/403 from GitHub.
+ */
+export function createOctokit(env: NodeJS.ProcessEnv = process.env): Octokit {
+  const token = env.GITHUB_TOKEN;
+  if (!token) {
+    throw new Error("GITHUB_TOKEN environment variable is required to create an Octokit client");
+  }
+  return new Octokit({ auth: token });
+}
 
 export interface RepoMeta {
   repoId: number;
