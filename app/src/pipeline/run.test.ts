@@ -1,18 +1,36 @@
+import type Anthropic from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import type { Octokit } from "octokit";
 import { afterEach, describe, expect, it } from "vitest";
-import { commits, issues, pullRequests, repoDiscoveries, repos, runs } from "../db/schema";
+import { commits, issues, pullRequests, repoAssessments, repoDiscoveries, repos, runs } from "../db/schema";
+import type { Assessment } from "./anthropic/client";
 import type { DiscoveryResult } from "./discover";
 import type { ExtractLoadResult } from "./extract-load";
 import type { Commit, Issue, PullRequest, RepoMeta } from "./github/client";
 import { buildRepoList, computeRunCounts, parseArgs, runPipeline } from "./run";
 import { createTestDb } from "./test-helpers/pglite-db";
 
-// A fake Octokit is enough — every test injects fetchRepos/fetchCommits/
-// fetchIssues/fetchPrs, so the real Octokit-backed functions are never
-// called. Mirrors the fake-Octokit pattern in discover.test.ts /
+// A fake Octokit/Anthropic client is enough — every non-dry-run test
+// injects fetchRepos/fetchCommits/fetchIssues/fetchPrs/fetchReadme/
+// generateAssessment, so the real Octokit- and Anthropic-backed functions
+// are never called. Mirrors the fake-Octokit pattern in discover.test.ts /
 // extract-load.test.ts / github/client.test.ts.
 const fakeOctokit = {} as Octokit;
+const fakeAnthropicClient = {} as Anthropic;
+
+async function fakeFetchReadme(): Promise<string> {
+  return "# Hello";
+}
+
+async function fakeGenerateAssessment(): Promise<Assessment> {
+  return {
+    pct: 80,
+    band: "good",
+    label: "On track",
+    text: "Stub assessment for pipeline integration tests.",
+    gaps: [],
+  };
+}
 
 let cleanup: (() => Promise<void>) | undefined;
 
@@ -201,11 +219,14 @@ describe("runPipeline", () => {
     const summary = await runPipeline({
       db,
       octokit: fakeOctokit,
+      anthropicClient: fakeAnthropicClient,
       args: { dryRun: false, limit: null },
       fetchRepos: fakeFetchRepos,
       fetchCommits: fakeFetchCommits,
       fetchIssues: fakeFetchIssues,
       fetchPrs: fakeFetchPrs,
+      fetchReadme: fakeFetchReadme,
+      generateAssessment: fakeGenerateAssessment,
     });
 
     expect(summary).toBeDefined();
@@ -218,6 +239,10 @@ describe("runPipeline", () => {
       "sdpilon/spilon.dev",
       "sdpilon/typst-resume",
     ]);
+    // typst-resume is a fork (see TWO_REPOS), so it's auto-ignored and
+    // enrichment skips it; spilon.dev is not, so it gets enriched.
+    expect(repoRows[1].isIgnored).toBe(true);
+    expect(repoRows[1].ignoreSource).toBe("auto");
 
     const runId = summary?.runId ?? "";
     const discoveryRows = await db
@@ -242,9 +267,16 @@ describe("runPipeline", () => {
     expect(runRows[0].reposDiscovered).toBe(2);
     expect(runRows[0].reposFetchedOk).toBe(2);
     expect(runRows[0].reposFailed).toBe(0);
-    expect(runRows[0].llmCallsMade).toBe(0);
-    expect(runRows[0].llmCallsSkipped).toBe(0);
+    expect(runRows[0].llmCallsMade).toBe(1);
+    expect(runRows[0].llmCallsSkipped).toBe(1);
     expect(runRows[0].finishedAt).not.toBeNull();
+
+    const assessmentRows = await db
+      .select()
+      .from(repoAssessments)
+      .where(eq(repoAssessments.repoId, 1));
+    expect(assessmentRows).toHaveLength(1);
+    expect(assessmentRows[0].band).toBe("good");
   });
 
   it("marks the run partial and reposFailed=1 when one repo's extract-load fails entirely, without blocking the other repo", async () => {
@@ -254,6 +286,7 @@ describe("runPipeline", () => {
     const summary = await runPipeline({
       db,
       octokit: fakeOctokit,
+      anthropicClient: fakeAnthropicClient,
       args: { dryRun: false, limit: null },
       fetchRepos: fakeFetchRepos,
       fetchCommits: async (fullName: string) => {
@@ -264,6 +297,8 @@ describe("runPipeline", () => {
       },
       fetchIssues: fakeFetchIssues,
       fetchPrs: fakeFetchPrs,
+      fetchReadme: fakeFetchReadme,
+      generateAssessment: fakeGenerateAssessment,
     });
 
     expect(summary?.reposFetchedOk).toBe(1);
@@ -283,11 +318,14 @@ describe("runPipeline", () => {
     const summary = await runPipeline({
       db,
       octokit: fakeOctokit,
+      anthropicClient: fakeAnthropicClient,
       args: { dryRun: false, limit: 1 },
       fetchRepos: fakeFetchRepos,
       fetchCommits: fakeFetchCommits,
       fetchIssues: fakeFetchIssues,
       fetchPrs: fakeFetchPrs,
+      fetchReadme: fakeFetchReadme,
+      generateAssessment: fakeGenerateAssessment,
     });
 
     expect(summary?.discoveredCount).toBe(2);
@@ -309,6 +347,7 @@ describe("runPipeline", () => {
     const summary = await runPipeline({
       db,
       octokit: fakeOctokit,
+      anthropicClient: fakeAnthropicClient,
       args: { dryRun: true, limit: null },
       fetchRepos: fakeFetchRepos,
     });
@@ -334,6 +373,7 @@ describe("runPipeline", () => {
     const summary = await runPipeline({
       db,
       octokit: fakeOctokit,
+      anthropicClient: fakeAnthropicClient,
       args: { dryRun: false, limit: null },
       fetchRepos: async () => {
         throw new Error("GitHub API down");

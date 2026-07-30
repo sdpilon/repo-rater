@@ -1,8 +1,12 @@
+import type Anthropic from "@anthropic-ai/sdk";
 import type { Octokit } from "octokit";
 import { createDb } from "../db/client";
+import { createAnthropicClient } from "./anthropic/client";
+import type { Assessment, AssessmentInput } from "./anthropic/client";
 import type { DrizzleDb } from "./db-types";
 import type { DiscoveryResult } from "./discover";
 import { runDiscoveryScaffold } from "./discover";
+import { countUnassessedRepos, enrichAll } from "./enrich";
 import {
   type DataType,
   type ExtractLoadResult,
@@ -14,18 +18,10 @@ import { createOctokit } from "./github/client";
 import { recordRunFinish, recordRunStart } from "./runs";
 
 /**
- * Phase 1 orchestrator: Discover -> Extract+Load only, ported from repo-root
- * `pipeline/run.js` (read-only reference). Enrichment (old `enrich.js`) and
- * Publish are deliberately out of scope here — enrichment is Phase 2, and
- * publish is being removed from the architecture entirely (SolidStart's SSR
- * route will query Postgres directly once the frontend phase lands).
- *
- * Everywhere the old orchestrator would have called into
- * `applySuggestedIgnoreDefaults` / `getIgnoredRepoIds` / the enrichment loop
- * / `publish`, this file either omits that section or leaves a
- * `// TODO(Phase 2): ...` marker. `recordRunFinish` below always reports
- * `llmCallsMade: 0, llmCallsSkipped: 0` — an honest reflection of a run that
- * never touches the LLM.
+ * Phase 1+2 orchestrator: Discover -> Extract+Load -> Enrich, ported from
+ * repo-root `pipeline/run.js` (read-only reference). Publish is removed
+ * from the architecture entirely — the eventual SolidStart SSR route will
+ * query Postgres directly once the frontend phase lands.
  */
 
 export interface ParsedArgs {
@@ -105,6 +101,7 @@ export function computeRunCounts(extractResults: ExtractLoadResult[]): {
 export interface RunPipelineParams {
   db: DrizzleDb;
   octokit: Octokit;
+  anthropicClient: Anthropic;
   args: ParsedArgs;
   /** Injectable in tests in place of the real `fetchAccountRepos` Octokit call. */
   fetchRepos?: (octokit: Octokit) => Promise<import("./github/client").RepoMeta[]>;
@@ -112,6 +109,10 @@ export interface RunPipelineParams {
   fetchCommits?: (fullName: string, since: string, octokit: Octokit) => Promise<Commit[]>;
   fetchIssues?: (fullName: string, since: string, octokit: Octokit) => Promise<Issue[]>;
   fetchPrs?: (fullName: string, since: string, octokit: Octokit) => Promise<PullRequest[]>;
+  /** Injectable in tests in place of the real Octokit-backed fetchReadme. */
+  fetchReadme?: (fullName: string, octokit: Octokit) => Promise<string>;
+  /** Injectable in tests in place of the real Anthropic-backed assessment call. */
+  generateAssessment?: (client: Anthropic, input: AssessmentInput) => Promise<Assessment>;
 }
 
 export interface RunPipelineSummary {
@@ -131,11 +132,14 @@ export interface RunPipelineSummary {
 export async function runPipeline({
   db,
   octokit,
+  anthropicClient,
   args,
   fetchRepos,
   fetchCommits,
   fetchIssues,
   fetchPrs,
+  fetchReadme,
+  generateAssessment,
 }: RunPipelineParams): Promise<RunPipelineSummary | undefined> {
   const {
     runId,
@@ -152,11 +156,15 @@ export async function runPipeline({
 
   if (args.dryRun) {
     await recordRunStart(db, runId, startedAt, discoveredCount);
-    console.log(`run ${runId} (dry-run): ${discoveredCount} repos discovered`);
-    // TODO(Phase 2): once repo_assessments/enrichment exist, re-add
-    // assessment-awareness to dry-run output (the old dry-run also reported
-    // "N have no prior assessment" via `countUnassessedRepos`); meaningless
-    // before Phase 2.
+    const repoIds = new Set(
+      discoveryResults
+        .filter((r) => r.status === "ok" && r.repoId !== null)
+        .map((r) => r.repoId as number),
+    );
+    const unassessed = await countUnassessedRepos(db, repoIds);
+    console.log(
+      `run ${runId} (dry-run): ${discoveredCount} repos discovered, ${unassessed} have no prior assessment`,
+    );
     await recordRunFinish(db, runId, new Date(), {
       status: "success",
       reposFetchedOk: 0,
@@ -180,24 +188,34 @@ export async function runPipeline({
     fetchIssues,
     fetchPrs,
   });
-  const { reposFetchedOk, reposFailed } = computeRunCounts(extractResults);
+  const { repoIds, reposFetchedOk, reposFailed } = computeRunCounts(extractResults);
 
-  // TODO(Phase 2): enrichment loop (content-hash-gated AI assessment per
-  // non-ignored repo) goes here. No `publish` step — it's removed from the
-  // architecture entirely; the SolidStart SSR route queries Postgres
-  // directly once the frontend phase lands.
+  // No `publish` step — it's removed from the architecture entirely; the
+  // SolidStart SSR route queries Postgres directly once the frontend phase
+  // lands.
+  const { llmCallsMade, llmCallsSkipped } = await enrichAll({
+    db,
+    octokit,
+    anthropicClient,
+    repoIds,
+    runId,
+    now: startedAt,
+    fetchReadme,
+    generateAssessment,
+  });
 
   const finishedAt = new Date();
   await recordRunFinish(db, runId, finishedAt, {
     status: reposFailed > 0 ? "partial" : "success",
     reposFetchedOk,
     reposFailed,
-    llmCallsMade: 0,
-    llmCallsSkipped: 0,
+    llmCallsMade,
+    llmCallsSkipped,
   });
 
   console.log(
-    `run ${runId}: ${reposFetchedOk} repos ok, ${reposFailed} repos with fetch errors` +
+    `run ${runId}: ${reposFetchedOk} repos ok, ${reposFailed} repos with fetch errors, ` +
+      `${llmCallsMade} enrichment calls made, ${llmCallsSkipped} skipped` +
       (args.limit ? ` (limited to ${args.limit} of ${discoveredCount} discovered repos)` : ""),
   );
 
@@ -226,12 +244,19 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       "GITHUB_TOKEN environment variable is required to run the pipeline — set it before running `node run.js`.",
     );
   }
+  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+  if (!anthropicApiKey) {
+    throw new Error(
+      "ANTHROPIC_API_KEY environment variable is required to run the pipeline — set it before running `node run.js`.",
+    );
+  }
 
   const db = createDb(databaseUrl);
   const octokit = createOctokit(process.env);
+  const anthropicClient = createAnthropicClient(process.env);
 
   try {
-    await runPipeline({ db, octokit, args });
+    await runPipeline({ db, octokit, anthropicClient, args });
   } finally {
     await db.$client.end();
   }

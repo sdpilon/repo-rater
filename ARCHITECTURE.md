@@ -222,8 +222,83 @@ accessible by personal access token` — fine-grained PATs scope each REST
 resource independently, so "Issues: Read-only" and "Pull requests:
 Read-only" repository permissions have to be granted explicitly too.
 
-**Remaining phases**: Phase 2 (ignore-rules port, real Anthropic-backed
-content-hash-gated enrichment), Phase 3 (SolidStart frontend replacing
+### New stack — Phase 2 (ignore-rules port + Anthropic-backed enrichment): complete and live-verified
+
+All new code lives in `app/src/pipeline/`:
+
+- **`app/src/pipeline/anthropic/client.ts`** — port of `pipeline/enrich.js`'s
+  Anthropic-calling half: `createAnthropicClient` (fails fast on missing
+  `ANTHROPIC_API_KEY`, mirroring `createOctokit`), `ASSESSMENT_SCHEMA`,
+  `SYSTEM_PROMPT`, `buildUserContent`, and `generateAssessment`. The API
+  call shape (`model: "claude-opus-4-8"`, `thinking: {type: "adaptive"}`,
+  `output_config: {format: {type: "json_schema", ...}}`) is ported verbatim
+  from the old stack, not "corrected" to older documented API shapes — it's
+  confirmed working against the real API below.
+- **`app/src/pipeline/ignore-rules.ts`** — port of `pipeline/ignore-rules.js`.
+  `computeSuggestedIgnore` is unchanged (fork / archived / no-README /
+  zero-activity). `applyIgnoreDefaultForRepo` is the single-repo equivalent
+  of the old `applySuggestedIgnoreDefaults` loop body; the "auto never
+  overwrites manual" `ignore_source` invariant is preserved.
+- **`app/src/pipeline/enrich.ts`** — port of `pipeline/enrich.js`'s
+  content-hash-gate half (`computeInputHash`, `readEnrichInputs`,
+  `enrichRepo`, `countUnassessedRepos`), plus a new `enrichAll` orchestrator.
+  Two deliberate departures from a literal port: `readEnrichInputs`'s
+  commit/issue/PR queries now have an explicit `ORDER BY` (the old DuckDB
+  queries had none, making the hash technically non-deterministic — free to
+  fix since no existing hash values need to stay stable), and `enrichAll`
+  merges what the old stack did as two separate full passes
+  (`applySuggestedIgnoreDefaults` over every repo, then a second loop for
+  enrichment) into one per-repo pass — there's no bronze-file README cache
+  here (see `extract-load.ts`'s module comment), so a second pass would
+  fetch each repo's README from GitHub twice. `enrichAll` also respects the
+  new `repos.assessment_source` column (added in Phase 1 for exactly this):
+  a repo marked `'manual'` is never re-enriched, mirroring `ignore_source`.
+- **`app/src/pipeline/run.ts`** — extended from the Phase 1 orchestrator:
+  `main()` now also requires `ANTHROPIC_API_KEY` and constructs the
+  Anthropic client; `runPipeline` calls `enrichAll` after extract-load and
+  threads real `llmCallsMade`/`llmCallsSkipped` into `recordRunFinish`
+  (previously hardcoded to `0, 0`); the dry-run branch reports "N have no
+  prior assessment" again via `countUnassessedRepos`.
+
+No schema migration was needed — `repos.assessment_source` and
+`repo_assessments.input_snapshot` were already added in Phase 1 anticipating
+this phase.
+
+Live-verified against the real GitHub account, real Neon Postgres, and the
+real Anthropic API, 2026-07-30:
+
+```
+$ pnpm exec tsx src/pipeline/run.ts --dry-run
+run run_...: 66 repos discovered, 66 have no prior assessment
+
+$ pnpm exec tsx src/pipeline/run.ts --limit 3
+run run_...: 3 repos ok, 0 repos with fetch errors, 0 enrichment calls made, 3 skipped
+# all 3 correctly auto-ignored: no-README/no-activity student-assignment repos
+
+$ pnpm exec tsx src/pipeline/run.ts --limit 12
+run run_...: 12 repos ok, 0 repos with fetch errors, 0 enrichment calls made, 12 skipped
+# several of these have real commit/issue activity but no README (confirmed
+# directly against Postgres row counts) — correctly auto-ignored on that
+# basis alone, matching the old stack's historical finding that "no README"
+# was the dominant auto-ignore reason across this account
+```
+
+To exercise the actual LLM-call path (the first 15 discovered repos happen
+to be READMEless student-assignment repos), `enrichAll` was called directly
+against `sdpilon/github-project-tracker` (a real repo with a real README and
+real commit history already loaded from Phase 1's earlier full run):
+
+- First call: 1 real Anthropic call made, produced a coherent,
+  evidence-based assessment citing specific real commit messages and README
+  claims (`pct: 80, band: "good"`), inserted into `repo_assessments` with
+  `input_snapshot` populated.
+- Second call, same inputs: 0 calls made, 1 skipped — content-hash gate
+  held, still exactly 1 assessment row.
+- Third call, with `repos.assessment_source` manually set to `'manual'`: 0
+  calls made, 1 skipped, still exactly 1 assessment row — confirming the new
+  manual-override gate works, then reverted back to `'auto'`.
+
+**Remaining phases**: Phase 3 (SolidStart frontend replacing
 `tracker.html`'s hand-rolled `innerHTML` templating with real
 components), Phase 4 (Vercel + GitHub Actions deploy, then cutover —
 retiring `pipeline/`, `tracker.html`, `schema.sql`, `tracker.duckdb`, and
