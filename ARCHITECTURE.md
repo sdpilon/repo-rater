@@ -138,6 +138,99 @@ Full DDL: see [`schema.sql`](schema.sql). Key design choices:
 
 ## Status
 
+**This document's sections above (Architecture overview, Storage design,
+etc.) describe the original DuckDB-based pipeline design.** As of
+2026-07-29, the project is mid a ground-up rewrite (branch
+`claude/duckdb-source-build-wv9638`) to **SolidStart + Drizzle + Postgres
+(Neon) + Octokit**, replacing DuckDB, the `gh` CLI, and the static
+`tracker.html`/`inject.js` publish step. The sections above remain
+accurate for the *old* stack, which stays functional and untouched in
+`pipeline/`/`tracker.html` at the repo root until Phase 4 cutover.
+Everything below this point describes the new stack's progress instead.
+
+### New stack — Phase 1 (Discover → Extract+Load): complete and live-verified
+
+All of the following lives in `app/` (a SolidStart project, its own
+isolated pnpm workspace so installing it doesn't pull in the old stack's
+DuckDB native-binding rebuild):
+
+- **`app/src/db/schema.ts`** — Drizzle Postgres schema translating the old
+  `schema.sql`'s 9 tables, plus two new columns: `repos.assessment_source`
+  (mirrors `ignore_source`, will gate manual-override assessments in
+  Phase 2) and `repo_assessments.input_snapshot jsonb` (debuggability now
+  that there's no bronze layer to inspect after the fact). Migration
+  generated via `drizzle-kit generate`, applied to a real Neon database
+  via `drizzle-kit migrate`, and verified against real
+  `information_schema` introspection — all 9 tables/columns present
+  exactly as designed.
+- **`app/src/pipeline/github/client.ts`** — Octokit-based GitHub client
+  replacing `gh`-CLI shell-outs. Function-for-function port of
+  `pipeline/github.js`: same repo-meta/readme/commits/issues/PR fetch
+  shapes, Octokit's built-in pagination replacing the old hand-rolled
+  loops, and the PR since-filter logic preserved (still needed — GitHub's
+  `/pulls` has no server-side `since=` regardless of client, that was
+  never a `gh`-CLI artifact).
+- **`app/src/pipeline/discover.ts` + `runs.ts`** — port of
+  `discover.js`/`run-tracking.js`. `upsertRepo` is now a single atomic
+  Postgres `INSERT ... ON CONFLICT DO UPDATE`, replacing the old
+  two-round-trip SELECT-then-`INSERT OR REPLACE` that DuckDB needed to
+  preserve `first_seen_at`/`is_ignored` — Postgres just leaves omitted
+  columns alone on conflict, so no pre-SELECT is needed.
+- **`app/src/pipeline/extract-load.ts`** — the one genuinely new module,
+  not a port: merges the old `extract.js` (fetch → bronze flat files) and
+  `load.js` (bronze → DuckDB) into a single per-repo, per-data-type
+  fetch-and-upsert step straight into Postgres, **with no bronze
+  flat-file layer** (its only value — replay without re-hitting GitHub —
+  doesn't survive on ephemeral compute and isn't worth a second storage
+  subsystem at this project's scale). Each of commits/issues/prs gets its
+  own try/catch: a failure records a `fetch_failures` row and skips that
+  data type's watermark advance without blocking the others; a second,
+  outer per-repo isolation layer means one repo's total failure doesn't
+  block the rest of the batch either.
+- **`app/src/pipeline/run.ts`** — Phase 1 orchestrator, Discover →
+  Extract+Load only. Enrichment is Phase 2; Publish is removed from the
+  architecture entirely — the eventual SolidStart SSR route will query
+  Postgres directly at request time, no static-file regeneration step.
+
+Live-verified against the real GitHub account (66 repos) and a real Neon
+Postgres database, 2026-07-30:
+
+```
+$ pnpm exec tsx src/pipeline/run.ts --dry-run
+run run_...: 66 repos discovered
+
+$ pnpm exec tsx src/pipeline/run.ts            # first full run
+run run_...: 65 repos ok, 1 repos with fetch errors
+
+$ pnpm exec tsx src/pipeline/run.ts            # same command, run again immediately
+run run_...: 65 repos ok, 1 repos with fetch errors   # identical result
+```
+
+The one failure, both times, is a real expected 404 (`sdpilon/home-server`
+has pull requests disabled) — correctly isolated into `fetch_failures`
+rather than aborting the run. Idempotency confirmed directly against
+Postgres: row counts identical across both runs (1863 commits, 17 issues,
+6 pull requests, 197 `fetch_watermarks` rows — 66 repos × 3 data types
+minus the 1 failure), zero duplicate `(repo_id, sha)` commit rows, and
+`fetch_watermarks.last_success_run_id`/`last_fetched_at` correctly
+advanced to the second run's id/timestamp.
+
+Along the way this also surfaced a real-world credential-scoping gotcha
+worth recording: a fine-grained GitHub PAT with only "Contents: Read"
+access fetches commits fine but fails Issues/PRs with `Resource not
+accessible by personal access token` — fine-grained PATs scope each REST
+resource independently, so "Issues: Read-only" and "Pull requests:
+Read-only" repository permissions have to be granted explicitly too.
+
+**Remaining phases**: Phase 2 (ignore-rules port, real Anthropic-backed
+content-hash-gated enrichment), Phase 3 (SolidStart frontend replacing
+`tracker.html`'s hand-rolled `innerHTML` templating with real
+components), Phase 4 (Vercel + GitHub Actions deploy, then cutover —
+retiring `pipeline/`, `tracker.html`, `schema.sql`, `tracker.duckdb`, and
+the sections of this document above that describe them).
+
+### Old stack (DuckDB) — status as of the rewrite starting
+
 **Stage 0 (a thin vertical slice) is implemented in `pipeline/`**, run
 end-to-end for a hardcoded 2-repo scope: Extract → Load → Enrich → Publish,
 with DuckDB-backed watermarking, idempotent upserts, content-hash-gated
