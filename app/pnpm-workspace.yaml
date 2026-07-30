@@ -3,3 +3,5 @@
 # old stack's dependencies (e.g. native duckdb rebuilds).
 packages:
   - "."
+allowBuilds:
+  esbuild: true
