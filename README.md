@@ -1,42 +1,43 @@
 # github-project-tracker
 
-A single-file dashboard (`tracker.html`) summarizing recent activity across your full GitHub account — discovered automatically, not a hardcoded list — plus an AI-written "stated goals vs. reality" assessment for each repo.
+A dashboard summarizing recent activity across your full GitHub account — discovered automatically, not a hardcoded list — plus an AI-written "stated goals vs. reality" assessment for each repo.
 
-Mostly static (data is baked in at build time), except for one live control: each repo card has an **Ignore** checkbox that persists to a local DuckDB store via `pipeline/server.js`, so future pipeline runs skip generating an assessment for that repo. Ignore defaults are computed automatically (forks, archived repos, no-README repos, and no-activity repos default to ignored) but any manual toggle always wins on future runs.
+This is a live, deployed personal tool: production is https://github-project-tracker-chi.vercel.app, gated behind an app-level password. There's no local build step that produces a static file to view — the dashboard (`app/`, a SolidStart app) renders live from Postgres on every request, and its data is kept fresh by a scheduled GitHub Actions pipeline, not a manually-run local script.
 
-## Requirements
+## How it works
 
-- Node.js
-- [`gh`](https://cli.github.com/) CLI, authenticated (`gh auth login`)
-- An `ANTHROPIC_API_KEY` for the AI assessment step
+- **`app/`** — the SolidStart + Drizzle + Postgres (Neon) + Octokit dashboard. Deployed to Vercel via `.github/workflows/deploy.yml` on every push to `main` that touches `app/**` (install → typecheck → lint → test → `vercel deploy --prod`).
+- **`app/src/pipeline/`** — discovers every repo in the account via Octokit, fetches readme/issues/PRs/commits/metadata for each, upserts into Postgres, and runs a content-hash-gated AI assessment (only re-calling the LLM when a repo's inputs actually changed). Runs via `.github/workflows/pipeline.yml` on a daily schedule (plus manual `workflow_dispatch`).
+- Each repo card has an **Ignore** checkbox, persisted straight to Postgres, so future pipeline runs skip generating an assessment for that repo. Ignore defaults are computed automatically (forks, archived repos, no-README repos, and no-activity repos default to ignored) but any manual toggle always wins on future runs.
 
-## Usage
+## Running locally
 
-Build/refresh the dashboard:
-
-```
-pnpm pipeline        # or: node pipeline/run.js
-```
-
-This discovers every repo in your account via `gh api /user/repos`, then for each one: pulls README/issues/PRs/commits/metadata, upserts into DuckDB, runs a content-hash-gated AI assessment (skipping repos marked ignored), and writes `repos.json` + splices it into `tracker.html`.
-
-Useful flags:
-- `--dry-run` — preview scope, no writes
-- `--limit N` — restrict a real run to the first N discovered repos
-
-Serve the dashboard (needed for the Ignore toggle to persist; opening `tracker.html` directly as a `file://` URL works for viewing only):
-
-```
-pnpm dev             # serves http://localhost:3000/tracker
+```bash
+cd app
+pnpm install
+pnpm dev
 ```
 
-**Note:** DuckDB is single-writer per file — don't run `pnpm pipeline` and `pnpm dev` at the same time.
+`app/package.json`'s `dev`/`start` scripts wrap the underlying command in `op run --environment <id> -- ...`, pulling secrets (`DATABASE_URL`, `APP_PASSWORD`, etc.) from a 1Password Environment. `app/` is its own isolated pnpm workspace, independent of this repo root.
+
+Other useful commands, run from inside `app/`:
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm run pipeline   # tsx src/pipeline/run.ts — the same script the scheduled GitHub Actions workflow runs
+```
+
+Pipeline flags: `--dry-run` (preview scope, no writes) and `--limit N` (restrict a real run to the first N discovered repos).
 
 ## Project layout
 
-- `pipeline/` — Extract → Load → Enrich → Publish pipeline that produces `repos.json`/`tracker.html`
-- `tracker.html` — the dashboard itself (checked in, overwritten by each pipeline run)
-- `ARCHITECTURE.md` / `ROADMAP.md` — design and sequencing notes for the ongoing pipeline redesign
-- `CLAUDE.md` — detailed contributor/agent notes (gotchas, schema-migration caveats, etc.)
+- `app/` — the whole live project: SolidStart dashboard, Drizzle/Postgres schema, and the discover/extract/enrich pipeline (`app/src/pipeline/`)
+- `.github/workflows/deploy.yml` — CI + Vercel deploy on push to `main`
+- `.github/workflows/pipeline.yml` — scheduled pipeline run
+- `ARCHITECTURE.md` — design and full build history, including the retired original DuckDB-based design this project replaced
+- `ROADMAP.md` — sequencing notes for what's next
+- `CLAUDE.md` — detailed contributor/agent notes (gotchas, auth model, etc.)
 
-This is a personal tool built partly as a learning exercise for a from-scratch DuckDB/medallion-style pipeline design — expect the pipeline architecture to be more involved than the dashboard's actual needs strictly require.
+This is a personal tool built partly as a learning exercise in incremental data-pipeline and full-stack app design — expect more architectural rigor than the dashboard's actual needs strictly require.

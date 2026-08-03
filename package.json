@@ -4,28 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test \"pipeline/**/*.test.js\"",
-    "dev": "node pipeline/server.js",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
-    "build": "node pipeline/run.js",
-    "pipeline": "node pipeline/run.js",
-    "pipeline:discover": "node pipeline/discover.js",
-    "tracker:screenshot": "pnpm install && node .claude/skills/run-github-project-tracker/driver.mjs",
     "deps:outdated": "pnpm outdated",
-    "deps:update": "pnpm update -i --latest",
-    "env-check": "./scripts/doctor.sh"
+    "deps:update": "pnpm update -i --latest"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0",
-    "duckdb": "^1.4.4"
-  },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.5",
-    "playwright": "^1.61.1"
+    "@biomejs/biome": "^2.5.5"
   }
 }

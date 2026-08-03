@@ -1,5 +1,11 @@
 # Agent Instructions
 
+<!-- bd-doctor-divergence: ok -->
+<!-- AGENTS.md and CLAUDE.md are deliberately not symlinked: CLAUDE.md
+     carries the project/stack-specific orientation, this file carries
+     generic agent/shell-tooling conventions. See CLAUDE.md for what this
+     project actually is and how the current stack works. -->
+
 This project uses **bd** (beads) for issue tracking. Run `bd prime` for full workflow context.
 
 > **Architecture in one line:** Issues live in a local Dolt database
