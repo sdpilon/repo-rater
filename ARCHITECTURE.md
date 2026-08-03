@@ -1,152 +1,49 @@
-# Architecture: incremental multi-repo tracker pipeline
+# Architecture: from a hardcoded fetch script to a live Postgres dashboard
 
-This is the design for evolving the tracker from a hardcoded 9-repo,
-full-refetch-every-time script into a pipeline that can run against a full
-GitHub account (~60 repos) incrementally. A first vertical slice (Stage 0)
-is implemented in `pipeline/` — see the "Status" section below for exactly
-what that covers. **`pipeline/run.js`'s `main()` now runs Discovery against
-the real account and writes to the same `repos.json` / `tracker.html`**
-(its Publish stage calls the same `inject.js`) — see "Status" below for the
-live-verified counts. `fetch.sh` has been retired: `pipeline/` is now the
-only path that produces `repos.json` / `tracker.html`.
+This document is the design/build history for `github-project-tracker`.
+The current, live-running system is a SolidStart + Drizzle + Postgres
+(Neon) + Octokit dashboard in `app/`, deployed to Vercel via GitHub
+Actions, with a second GitHub Actions workflow running the discover/
+extract/enrich pipeline on a schedule. See the "Status" section below for
+how it was built, phase by phase — that's the accurate, current design.
 
-## Why
+## Original design (retired)
 
-The original pipeline (`fetch.sh`, now retired) had a few properties that
-don't scale past a small, manually-curated repo list:
+Before the rewrite, this project was a from-scratch, DuckDB-backed,
+medallion-style (bronze/silver/gold) pipeline (`pipeline/`), built
+partly as a learning exercise in incremental data-pipeline design: repo
+discovery via the `gh` CLI instead of a hardcoded list, per-repo watermarked
+incremental extraction to flat-file "bronze" JSON, idempotent upserts into
+DuckDB "silver" tables, content-hash-gated LLM re-assessment (only call the
+LLM when a repo's inputs actually changed), and a "gold" publish step that
+spliced the result into a static `tracker.html`. Discovery/extraction/
+loading/enrichment/publishing were five separately-isolated stages so one
+repo's failure never took down the whole run. GraphQL batching,
+concurrency/backoff tuning, and multi-tenancy were all explicitly
+considered and parked as unnecessary complexity at this project's ~60-repo,
+single-user scale.
 
-- The repo list is hardcoded in `fetch.sh` and has to be edited by hand as
-  projects come and go.
-- Every run refetches everything from a single global `$SINCE` cutoff —
-  there's no per-repo memory of what's already been fetched.
-- API failures silently fall back to empty (`valid()` swaps bad JSON for
-  `[]`/`{}`), so a broken repo just goes blank in the dashboard instead of
-  surfacing as an error.
-- The AI "stated goals vs. reality" assessment is hand-authored per repo
-  (`ASSESS` block in `tracker.html`), not something the pipeline generates
-  or refreshes on its own.
-- There's no persistence beyond flat JSON files that get overwritten each
-  run — no history, no run metadata, nothing to inspect after the fact.
-
-This is a personal-use project (one GitHub account, no multi-tenancy), but
-the goal is to build it the way a real data pipeline would be built, as a
-learning exercise. The focus is specifically the **data/product axis**:
-learning pipeline design patterns that hold up as repo count grows, not
-ops/infra concerns and not AI-engineering concerns.
-
-## Scale target
-
-~60 repos (the user's actual GitHub account), up from the current 9.
-At roughly 4 API calls per repo per run, that's ~240 requests — well under
-GitHub's 5,000/hour REST rate limit. **Rate limiting is explicitly not the
-bottleneck being designed around.** Patterns like GraphQL batching or
-aggressive concurrency/backoff were considered and deliberately parked —
-they solve a rate-limit problem that doesn't exist at this scale, and
-adding them now would be complexity for the sake of feeling scalable
-rather than complexity the problem actually demands.
-
-## Architecture overview
-
-Five pipeline stages, each isolated so a failure in one repo or stage
-doesn't take down the rest of the run:
-
-1. **Discovery** — replaces the hardcoded `repos=` list. Calls
-   `gh api /user/repos --paginate` to enumerate the account's repos each
-   run. Every repo seen is logged to `repo_discoveries` (append-only), and
-   `repos` (the dimension table) is upserted so renames/archival/new repos
-   are tracked over time instead of requiring a manual edit.
-
-2. **Extract (bronze)** — pulls raw API responses (readme, issues, PRs,
-   commits, meta) per repo, per run, and writes them to disk as immutable
-   flat JSON files keyed by `(repo_id, run_id)`. This layer is intentionally
-   *not* in DuckDB — it's the raw, replayable source of truth. If a
-   downstream bug is found, silver/gold can be rebuilt from bronze without
-   re-hitting the GitHub API.
-
-   Extraction is **incremental**, driven by a per-repo, per-datatype
-   watermark (`fetch_watermarks`) instead of a single global `$SINCE`. Each
-   repo's `commits`/`issues`/`prs` fetch uses its own `last_fetched_at` as
-   the `since=` cursor, and only advances the watermark on success.
-
-   Failures are isolated per repo/datatype: instead of silently falling
-   back to `[]`, a failure is written to `fetch_failures` (a dead-letter
-   manifest) and that repo's existing data is left untouched rather than
-   zeroed out. One broken repo no longer degrades the whole dashboard.
-
-3. **Load (silver)** — normalizes bronze JSON into DuckDB tables
-   (`commits`, `issues`, `pull_requests`), upserted idempotently by natural
-   key (`repo_id` + `sha`/`number`). Replaying a run doesn't duplicate rows.
-
-4. **Enrich (AI assessment)** — replaces the hand-authored `ASSESS` block
-   with a generated one, but avoids re-running the LLM on every repo every
-   run. Each repo's silver-layer inputs (readme + recent activity) are
-   hashed into `input_hash`; enrichment only calls the LLM when that hash
-   changes since the last assessment. This is the same pattern as a dbt
-   incremental model, applied to an LLM call instead of a SQL transform.
-   Results are appended to `repo_assessments` (never overwritten), so
-   assessment history is preserved and "current" is just the latest row
-   per repo.
-
-5. **Publish (gold)** — the existing `inject.js` step, reading current
-   state out of DuckDB (latest repo metadata, activity, and assessment per
-   repo) instead of `repos.json`, and splicing it into `tracker.html` the
-   same way it does today (see the slice-based splicing gotcha below —
-   that constraint doesn't change).
-
-Every run is recorded in `runs`: start/end time, repos discovered, repos
-fetched OK vs. failed, and LLM calls made vs. skipped. The
-`llm_calls_skipped` count is the concrete signal that the incremental
-enrichment gate is actually working, not just hoped to be working.
-
-## Storage design
-
-DuckDB is the storage engine for silver/gold/metadata — chosen
-specifically to practice the medallion + incremental-load pattern without
-taking on a hosted database's operational burden, which isn't the point of
-this exercise for a single-user tool. Bronze stays as flat files on disk,
-outside DuckDB, so "replay from raw" stays trivial.
-
-Full DDL: see [`schema.sql`](schema.sql). Key design choices:
-
-- **`repo_id` (GitHub's numeric id) is the primary key everywhere**, not
-  `full_name`. A rename or ownership transfer changes `full_name` but not
-  `repo_id` — keying on the stable id keeps a repo's history from
-  fracturing into two identities across a rename.
-- **`fetch_watermarks` is keyed per `(repo_id, data_type)`**, not one
-  watermark per repo, because GitHub's `since=` semantics differ slightly
-  across the commits/issues/PRs endpoints.
-- **`repo_assessments` is append-only.** There's no "current assessment"
-  column to update in place — "current" is defined as the latest row per
-  `repo_id` by `created_at`. Slightly more work to query, but it comes for
-  free with a full history of how each repo's assessment has evolved.
-- **`fetch_failures` is a dead-letter manifest, not a log line.** It's a
-  queryable table specifically so "which repos are currently degraded" is
-  a first-class question the pipeline can answer, rather than something
-  buried in run output.
-
-## Explicitly out of scope (for now)
-
-- GraphQL batching of API calls — solves a rate-limit problem that doesn't
-  exist at 60 repos.
-- Concurrency/backoff tuning — same reasoning; premature for this scale.
-- Multi-tenancy / multi-user support — this is a personal tool built to
-  practice patterns, not a product with other users.
-- Any change to the existing `inject.js` splicing mechanism itself (the
-  slice-based string splicing that avoids `$`/`$$`-sequence corruption from
-  README content) — the publish stage's *data source* changes, not that
-  mechanism.
+**Fully retired as of Phase 4** (this branch, `worktree-phase4-deploy`):
+`pipeline/`, `tracker.html`, `schema.sql`, `inject.js`, `repos.json`, and
+the local `tracker.duckdb` file are all deleted — nothing above is
+runnable anymore. This section is kept only as a condensed pointer, not a
+current design: the full original write-up (five-stage architecture
+diagram, full DDL rationale, out-of-scope reasoning) lives in git history
+(see commit `660fc2b`, "docs: add scaled pipeline architecture design and
+DuckDB schema draft") and in `docs/postmortems/`, which are dated
+historical records and intentionally left unedited.
 
 ## Status
 
-**This document's sections above (Architecture overview, Storage design,
-etc.) describe the original DuckDB-based pipeline design.** As of
-2026-07-29, the project is mid a ground-up rewrite (branch
-`claude/duckdb-source-build-wv9638`) to **SolidStart + Drizzle + Postgres
-(Neon) + Octokit**, replacing DuckDB, the `gh` CLI, and the static
-`tracker.html`/`inject.js` publish step. The sections above remain
-accurate for the *old* stack, which stays functional and untouched in
-`pipeline/`/`tracker.html` at the repo root until Phase 4 cutover.
-Everything below this point describes the new stack's progress instead.
+Starting 2026-07-29, the project underwent a ground-up rewrite to
+**SolidStart + Drizzle + Postgres (Neon) + Octokit**, replacing DuckDB, the
+`gh` CLI, and the static `tracker.html`/`inject.js` publish step. That
+rewrite is now **fully complete and cut over** (Phase 4, this document's
+last section below): the new stack runs live in production on Vercel, and
+the old stack described in "Original design (retired)" above has been
+deleted from the repo. Everything below traces how the new stack was
+actually built, phase by phase, as a historical record — not a
+forward-looking plan.
 
 ### New stack — Phase 1 (Discover → Extract+Load): complete and live-verified
 
@@ -193,7 +90,11 @@ DuckDB native-binding rebuild):
   Postgres directly at request time, no static-file regeneration step.
 
 Live-verified against the real GitHub account (66 repos) and a real Neon
-Postgres database, 2026-07-30:
+Postgres database, 2026-07-30 (`pnpm exec tsx src/pipeline/run.ts` below is
+the exact command run at the time; as of Phase 4, `app/package.json` also
+has a `pipeline` script — `pnpm run pipeline` — wrapping the identical
+`tsx src/pipeline/run.ts` invocation, which is what `pipeline.yml` calls in
+CI):
 
 ```
 $ pnpm exec tsx src/pipeline/run.ts --dry-run
@@ -298,11 +199,95 @@ real commit history already loaded from Phase 1's earlier full run):
   calls made, 1 skipped, still exactly 1 assessment row — confirming the new
   manual-override gate works, then reverted back to `'auto'`.
 
-**Remaining phases**: Phase 3 (SolidStart frontend replacing
-`tracker.html`'s hand-rolled `innerHTML` templating with real
-components), Phase 4 (Vercel + GitHub Actions deploy, then cutover —
-retiring `pipeline/`, `tracker.html`, `schema.sql`, `tracker.duckdb`, and
-the sections of this document above that describe them).
+### New stack — Phase 3 (SolidStart frontend): complete
+
+Replaces `tracker.html`'s hand-rolled `innerHTML` templating with real
+SolidStart components rendering live Postgres data server-side, per
+`docs/superpowers/specs/2026-07-30-phase3-solidstart-frontend-design.md`
+and `docs/superpowers/plans/2026-07-30-phase3-solidstart-frontend.md`:
+
+- **`app/src/lib/server-db.ts` + `app/src/lib/dashboard.ts` /
+  `dashboard-queries.ts`** — a server-only Postgres singleton and the
+  data-shaping layer that reads each repo's latest metadata, activity
+  counts, and latest `repo_assessments` row, plus the ignore-toggle write
+  path (`toggleIgnore`), ported from `pipeline/server.js`'s
+  `POST /api/repos/:repoId/ignore` endpoint but now a SolidStart server
+  function instead of a hand-rolled `node:http` route. `ignore_reasons` is
+  persisted alongside `is_ignored` (previously computed and rendered
+  on-the-fly by `publish.js`) so the UI can show *why* a repo was
+  auto-ignored without recomputing it at render time.
+- **`app/src/components/{Totals,CollapsibleSection,RepoCard}.tsx`** — port
+  of `tracker.html`'s visual structure (repo cards, Commits/PRs/Issues/
+  README `<details>` toggles, the Ignore checkbox, totals header) into
+  real Solid components instead of one large template-string blob.
+- **`app/src/routes/index.tsx`** — the dashboard route itself, wired to
+  `getDashboardData` (a SolidStart server query) so the page renders from
+  live Postgres on every request — no static-file regeneration step, no
+  `inject.js` splice, no risk of README `$`/`$$` sequences corrupting a
+  string-splice (that whole gotcha class no longer exists).
+
+### New stack — Phase 4 (Vercel + GitHub Actions deploy, then cutover): complete
+
+- **`app/nitro.config.ts` / Vercel Build Output API target** — the
+  SolidStart/Nitro build outputs Vercel's Build Output API format directly,
+  so deploys don't need Vercel's own framework auto-detection.
+- **`.github/workflows/deploy.yml`** — on every push to `main` touching
+  `app/**`: install, typecheck, lint, test, then
+  `vercel deploy --prod` using `VERCEL_TOKEN`/`VERCEL_ORG_ID`/
+  `VERCEL_PROJECT_ID` repo secrets. Live-verified: deploy succeeded end to
+  end after fixing two Vercel project misconfigurations discovered live
+  (Root Directory pointed at a build-artifact path, then needed to be
+  empty rather than `app` since the workflow already `cd`s into `app/`
+  before invoking the Vercel CLI) — production is
+  https://github-project-tracker-chi.vercel.app.
+- **`.github/workflows/pipeline.yml`** — replaces manually running
+  `node pipeline/run.js` locally: runs `pnpm run pipeline`
+  (`tsx src/pipeline/run.ts`) on a daily cron plus `workflow_dispatch`,
+  against real `DATABASE_URL`/`GITHUB_TOKEN`/`ANTHROPIC_API_KEY` secrets.
+  **Naming gotcha, verified as a hard GitHub Actions platform constraint,
+  not a style choice:** Actions disallows a repo secret literally named
+  `GITHUB_TOKEN` (reserved for the automatic per-run token), but the
+  pipeline's Octokit client needs a broad, account-wide PAT (it discovers
+  every repo in the account), not the automatic token's repo-scoped one.
+  The PAT is stored as `PIPELINE_GH_TOKEN` and mapped into the
+  `GITHUB_TOKEN` env var the app code expects via the workflow's `env:`
+  block. Also confirmed: a fine-grained PAT needs Contents/Issues/Pull
+  requests read access granted explicitly and independently — see the
+  Phase 1 gotcha above, which held again here.
+- **App-level shared-secret auth (`app/src/middleware.ts` +
+  `app/src/lib/auth.ts` + `app/src/lib/auth-guard.ts` +
+  `app/src/routes/login.tsx`)** — added after discovering, live, that
+  Vercel's native Deployment Protection does **not** cover production
+  deployments on the free Hobby plan (only ephemeral preview URLs; a
+  rejected API PATCH confirmed "Vercel Authentication is not available on
+  your plan for production deployments"). Since this dashboard surfaces AI
+  assessments of private repos, the production URL was briefly served with
+  zero auth — a real exposure, not theoretical. Fixed with an in-app
+  shared-secret cookie gate (`APP_PASSWORD`, a single environment
+  variable, compared server-side against a `site_auth` cookie) instead of
+  upgrading to a paid Vercel plan. Also closed a gap the initial
+  implementation missed: SolidStart's `action()`/`query()` functions all
+  POST through a shared `/_server` RPC endpoint regardless of which page
+  called them, so page-level middleware alone doesn't stop a direct
+  unauthenticated POST to `/_server` from reaching `getDashboardData`/
+  `toggleIgnore` — closed via `assertAuthenticated()` inside those
+  functions themselves (defense in depth at the RPC layer, not just the
+  page layer).
+- **Live verification (2026-08-02):** unauthenticated `/` correctly
+  302-redirects to `/login`; the real `APP_PASSWORD` cookie yields real
+  content; the production dashboard renders the full account (66 repos, 54
+  private) matching local dev exactly; `pipeline.yml` triggered manually
+  via `workflow_dispatch` completed in 4m52s ("65 repos ok, 1 repo with
+  fetch errors, 21 enrichment calls made, 45 skipped") with the live
+  dashboard's repo/private counts matching that run's output exactly,
+  confirming the schedule-refreshes-Postgres/dashboard-reads-live-at-
+  request-time model works without a redeploy.
+- **Cutover (this task):** `pipeline/`, `tracker.html`, `schema.sql`,
+  `inject.js`, `repos.json`, `scripts/doctor.sh`, and the local
+  `tracker.duckdb` file are deleted; root `package.json`/
+  `pnpm-workspace.yaml`/`biome.json` no longer reference them; `CLAUDE.md`/
+  `AGENTS.md`/`README.md`/`ROADMAP.md` rewritten to describe the current
+  stack only.
 
 ### Old stack (DuckDB) — status as of the rewrite starting
 
@@ -458,3 +443,15 @@ against the live `tracker.duckdb`, run once before any of the above code
 landed. This is the project's first server-side write path — previously
 everything was one-directional (pipeline → DuckDB → `repos.json` → static
 `tracker.html`).
+
+## Closing note
+
+Everything in this "Old stack (DuckDB)" subsection describes code that no
+longer exists in this repo as of Phase 4's cutover (see "Original design
+(retired)" at the top of this document and the Phase 4 write-up above) —
+kept here only as the historical record of how Stage 0 was actually built,
+not as documentation of anything currently runnable. The rewrite that
+started 2026-07-29 is done: `app/` is the whole project now, deployed live
+on Vercel with a scheduled GitHub Actions pipeline keeping its Postgres
+data fresh. `CLAUDE.md` has the current-stack orientation for day-to-day
+work; `ROADMAP.md` has whatever's next.

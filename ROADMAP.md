@@ -4,12 +4,15 @@ This is a personal-use, single-repo learning project — one owner (you), no tea
 no hard deadlines. Kept in Now/Next/Later form deliberately: it says what's
 true and what's next without pretending to have dates or capacity numbers
 that don't exist for a solo side project. See `ARCHITECTURE.md` for the full
-design rationale behind each item; this file is just the sequencing.
+design rationale and build history behind each item; this file is just the
+sequencing.
 
-Update this file (and re-sync `ARCHITECTURE.md`'s "Status" section /
-`CLAUDE.md`'s "Future direction" section alongside it — see
-`CLAUDE.md`'s "Keeping docs in sync") whenever priorities shift or an item
-completes.
+The project's original DuckDB-backed pipeline (`pipeline/`, `tracker.html`)
+has been fully retired — see `ARCHITECTURE.md`'s "Original design (retired)"
+section and its "Status" section's Phase 4 write-up. Everything below is
+about the current stack: the SolidStart dashboard in `app/`, deployed live
+on Vercel, with a scheduled GitHub Actions pipeline keeping its Postgres
+data fresh.
 
 ## Now
 
@@ -17,194 +20,29 @@ Nothing currently queued — see Next for what's up.
 
 ## Next
 
-- Dedupe ignore-reason derivation: `load.js`'s
-  `applySuggestedIgnoreDefaults()` and `publish.js`'s `buildRepoRecord()`
-  each independently run commit/issue/PR count queries before calling
-  `computeSuggestedIgnore()` — extract one shared helper.
-- Dedupe the bronze-read helper: `extract.js` and `load.js` each have
-  their own `readBronzeJson`/`readBronze` with different signatures (one
-  throws on missing file, one returns null) — unify to one shared,
-  well-defined contract.
-- Resolve `run.js` vs. `discover.js` overlapping CLI entry points —
-  `discover.js`'s standalone `main()` duplicates a subset of what
-  `run.js`'s `main()` does via `discoverRepos()`; decide whether
-  `discover.js` needs its own CLI entry at all or should just export the
-  function.
+- **`.github/workflows/deploy.yml`'s `vercel deploy --prod` step has no
+  `--yes` flag.** Likely unnecessary in practice since `VERCEL_ORG_ID`/
+  `VERCEL_PROJECT_ID` are already set as env vars (which should suppress
+  any interactive prompt), but a cheap defensive no-op against a stuck
+  non-TTY prompt in CI if that assumption ever breaks. Noted during Phase 4
+  review, not yet applied.
+- **`PIPELINE_GH_TOKEN`'s expiration.** It's a fine-grained GitHub PAT
+  (Contents/Issues/Pull requests: Read-only, account-wide) — fine-grained
+  PATs have a mandatory expiration date. Whenever `pipeline.yml`'s
+  scheduled run starts failing with an auth error, this is the first thing
+  to check and rotate.
 
 ## Later
 
-- Add an `assessment_source` column (`auto`/`manual`), mirroring the
-  existing `ignore_source` pattern, once auto-assessment has run for a
-  while — lets the UI show which repos have a human-reviewed vs.
-  machine-only assessment.
-- Reframe `/update-tracker` from "the real assessment path" to "manual
-  override for when the automated read is wrong" in `CLAUDE.md`'s "The
-  ASSESS block" section and the skill's own description — a docs/framing
-  update, not a code change, since `tracker.html`'s render precedence
-  already supports this.
-- Revisit whether the `pipeline:discover` standalone script is still
-  needed once the `run.js`/`discover.js` overlap (Next, above) is
-  resolved.
-
-## Done
-
-- **Wire a real AI call into `pipeline/enrich.js`.** `generateAssessment()`
-  now calls the Anthropic API (`claude-opus-4-8`, adaptive thinking,
-  structured JSON output via `output_config`'s `json_schema` format)
-  instead of the old hardcoded 50%/"unknown" stub, matching
-  `repo_assessments`'/`publish.js`'s existing shape
-  (`pct`/`band`/`label`/`text`/`gaps`). The Anthropic client is a plain
-  parameter threaded through `enrichRepo()` (constructed once in `run.js`'s
-  `main()` via `new Anthropic()`, which picks up `ANTHROPIC_API_KEY` from
-  the environment implicitly) — no SDK-specific injection framework, just
-  duck-typing `messages.create` — so `pipeline/enrich.test.js` exercises
-  the real assessment logic offline against a stub client instead of
-  hitting the API. `run.js`'s enrich loop wraps each repo's assessment call
-  in its own try/catch, so one repo's failure is logged and counted as
-  skipped rather than aborting the run for the rest of the account.
-  `/update-tracker` stays as the manual override path, not retired —
-  `tracker.html`'s `ASSESS[r.name] || r.assessment` precedence already
-  supported this split for free.
-
-- **Extend enrichment inputs with PR titles/state and issue state.**
-  `readEnrichInputs` (`pipeline/run.js`) now pulls each repo's live
-  `issues`/`pull_requests` rows from DuckDB into the assessment context,
-  not just commit messages and issue titles — closer to what
-  `/update-tracker`'s manual process already considers.
-
-- **Expand `computeInputHash` to cover PR/issue-state inputs.**
-  `computeInputHash` (`pipeline/enrich.js`) now hashes issue state and PR
-  title/state alongside README + commit messages + issue titles, so the
-  content-hash gate re-triggers when a PR or issue's state changes even if
-  no new commit or title text did.
-
-- **Smart-default ignore state.** Scoped down from the original "let the
-  user filter/select" framing during brainstorming: the actual pain point
-  was that forks, archived repos, repos with no README, and repos with
-  zero tracked activity all defaulted to `is_ignored = false` (assessed)
-  until a human noticed and manually unchecked each one. A new
-  `ignore_source` column (`'auto'` | `'manual'`) on `repos` tracks whether
-  a repo's `is_ignored` value came from the pipeline's computed default or
-  a deliberate checkbox toggle. `pipeline/ignore-rules.js`'s
-  `computeSuggestedIgnore()` flags fork/archived/no-README/no-activity;
-  `pipeline/load.js`'s new `applySuggestedIgnoreDefaults()` runs every
-  pipeline run (after `loadRun`, before enrichment) and recomputes
-  `is_ignored` for every repo still on `'auto'` — manually-toggled repos
-  (`ignore_source = 'manual'`) are never touched, checking or unchecking
-  the UI checkbox always marks a repo `'manual'`. `tracker.html` shows
-  *why* a repo was auto-ignored (e.g. "auto: no README") next to the
-  checkbox, sourced from `pipeline/publish.js`'s new `meta.ignoreReasons`.
-  Required the same kind of one-time manual `ALTER TABLE` migration as
-  `is_ignored` originally did (see `CLAUDE.md`'s Gotcha section) — that
-  migration doubled as the "one-time bulk apply" to the existing ~65
-  repos, since any repo already `is_ignored = true` could only have gotten
-  there manually and was marked `'manual'` accordingly, leaving everything
-  else to be freshly computed on the very next run. Live-verified against
-  the real account: 22 pre-existing manually-ignored repos preserved
-  exactly, 24 repos newly auto-ignored (no forks/archived among them —
-  all no-README or no-activity), 19 auto repos correctly left assessed; a
-  second consecutive run left all three counts unchanged; the browser
-  checkbox toggle and its reason label were confirmed visually via
-  Playwright.
-
-- **UI-based per-repo assess/ignore toggle** — each repo card in
-  `tracker.html` now has a real "Ignore" checkbox. Toggling it
-  `fetch()`-POSTs to a new `pipeline/server.js` (plain `node:http`,
-  replacing `serve .` as `pnpm dev`), which writes straight to a new
-  `is_ignored` column on `tracker.duckdb`'s `repos` table.
-  `pipeline/run.js`'s enrichment loop reads it back via
-  `getIgnoredRepoIds()` and skips `enrichRepo()` for ignored repos — the
-  repo still shows on the dashboard with its normal activity, just no
-  assessment. `pipeline/load.js`'s `upsertRepo()` preserves `is_ignored`
-  across `INSERT OR REPLACE` the same way it already preserved
-  `first_seen_at`. Live-verified against the real account: toggled a
-  repo's checkbox in a real browser, confirmed the POST persisted to
-  `tracker.duckdb` (not just DOM state — checked after the server was
-  stopped and reopened fresh), confirmed `getIgnoredRepoIds` against the
-  live DB returns exactly that repo, toggled it back off. This is the
-  project's first server-side write path — everything before this was
-  one-directional (pipeline → DuckDB → `repos.json` → static
-  `tracker.html`). Required a one-time manual `ALTER TABLE` migration
-  against the live `tracker.duckdb` (see `CLAUDE.md`'s Gotcha section) —
-  `schema.sql` alone doesn't retrofit an already-populated DB.
-
-- **Retire `fetch.sh`** — `pipeline/` is the real project and
-  `publish.js` writing to `repos.json`/`tracker.html` is accepted behavior,
-  so `fetch.sh` was deleted outright. The one gap that would have made this
-  a regression — `pipeline/publish.js` always publishing `readme: ""` while
-  `fetch.sh` fetched real README text — is fixed: `buildRepoRecord()` now
-  reads the real README text out of that run's bronze copy. `package.json`'s
-  `build` script now runs `node pipeline/run.js` directly, and
-  `.claude/skills/update-tracker/SKILL.md` was rewritten to run the pipeline
-  and scope assessment work via `$ARGUMENTS` instead of hand-editing a
-  `repos=` list that no longer exists.
-
-- **`prs` data type** — the pipeline now extracts/loads/publishes pull
-  requests (`fetchPrsSince` and the full extract/load/publish wiring),
-  matching what `fetch.sh` already provided. Live-verified.
-
-- **Wire `repo_assessments` into `tracker.html`.** `pipeline/publish.js`'s
-  `buildRepoRecord()` includes each repo's latest `repo_assessments` row as
-  an `assessment` field; `tracker.html` falls back to it
-  (`ASSESS[r.name] || r.assessment || {...}`) only when there's no
-  hand-authored `ASSESS` entry. No second `inject.js` splice marker was
-  needed — the assessment rides along inside the existing `DATA` payload.
-  Deliberately not a full replacement of the hand-authored block: until
-  `generateAssessment()` is a real LLM call instead of a stub, the 9
-  existing hand-written entries stay authoritative.
-
-- **Wire Discovery into `run.js`'s `main()`, widen from 2 repos to the full
-  account.** No filter policy applied — `main()` extracts/loads/enriches/
-  publishes every repo Discovery returns (forks and archived included).
-  `pipeline/config.js`'s hardcoded `REPOS` is deleted. Added `--dry-run`
-  (reports scope + repos with no prior assessment; runs a real discovery —
-  writes `repos`/`repo_discoveries`/`runs` — but no extraction, load,
-  enrichment, publish, or `repos.json`/`tracker.html` writes) and
-  `--limit N` (restricts a real run to the first N discovered repos;
-  discovery itself is never restricted by `--limit`) flags to `run.js`.
-  Live-verified against the real account: dry-run found 65 repos discovered,
-  63 with no prior assessment; a `--limit 3` run confirmed `repos`/
-  `repo_discoveries` always reflect the full 65-repo account regardless of
-  `--limit`, while `repos.json`/`tracker.html` reflect only the limited
-  subset; a full run (no flags) discovered 65, fetched 28 ok, hit 37 fetch
-  errors (overwhelmingly repos with no README — a 404, handled as an
-  expected per-datatype failure — plus one "Git Repository is empty" 409),
-  made 60 enrichment calls, skipped 5 (already assessed); running the same
-  full run again immediately after made 0 enrichment calls and skipped all
-  65, confirming the content-hash gate holds when nothing has changed.
-  `repos.json` now has 65 entries (was 2); `tracker.html`'s injected `DATA`
-  block was verified to parse as valid JSON with all 65.
-
-- **Decided: `pipeline/publish.js` overwriting `repos.json`/`tracker.html`
-  is accepted behavior, not a bug.** `pipeline/` is now treated as the real
-  project; the earlier framing (see `docs/postmortems/`) of the overwrite as
-  a footgun to fix before it's safe to run assumed `fetch.sh`'s output was
-  the thing worth protecting. That's no longer the premise. Discovery is now
-  wired in (see the item above), so `pnpm pipeline` publishes the full
-  discovered account rather than a hardcoded 2-repo subset.
-
-- **Stage 0 vertical slice** (`pipeline/`) — Extract → Load → Enrich →
-  Publish, proven end-to-end for a hardcoded 2-repo scope: DuckDB-backed
-  watermarking, idempotent upserts, content-hash-gated enrichment (skips
-  the LLM call when inputs haven't changed), dead-letter failure isolation.
-- **Discovery module** (`pipeline/discover.js`) — enumerates the account via
-  paginated `gh api user/repos`, upserts `repos`, appends one row per repo to
-  `repo_discoveries` per run, and records a real `runs` row (not a
-  hardcoded count). Per-repo failures are isolated (one bad repo doesn't
-  abort the batch), matching `extract.js`'s pattern. Verified across two
-  live runs against the real account: 65 repos, no filtering, `runs` and
-  `repo_discoveries` both correctly populated (see `ARCHITECTURE.md`'s
-  Status section for the actual output). Runnable standalone via
-  `pnpm pipeline:discover`, and now also wired into `run.js`'s `main()`
-  (see the "Wire Discovery..." item above).
-- **Environment tooling** — `scripts/doctor.sh` (preflight checks: lockfile
-  integrity, DuckDB binding, real `gh` auth reachability, test discovery)
-  and standard `package.json` scripts (`dev`, `lint`, `format`, `build`,
-  `pipeline`, `deps:outdated`, `deps:update`, `env-check`).
+- Nothing specific queued. If a real pain point shows up while using the
+  live dashboard day to day, capture it here rather than speculating about
+  future work nobody's asked for.
 
 ## Explicitly not planned
 
-Carried over from `ARCHITECTURE.md`'s "Explicitly out of scope" — GraphQL
-batching, concurrency/backoff tuning, multi-tenancy. None of these solve a
-problem that exists at ~60 repos / one user; they'd be complexity for the
-sake of looking scalable, which isn't the point of this exercise.
+Carried over from the retired pipeline's original design rationale (see
+`ARCHITECTURE.md`): GraphQL batching of GitHub API calls, request
+concurrency/backoff tuning, and multi-tenancy/multi-user support. None of
+these solve a problem that exists at ~65 repos / one user; they'd be
+complexity for the sake of looking scalable, which isn't the point of this
+project.

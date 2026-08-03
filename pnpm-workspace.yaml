@@ -1,2 +1,5 @@
-allowBuilds:
-  duckdb: true
+# Marks this directory as its own pnpm workspace root (same reasoning as
+# app/pnpm-workspace.yaml) so `pnpm install` here doesn't walk up past this
+# package.json to a parent directory's pnpm-workspace.yaml. No packages/
+# allowBuilds entries needed now that the old stack (and its duckdb native
+# build) is gone.
