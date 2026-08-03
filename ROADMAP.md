@@ -20,12 +20,6 @@ Nothing currently queued — see Next for what's up.
 
 ## Next
 
-- **`.github/workflows/deploy.yml`'s `vercel deploy --prod` step has no
-  `--yes` flag.** Likely unnecessary in practice since `VERCEL_ORG_ID`/
-  `VERCEL_PROJECT_ID` are already set as env vars (which should suppress
-  any interactive prompt), but a cheap defensive no-op against a stuck
-  non-TTY prompt in CI if that assumption ever breaks. Noted during Phase 4
-  review, not yet applied.
 - **`PIPELINE_GH_TOKEN`'s expiration.** It's a fine-grained GitHub PAT
   (Contents/Issues/Pull requests: Read-only, account-wide) — fine-grained
   PATs have a mandatory expiration date. Whenever `pipeline.yml`'s
