@@ -1,50 +1,50 @@
 {
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/warn-dirty-review.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking git status before review dispatch..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/warn-docs-sync.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking doc-sync status before commit..."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd prime --hook-json"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@superpowers-dev": true
+  },
   "extraKnownMarketplaces": {
-    "superpowers": {
+    "superpowers-dev": {
       "source": {
         "source": "github",
         "repo": "obra/superpowers"
       }
     }
-  },
-  "enabledPlugins": {
-    "superpowers@superpowers": true
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "command": "bash \"$(git rev-parse --show-toplevel 2\u003e/dev/null || echo .)/.claude/hooks/warn-dirty-review.sh\"",
-            "statusMessage": "Checking git status before review dispatch...",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "Agent"
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash \"$(git rev-parse --show-toplevel 2\u003e/dev/null || echo .)/.claude/hooks/warn-docs-sync.sh\"",
-            "statusMessage": "Checking doc-sync status before commit...",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "Bash"
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "bd prime --hook-json",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ]
   }
 }
