@@ -20,11 +20,12 @@ Nothing currently queued — see Next for what's up.
 
 ## Next
 
-- **`PIPELINE_GH_TOKEN`'s expiration.** It's a fine-grained GitHub PAT
-  (Contents/Issues/Pull requests: Read-only, account-wide) — fine-grained
-  PATs have a mandatory expiration date. Whenever `pipeline.yml`'s
-  scheduled run starts failing with an auth error, this is the first thing
-  to check and rotate.
+- **Secrets & environment isolation.** Tracked live as a `bd` epic
+  (`tracker-6rd`) rather than duplicated here — run `bd show tracker-6rd`
+  for current status. Covers `PIPELINE_GH_TOKEN`'s mandatory expiration
+  (fine-grained PATs always expire — when `pipeline.yml`'s scheduled run
+  starts failing with an auth error, this is the first thing to check),
+  centralizing secrets in 1Password, and general prod-grade isolation.
 
 ## Later
 
