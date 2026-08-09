@@ -91,6 +91,17 @@ function latestByRepoId<T extends { repoId: number }>(rows: T[]): Map<number, T>
   return map;
 }
 
+export function computeTotals(repos: RepoCardView[]): DashboardTotals {
+  return {
+    repoCount: repos.length,
+    privateCount: repos.filter((r) => r.isPrivate).length,
+    commitCount: repos.reduce((sum, r) => sum + r.commits.length, 0),
+    prCount: repos.reduce((sum, r) => sum + r.pullRequests.length, 0),
+    mergedPrCount: repos.reduce((sum, r) => sum + r.pullRequests.filter((p) => p.mergedAt).length, 0),
+    issueCount: repos.reduce((sum, r) => sum + r.issues.length, 0),
+  };
+}
+
 export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
   const [repoRows, assessmentRows, commitRows, issueRows, prRows] = await Promise.all([
     db.select().from(repos).orderBy(repos.fullName),
@@ -154,16 +165,7 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
     };
   });
 
-  const totals: DashboardTotals = {
-    repoCount: repoViews.length,
-    privateCount: repoViews.filter((r) => r.isPrivate).length,
-    commitCount: repoViews.reduce((sum, r) => sum + r.commits.length, 0),
-    prCount: repoViews.reduce((sum, r) => sum + r.pullRequests.length, 0),
-    mergedPrCount: repoViews.reduce((sum, r) => sum + r.pullRequests.filter((p) => p.mergedAt).length, 0),
-    issueCount: repoViews.reduce((sum, r) => sum + r.issues.length, 0),
-  };
-
-  return { totals, repos: repoViews };
+  return { totals: computeTotals(repoViews), repos: repoViews };
 }
 
 export async function setRepoIgnoreControl(db: DrizzleDb, repoId: number, value: IgnoreControlValue): Promise<void> {
