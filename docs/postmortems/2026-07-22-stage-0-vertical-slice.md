@@ -1,7 +1,7 @@
 # Postmortem: Stage 0 vertical slice
 
 Branch: `stage-0-vertical-slice` (merged to `main` 2026-07-22).
-Plan: [`docs/superpowers/plans/2026-07-22-stage-0-vertical-slice.md`](../superpowers/plans/2026-07-22-stage-0-vertical-slice.md).
+Plan: [`docs/retired/2026-07-22-stage-0-vertical-slice.md`](../retired/2026-07-22-stage-0-vertical-slice.md).
 
 Six tasks landed clean (all approved by independent review, whole-branch
 review said ready-to-merge with no Critical/Important issues). This isn't a

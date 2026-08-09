@@ -8,7 +8,7 @@
 
 **Tech Stack:** SolidStart 2.x, `@solidjs/router` 1.x (`query`/`action`/`createAsync`/`useAction`/`useSubmission`), Drizzle ORM (`drizzle-orm/node-postgres` for the real Neon DB, `drizzle-orm/pglite` for tests), `drizzle-kit` for migrations, Vitest.
 
-**Reference:** `docs/superpowers/specs/2026-07-30-phase3-solidstart-frontend-design.md` — read this first for the approved decisions and their rationale.
+**Reference:** `docs/specs/2026-07-30-phase3-solidstart-frontend-design.md` — read this first for the approved decisions and their rationale.
 
 ## Global Constraints
 

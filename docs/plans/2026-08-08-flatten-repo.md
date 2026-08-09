@@ -97,7 +97,7 @@ Replace with (the comment now describes the post-flatten reality — this file's
 # Marks this directory as the pnpm workspace root, so `pnpm install` here
 # doesn't walk up past this directory looking for a workspace file
 # further up the filesystem. Single-package repo (no old nested app/
-# workspace anymore — flattened, see docs/superpowers/plans/2026-08-08-flatten-repo.md).
+# workspace anymore — flattened, see docs/plans/2026-08-08-flatten-repo.md).
 allowBuilds:
   esbuild: true
 ```

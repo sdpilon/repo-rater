@@ -1265,7 +1265,7 @@ to:
 end-to-end for a hardcoded 2-repo scope: Extract → Load → Enrich → Publish,
 with DuckDB-backed watermarking, idempotent upserts, content-hash-gated
 enrichment, and dead-letter failure isolation all proven out. See
-`docs/superpowers/plans/2026-07-22-stage-0-vertical-slice.md` for what was
+`docs/retired/2026-07-22-stage-0-vertical-slice.md` for what was
 built and why (thinnest end-to-end slice first, Discovery deliberately
 last since it's the easiest stage in isolation).
 
@@ -1298,7 +1298,7 @@ to:
 
 The pipeline above is the current, working baseline for a small hardcoded repo list. `ARCHITECTURE.md` and `schema.sql` describe a redesign to scale this to a full GitHub account (~60 repos): repo discovery instead of a hardcoded list, a bronze/silver/gold DuckDB-backed storage layer, incremental per-repo watermarked extraction, content-hash-gated AI re-assessment, and per-repo failure isolation.
 
-A first vertical slice of that redesign (Stage 0) is implemented in `pipeline/` — Extract → Load → Enrich → Publish for a hardcoded 2-repo scope. Discovery is not yet implemented (the repo list is still hardcoded), and `pipeline/` does not yet replace `fetch.sh`/`inject.js` as the pipeline that produces the checked-in `tracker.html` — it's a parallel, proven-out path, not yet the production one. Consult `ARCHITECTURE.md`'s "Status" section and `docs/superpowers/plans/` before assuming how much of the redesign exists.
+A first vertical slice of that redesign (Stage 0) is implemented in `pipeline/` — Extract → Load → Enrich → Publish for a hardcoded 2-repo scope. Discovery is not yet implemented (the repo list is still hardcoded), and `pipeline/` does not yet replace `fetch.sh`/`inject.js` as the pipeline that produces the checked-in `tracker.html` — it's a parallel, proven-out path, not yet the production one. Consult `ARCHITECTURE.md`'s "Status" section and `docs/plans/` before assuming how much of the redesign exists.
 ```
 
 - [ ] **Step 4: Commit**
