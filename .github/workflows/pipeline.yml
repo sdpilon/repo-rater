@@ -35,7 +35,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           # The pipeline's Octokit client reads the literal `GITHUB_TOKEN` env
-          # var (see app/src/pipeline/github/client.ts's createOctokit) and
+          # var (see src/pipeline/github/client.ts's createOctokit) and
           # needs a broad, account-wide PAT (it discovers/reads every repo in
           # the account via listForAuthenticatedUser) — not GitHub Actions'
           # automatic, repo-scoped GITHUB_TOKEN. GitHub also disallows
