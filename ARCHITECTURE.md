@@ -231,15 +231,31 @@ and `docs/superpowers/plans/2026-07-30-phase3-solidstart-frontend.md`:
 - **`app/nitro.config.ts` / Vercel Build Output API target** — the
   SolidStart/Nitro build outputs Vercel's Build Output API format directly,
   so deploys don't need Vercel's own framework auto-detection.
-- **`.github/workflows/deploy.yml`** — on every push to `main` touching
-  `app/**`: install, typecheck, lint, test, then
-  `vercel deploy --prod` using `VERCEL_TOKEN`/`VERCEL_ORG_ID`/
-  `VERCEL_PROJECT_ID` repo secrets. Live-verified: deploy succeeded end to
-  end after fixing two Vercel project misconfigurations discovered live
-  (Root Directory pointed at a build-artifact path, then needed to be
-  empty rather than `app` since the workflow already `cd`s into `app/`
-  before invoking the Vercel CLI) — production is
-  https://github-project-tracker-chi.vercel.app.
+- **`.github/workflows/deploy.yml`** — on every push to `main`: install,
+  typecheck, lint, test, then `vercel pull` + `vercel build --prod` +
+  `vercel deploy --prebuilt --prod`, using `VERCEL_TOKEN`/`VERCEL_ORG_ID`/
+  `VERCEL_PROJECT_ID` repo secrets. CI runs the actual build (the same one
+  Vercel would otherwise run remotely, unverified) via the Build Output
+  API — `vercel build` produces `.vercel/output`, and
+  `vercel deploy --prebuilt` ships exactly that artifact rather than
+  handing raw source to a second, disconnected Vercel-side build. Root
+  Directory is unset on the Vercel project (repo root is the project
+  root); `vercel pull` reads and applies that setting automatically. Nitro's
+  `preset: "vercel"` (`vite.config.ts`) independently bakes in
+  `deploy --prebuilt` as its own recommended deploy command for this exact
+  stack, corroborating this as the intended flow rather than a workaround.
+  Production is https://github-project-tracker-chi.vercel.app.
+
+  Gotcha hit live while implementing this (tracker-7bc): Vercel access
+  tokens can be scoped to a single project, but as of CLI 58.9.0 the
+  Vercel CLI appears not to support project-scoped tokens at all —
+  `vercel pull`/`vercel build`/even a plain `vercel ls` all fail with
+  "Could not retrieve Project Settings" or "User not found" against a
+  project-scoped token, confirmed by testing a read-only, project-scoped
+  operation directly. Vercel's own changelog for project-scoped tokens
+  only discusses REST API authentication, never the CLI. `VERCEL_TOKEN`
+  must be a **team-scoped** token (scope: `sdpilons-projects`), not
+  project-scoped, for this pipeline to work.
 - **`.github/workflows/pipeline.yml`** — replaces manually running
   `node pipeline/run.js` locally: runs `pnpm run pipeline`
   (`tsx src/pipeline/run.ts`) on a daily cron plus `workflow_dispatch`,
