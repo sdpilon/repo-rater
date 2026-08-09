@@ -1,6 +1,15 @@
 import { desc, eq } from "drizzle-orm";
 import { commits, issues, pullRequests, repoAssessments, repos } from "../db/schema";
 import type { DrizzleDb } from "../pipeline/db-types";
+import {
+  computeTotals,
+  type DashboardView,
+  type IgnoreControlValue,
+  type RepoAssessmentView,
+  type RepoCardView,
+} from "./dashboard-view";
+
+export * from "./dashboard-view";
 
 /**
  * Read-and-shape logic for the dashboard, plus the ignore-toggle write.
@@ -8,69 +17,12 @@ import type { DrizzleDb } from "../pipeline/db-types";
  * ~/lib/dashboard.ts) so it can be unit-tested against a real (PGlite)
  * Postgres the same way pipeline/ code already is, rather than only being
  * exercisable through a live SSR request.
+ *
+ * View types and pure helpers (computeTotals, filterVisibleRepos, etc.) live
+ * in ./dashboard-view.ts, which is free of drizzle imports so it's safe for
+ * the client bundle; this file re-exports them for convenience but anything
+ * importing only those should import ./dashboard-view directly.
  */
-
-export type IgnoreControlValue = "auto" | "yes" | "no";
-
-export interface RepoAssessmentView {
-  pct: number | null;
-  band: string;
-  label: string;
-  text: string;
-  gaps: string[];
-  readmeText: string | null;
-}
-
-export interface RepoCommitView {
-  sha: string;
-  authoredAt: Date | null;
-  message: string | null;
-}
-
-export interface RepoIssueView {
-  number: number;
-  title: string | null;
-  state: string | null;
-  createdAt: Date | null;
-}
-
-export interface RepoPullRequestView {
-  number: number;
-  title: string | null;
-  state: string | null;
-  createdAt: Date | null;
-  mergedAt: Date | null;
-}
-
-export interface RepoCardView {
-  repoId: number;
-  fullName: string;
-  htmlUrl: string | null;
-  description: string | null;
-  language: string | null;
-  isPrivate: boolean;
-  isIgnored: boolean;
-  ignoreReasons: string[];
-  ignoreControl: IgnoreControlValue;
-  assessment: RepoAssessmentView;
-  commits: RepoCommitView[];
-  issues: RepoIssueView[];
-  pullRequests: RepoPullRequestView[];
-}
-
-export interface DashboardTotals {
-  repoCount: number;
-  privateCount: number;
-  commitCount: number;
-  prCount: number;
-  mergedPrCount: number;
-  issueCount: number;
-}
-
-export interface DashboardView {
-  totals: DashboardTotals;
-  repos: RepoCardView[];
-}
 
 function groupByRepoId<T extends { repoId: number }>(rows: T[]): Map<number, T[]> {
   const map = new Map<number, T[]>();
@@ -89,17 +41,6 @@ function latestByRepoId<T extends { repoId: number }>(rows: T[]): Map<number, T>
     if (!map.has(row.repoId)) map.set(row.repoId, row);
   }
   return map;
-}
-
-export function computeTotals(repos: RepoCardView[]): DashboardTotals {
-  return {
-    repoCount: repos.length,
-    privateCount: repos.filter((r) => r.isPrivate).length,
-    commitCount: repos.reduce((sum, r) => sum + r.commits.length, 0),
-    prCount: repos.reduce((sum, r) => sum + r.pullRequests.length, 0),
-    mergedPrCount: repos.reduce((sum, r) => sum + r.pullRequests.filter((p) => p.mergedAt).length, 0),
-    issueCount: repos.reduce((sum, r) => sum + r.issues.length, 0),
-  };
 }
 
 export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {

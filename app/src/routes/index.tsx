@@ -1,25 +1,32 @@
 import { Title } from "@solidjs/meta";
 import { createAsync } from "@solidjs/router";
-import { For, Show, createEffect, createSignal, onMount } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onMount } from "solid-js";
 import RepoCard from "~/components/RepoCard";
 import Totals from "~/components/Totals";
 import { getDashboardData } from "~/lib/dashboard";
-import { computeTotals } from "~/lib/dashboard-queries";
+import { computeTotals, filterVisibleRepos } from "~/lib/dashboard-view";
 
 export default function Home() {
   const data = createAsync(() => getDashboardData());
 
   const [hideIgnored, setHideIgnored] = createSignal(false);
 
+  // Must run before the persisting effect below — Solid runs effects in creation order.
   onMount(() => {
-    if (localStorage.getItem("hideIgnoredRepos") === "true") {
-      setHideIgnored(true);
+    try {
+      if (localStorage.getItem("hideIgnoredRepos") === "true") {
+        setHideIgnored(true);
+      }
+    } catch {
+      /* localStorage unavailable — preference just won't persist */
     }
   });
 
   createEffect(() => {
-    if (typeof window !== "undefined") {
+    try {
       localStorage.setItem("hideIgnoredRepos", String(hideIgnored()));
+    } catch {
+      /* localStorage unavailable — preference just won't persist */
     }
   });
 
@@ -39,9 +46,10 @@ export default function Home() {
 
       <Show when={data()}>
         {(dashboard) => {
-          const visibleRepos = () =>
-            hideIgnored() ? dashboard().repos.filter((r) => !r.isIgnored) : dashboard().repos;
-          const visibleTotals = () => (hideIgnored() ? computeTotals(visibleRepos()) : dashboard().totals);
+          const visibleRepos = createMemo(() => filterVisibleRepos(dashboard().repos, hideIgnored()));
+          const visibleTotals = createMemo(() =>
+            hideIgnored() ? computeTotals(visibleRepos()) : dashboard().totals,
+          );
 
           return (
             <>
@@ -54,9 +62,14 @@ export default function Home() {
                 Hide ignored repos
               </label>
               <Totals totals={visibleTotals()} />
-              <div id="repos">
-                <For each={visibleRepos()}>{(repo) => <RepoCard repo={repo} />}</For>
-              </div>
+              <Show
+                when={visibleRepos().length > 0}
+                fallback={<p class="empty">No repos to show — everything is currently ignored.</p>}
+              >
+                <div id="repos">
+                  <For each={visibleRepos()}>{(repo) => <RepoCard repo={repo} />}</For>
+                </div>
+              </Show>
             </>
           );
         }}

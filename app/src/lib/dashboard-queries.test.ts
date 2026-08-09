@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { commits, issues, pullRequests, repoAssessments, repos } from "../db/schema";
 import type { DrizzleDb } from "../pipeline/db-types";
 import { createTestDb } from "../pipeline/test-helpers/pglite-db";
-import { computeTotals, getDashboardView, setRepoIgnoreControl, type RepoCardView } from "./dashboard-queries";
+import { getDashboardView, setRepoIgnoreControl } from "./dashboard-queries";
 
 let cleanup: (() => Promise<void>) | undefined;
 afterEach(async () => {
@@ -198,61 +198,3 @@ describe("setRepoIgnoreControl", () => {
   });
 });
 
-function fakeRepoCardView(overrides: Partial<RepoCardView> = {}): RepoCardView {
-  return {
-    repoId: 1,
-    fullName: "sdpilon/example",
-    htmlUrl: null,
-    description: null,
-    language: null,
-    isPrivate: false,
-    isIgnored: false,
-    ignoreReasons: [],
-    ignoreControl: "auto",
-    assessment: { pct: null, band: "none", label: "Not yet assessed", text: "", gaps: [], readmeText: null },
-    commits: [],
-    issues: [],
-    pullRequests: [],
-    ...overrides,
-  };
-}
-
-describe("computeTotals", () => {
-  it("aggregates counts across repos", () => {
-    const repos = [
-      fakeRepoCardView({
-        repoId: 1,
-        isPrivate: true,
-        commits: [{ sha: "a", authoredAt: null, message: null }],
-      }),
-      fakeRepoCardView({
-        repoId: 2,
-        pullRequests: [
-          { number: 1, title: null, state: "open", createdAt: null, mergedAt: null },
-          { number: 2, title: null, state: "closed", createdAt: null, mergedAt: new Date() },
-        ],
-        issues: [{ number: 1, title: null, state: "open", createdAt: null }],
-      }),
-    ];
-
-    expect(computeTotals(repos)).toEqual({
-      repoCount: 2,
-      privateCount: 1,
-      commitCount: 1,
-      prCount: 2,
-      mergedPrCount: 1,
-      issueCount: 1,
-    });
-  });
-
-  it("returns all zeros for an empty list", () => {
-    expect(computeTotals([])).toEqual({
-      repoCount: 0,
-      privateCount: 0,
-      commitCount: 0,
-      prCount: 0,
-      mergedPrCount: 0,
-      issueCount: 0,
-    });
-  });
-});
