@@ -1,5 +1,6 @@
-# Marks this directory as its own pnpm workspace root (same reasoning as
-# app/pnpm-workspace.yaml) so `pnpm install` here doesn't walk up past this
-# package.json to a parent directory's pnpm-workspace.yaml. No packages/
-# allowBuilds entries needed now that the old stack (and its duckdb native
-# build) is gone.
+# Marks this directory as the pnpm workspace root, so `pnpm install` here
+# doesn't walk up past this directory looking for a workspace file
+# further up the filesystem. Single-package repo (no old nested app/
+# workspace anymore — flattened, see docs/superpowers/plans/2026-08-08-flatten-repo.md).
+allowBuilds:
+  esbuild: true
