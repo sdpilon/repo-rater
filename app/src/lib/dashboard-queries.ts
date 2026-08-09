@@ -168,7 +168,10 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
 
 export async function setRepoIgnoreControl(db: DrizzleDb, repoId: number, value: IgnoreControlValue): Promise<void> {
   if (value === "auto") {
-    await db.update(repos).set({ ignoreSource: "auto" }).where(eq(repos.repoId, repoId));
+    await db
+      .update(repos)
+      .set({ ignoreSource: "auto", ignoreReasons: null })
+      .where(eq(repos.repoId, repoId));
     return;
   }
   await db

@@ -35,7 +35,8 @@ export default function Home() {
 
       <footer class="page">
         Percentages are judgment calls about "stated scope shipped," not code coverage. Ignored repos are
-        excluded from AI assessment — toggle the checkbox on any repo to include or exclude it.
+        excluded from AI assessment — use the Auto/Yes/No control on any repo to force it ignored, force it
+        included, or hand it back to the automatic rules.
       </footer>
     </div>
   );

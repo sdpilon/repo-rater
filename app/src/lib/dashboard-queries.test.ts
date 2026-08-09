@@ -153,6 +153,10 @@ describe("getDashboardView", () => {
     await db.update(repos).set({ ignoreSource: "manual", isIgnored: false }).where(eq(repos.repoId, 1));
     const noView = await getDashboardView(db);
     expect(noView.repos[0].ignoreControl).toBe("no");
+
+    await db.update(repos).set({ ignoreSource: "auto", isIgnored: true }).where(eq(repos.repoId, 1));
+    const autoIgnoredView = await getDashboardView(db);
+    expect(autoIgnoredView.repos[0].ignoreControl).toBe("auto");
   });
 });
 
