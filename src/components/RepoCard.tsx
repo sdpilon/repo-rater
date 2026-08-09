@@ -2,7 +2,7 @@ import { useAction, useSubmission } from "@solidjs/router";
 import { For, Show } from "solid-js";
 import CollapsibleSection from "~/components/CollapsibleSection";
 import { toggleIgnore } from "~/lib/dashboard";
-import type { RepoCardView } from "~/lib/dashboard-queries";
+import type { IgnoreControlValue, RepoCardView } from "~/lib/dashboard-queries";
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
 
@@ -21,12 +21,10 @@ export default function RepoCard(props: { repo: RepoCardView }) {
   const toggle = useAction(toggleIgnore);
   const submission = useSubmission(toggleIgnore, (input) => input[0] === props.repo.repoId);
 
-  async function handleChange(event: Event & { currentTarget: HTMLInputElement }) {
-    const next = event.currentTarget.checked;
+  async function handleIgnoreChange(value: IgnoreControlValue) {
     try {
-      await toggle(props.repo.repoId, next);
+      await toggle(props.repo.repoId, value);
     } catch (err) {
-      event.currentTarget.checked = !next;
       alert(`Couldn't update ignore state: ${(err as Error).message}`);
     }
   }
@@ -49,15 +47,22 @@ export default function RepoCard(props: { repo: RepoCardView }) {
           <Show when={props.repo.language}>
             <span class="lang">{props.repo.language}</span>
           </Show>
-          <label class="ignore-toggle">
-            <input
-              type="checkbox"
-              checked={props.repo.isIgnored}
-              disabled={submission.pending}
-              onChange={handleChange}
-            />
-            Ignore
-          </label>
+          <div class="ignore-control" role="radiogroup" aria-label="Ignore status">
+            <For each={["auto", "yes", "no"] as const}>
+              {(value) => (
+                <label classList={{ active: props.repo.ignoreControl === value }}>
+                  <input
+                    type="radio"
+                    name={`ignore-${props.repo.repoId}`}
+                    checked={props.repo.ignoreControl === value}
+                    disabled={submission.pending}
+                    onChange={() => handleIgnoreChange(value)}
+                  />
+                  {value === "auto" ? "Auto" : value === "yes" ? "Yes" : "No"}
+                </label>
+              )}
+            </For>
+          </div>
           <Show when={props.repo.ignoreReasons.length > 0}>
             <span class="ignore-reason">auto: {props.repo.ignoreReasons.join(", ")}</span>
           </Show>

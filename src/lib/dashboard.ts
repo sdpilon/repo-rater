@@ -1,6 +1,6 @@
 import { action, json, query } from "@solidjs/router";
 import { assertAuthenticated } from "./auth-guard";
-import { getDashboardView, setRepoIgnored } from "./dashboard-queries";
+import { getDashboardView, setRepoIgnoreControl, type IgnoreControlValue } from "./dashboard-queries";
 import { db } from "./server-db";
 
 export const getDashboardData = query(async () => {
@@ -9,9 +9,9 @@ export const getDashboardData = query(async () => {
   return getDashboardView(db);
 }, "dashboard");
 
-export const toggleIgnore = action(async (repoId: number, ignored: boolean) => {
+export const toggleIgnore = action(async (repoId: number, value: IgnoreControlValue) => {
   "use server";
   assertAuthenticated();
-  await setRepoIgnored(db, repoId, ignored);
+  await setRepoIgnoreControl(db, repoId, value);
   return json(null, { revalidate: getDashboardData.key });
 }, "toggleIgnore");
