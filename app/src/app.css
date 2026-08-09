@@ -81,6 +81,13 @@ header.page .sub code { font-family: var(--mono); font-size: 0.85em; }
   color: var(--ink-3); margin-top: 2px;
 }
 
+.hide-ignored-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; color: var(--ink-2); cursor: pointer; user-select: none;
+  margin-top: 18px;
+}
+.hide-ignored-toggle input { accent-color: var(--accent); cursor: pointer; }
+
 .repo {
   background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
   margin-bottom: 22px; overflow: hidden;

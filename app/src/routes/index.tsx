@@ -1,12 +1,27 @@
 import { Title } from "@solidjs/meta";
 import { createAsync } from "@solidjs/router";
-import { For, Show } from "solid-js";
+import { For, Show, createEffect, createSignal, onMount } from "solid-js";
 import RepoCard from "~/components/RepoCard";
 import Totals from "~/components/Totals";
 import { getDashboardData } from "~/lib/dashboard";
+import { computeTotals } from "~/lib/dashboard-queries";
 
 export default function Home() {
   const data = createAsync(() => getDashboardData());
+
+  const [hideIgnored, setHideIgnored] = createSignal(false);
+
+  onMount(() => {
+    if (localStorage.getItem("hideIgnoredRepos") === "true") {
+      setHideIgnored(true);
+    }
+  });
+
+  createEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("hideIgnoredRepos", String(hideIgnored()));
+    }
+  });
 
   return (
     <div class="wrap">
@@ -23,14 +38,28 @@ export default function Home() {
       </header>
 
       <Show when={data()}>
-        {(dashboard) => (
-          <>
-            <Totals totals={dashboard().totals} />
-            <div id="repos">
-              <For each={dashboard().repos}>{(repo) => <RepoCard repo={repo} />}</For>
-            </div>
-          </>
-        )}
+        {(dashboard) => {
+          const visibleRepos = () =>
+            hideIgnored() ? dashboard().repos.filter((r) => !r.isIgnored) : dashboard().repos;
+          const visibleTotals = () => (hideIgnored() ? computeTotals(visibleRepos()) : dashboard().totals);
+
+          return (
+            <>
+              <label class="hide-ignored-toggle">
+                <input
+                  type="checkbox"
+                  checked={hideIgnored()}
+                  onChange={(e) => setHideIgnored(e.currentTarget.checked)}
+                />
+                Hide ignored repos
+              </label>
+              <Totals totals={visibleTotals()} />
+              <div id="repos">
+                <For each={visibleRepos()}>{(repo) => <RepoCard repo={repo} />}</For>
+              </div>
+            </>
+          );
+        }}
       </Show>
 
       <footer class="page">
