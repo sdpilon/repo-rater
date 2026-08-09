@@ -10,6 +10,8 @@ import type { DrizzleDb } from "../pipeline/db-types";
  * exercisable through a live SSR request.
  */
 
+export type IgnoreControlValue = "auto" | "yes" | "no";
+
 export interface RepoAssessmentView {
   pct: number | null;
   band: string;
@@ -49,6 +51,7 @@ export interface RepoCardView {
   isPrivate: boolean;
   isIgnored: boolean;
   ignoreReasons: string[];
+  ignoreControl: IgnoreControlValue;
   assessment: RepoAssessmentView;
   commits: RepoCommitView[];
   issues: RepoIssueView[];
@@ -128,6 +131,7 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
       isPrivate: repo.isPrivate ?? false,
       isIgnored: repo.isIgnored,
       ignoreReasons: repo.isIgnored && repo.ignoreSource === "auto" ? (repo.ignoreReasons ?? []) : [],
+      ignoreControl: repo.ignoreSource === "auto" ? "auto" : repo.isIgnored ? "yes" : "no",
       assessment,
       commits: (commitsByRepoId.get(repo.repoId) ?? []).map((c) => ({
         sha: c.sha,
@@ -162,9 +166,13 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
   return { totals, repos: repoViews };
 }
 
-export async function setRepoIgnored(db: DrizzleDb, repoId: number, ignored: boolean): Promise<void> {
+export async function setRepoIgnoreControl(db: DrizzleDb, repoId: number, value: IgnoreControlValue): Promise<void> {
+  if (value === "auto") {
+    await db.update(repos).set({ ignoreSource: "auto" }).where(eq(repos.repoId, repoId));
+    return;
+  }
   await db
     .update(repos)
-    .set({ isIgnored: ignored, ignoreSource: "manual" })
+    .set({ isIgnored: value === "yes", ignoreSource: "manual" })
     .where(eq(repos.repoId, repoId));
 }
