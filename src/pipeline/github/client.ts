@@ -8,16 +8,18 @@ import { Octokit } from "octokit";
  */
 
 /**
- * Builds an Octokit instance authenticated from the `GITHUB_TOKEN`
+ * Builds an Octokit instance authenticated from the `PIPELINE_GH_TOKEN`
  * environment variable. Throws a clear, actionable error rather than
  * constructing an unauthenticated client if the token is missing — callers
  * (namely `run.ts`'s `main()`) are expected to fail fast on a missing token
  * rather than let it surface later as a cryptic 401/403 from GitHub.
  */
 export function createOctokit(env: NodeJS.ProcessEnv = process.env): Octokit {
-  const token = env.GITHUB_TOKEN;
+  const token = env.PIPELINE_GH_TOKEN;
   if (!token) {
-    throw new Error("GITHUB_TOKEN environment variable is required to create an Octokit client");
+    throw new Error(
+      "PIPELINE_GH_TOKEN environment variable is required to create an Octokit client",
+    );
   }
   return new Octokit({ auth: token });
 }

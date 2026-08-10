@@ -223,7 +223,7 @@ export async function runPipeline({
 }
 
 /**
- * Real CLI entrypoint. Reads `DATABASE_URL`/`GITHUB_TOKEN` from the
+ * Real CLI entrypoint. Reads `DATABASE_URL`/`PIPELINE_GH_TOKEN` from the
  * environment and fails fast with a clear error if either is missing
  * (rather than letting a missing env var surface later as a cryptic
  * downstream connection error), builds a real db/Octokit, runs the
@@ -238,10 +238,10 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       "DATABASE_URL environment variable is required to run the pipeline — set it before running `node run.js`.",
     );
   }
-  const githubToken = process.env.GITHUB_TOKEN;
+  const githubToken = process.env.PIPELINE_GH_TOKEN;
   if (!githubToken) {
     throw new Error(
-      "GITHUB_TOKEN environment variable is required to run the pipeline — set it before running `node run.js`.",
+      "PIPELINE_GH_TOKEN environment variable is required to run the pipeline — set it before running `node run.js`.",
     );
   }
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;

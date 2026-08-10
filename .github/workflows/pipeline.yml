@@ -34,14 +34,10 @@ jobs:
         run: pnpm run pipeline
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          # The pipeline's Octokit client reads the literal `GITHUB_TOKEN` env
-          # var (see src/pipeline/github/client.ts's createOctokit) and
-          # needs a broad, account-wide PAT (it discovers/reads every repo in
-          # the account via listForAuthenticatedUser) — not GitHub Actions'
-          # automatic, repo-scoped GITHUB_TOKEN. GitHub also disallows
-          # creating a repo secret literally named GITHUB_TOKEN (secret names
-          # can't start with the GITHUB_ prefix), so the PAT is stored under
-          # a differently-named secret and mapped to the env var the app
-          # expects here.
-          GITHUB_TOKEN: ${{ secrets.PIPELINE_GH_TOKEN }}
+          # GitHub disallows a repo secret literally named GITHUB_TOKEN
+          # (reserved for Actions' own automatic per-run token), so the
+          # broad, account-wide PAT the pipeline's Octokit client needs is
+          # stored as PIPELINE_GH_TOKEN instead — same name the app code
+          # reads (see src/pipeline/github/client.ts's createOctokit).
+          PIPELINE_GH_TOKEN: ${{ secrets.PIPELINE_GH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
