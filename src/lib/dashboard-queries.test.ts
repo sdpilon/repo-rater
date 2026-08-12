@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { commits, issues, pullRequests, repoAssessments, repos } from "../db/schema";
 import type { DrizzleDb } from "../pipeline/db-types";
 import { createTestDb } from "../pipeline/test-helpers/pglite-db";
-import { getDashboardView, setRepoIgnoreControl } from "./dashboard-queries";
+import { getDashboardView, setRepoAssessControl } from "./dashboard-queries";
 
 let cleanup: (() => Promise<void>) | undefined;
 afterEach(async () => {
@@ -138,50 +138,50 @@ describe("getDashboardView", () => {
     });
   });
 
-  it("derives ignoreControl from ignore_source and is_ignored", async () => {
+  it("derives assessControl from ignore_source and is_ignored, inverted from is_ignored", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
     await insertRepo(db, { ignoreSource: "auto", isIgnored: false });
 
     const autoView = await getDashboardView(db);
-    expect(autoView.repos[0].ignoreControl).toBe("auto");
+    expect(autoView.repos[0].assessControl).toBe("auto");
 
     await db.update(repos).set({ ignoreSource: "manual", isIgnored: true }).where(eq(repos.repoId, 1));
-    const yesView = await getDashboardView(db);
-    expect(yesView.repos[0].ignoreControl).toBe("yes");
+    const noView = await getDashboardView(db);
+    expect(noView.repos[0].assessControl).toBe("no");
 
     await db.update(repos).set({ ignoreSource: "manual", isIgnored: false }).where(eq(repos.repoId, 1));
-    const noView = await getDashboardView(db);
-    expect(noView.repos[0].ignoreControl).toBe("no");
+    const yesView = await getDashboardView(db);
+    expect(yesView.repos[0].assessControl).toBe("yes");
 
     await db.update(repos).set({ ignoreSource: "auto", isIgnored: true }).where(eq(repos.repoId, 1));
     const autoIgnoredView = await getDashboardView(db);
-    expect(autoIgnoredView.repos[0].ignoreControl).toBe("auto");
+    expect(autoIgnoredView.repos[0].assessControl).toBe("auto");
   });
 });
 
-describe("setRepoIgnoreControl", () => {
-  it("'yes' sets is_ignored true and marks ignore_source manual", async () => {
-    const { db, close } = await createTestDb();
-    cleanup = close;
-    await insertRepo(db, { ignoreSource: "auto" });
-
-    await setRepoIgnoreControl(db, 1, "yes");
-
-    const [row] = await db.select().from(repos).where(eq(repos.repoId, 1));
-    expect(row.isIgnored).toBe(true);
-    expect(row.ignoreSource).toBe("manual");
-  });
-
-  it("'no' sets is_ignored false and marks ignore_source manual", async () => {
+describe("setRepoAssessControl", () => {
+  it("'yes' sets is_ignored false (will be assessed) and marks ignore_source manual", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
     await insertRepo(db, { ignoreSource: "auto", isIgnored: true });
 
-    await setRepoIgnoreControl(db, 1, "no");
+    await setRepoAssessControl(db, 1, "yes");
 
     const [row] = await db.select().from(repos).where(eq(repos.repoId, 1));
     expect(row.isIgnored).toBe(false);
+    expect(row.ignoreSource).toBe("manual");
+  });
+
+  it("'no' sets is_ignored true (won't be assessed) and marks ignore_source manual", async () => {
+    const { db, close } = await createTestDb();
+    cleanup = close;
+    await insertRepo(db, { ignoreSource: "auto", isIgnored: false });
+
+    await setRepoAssessControl(db, 1, "no");
+
+    const [row] = await db.select().from(repos).where(eq(repos.repoId, 1));
+    expect(row.isIgnored).toBe(true);
     expect(row.ignoreSource).toBe("manual");
   });
 
@@ -190,7 +190,7 @@ describe("setRepoIgnoreControl", () => {
     cleanup = close;
     await insertRepo(db, { ignoreSource: "manual", isIgnored: true });
 
-    await setRepoIgnoreControl(db, 1, "auto");
+    await setRepoAssessControl(db, 1, "auto");
 
     const [row] = await db.select().from(repos).where(eq(repos.repoId, 1));
     expect(row.ignoreSource).toBe("auto");

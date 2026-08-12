@@ -2,9 +2,9 @@ import { desc, eq } from "drizzle-orm";
 import { commits, issues, pullRequests, repoAssessments, repos } from "../db/schema";
 import type { DrizzleDb } from "../pipeline/db-types";
 import {
+  type AssessControlValue,
   computeTotals,
   type DashboardView,
-  type IgnoreControlValue,
   type RepoAssessmentView,
   type RepoCardView,
 } from "./dashboard-view";
@@ -83,7 +83,7 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
       isPrivate: repo.isPrivate ?? false,
       isIgnored: repo.isIgnored,
       ignoreReasons: repo.isIgnored && repo.ignoreSource === "auto" ? (repo.ignoreReasons ?? []) : [],
-      ignoreControl: repo.ignoreSource === "auto" ? "auto" : repo.isIgnored ? "yes" : "no",
+      assessControl: repo.ignoreSource === "auto" ? "auto" : repo.isIgnored ? "no" : "yes",
       assessment,
       commits: (commitsByRepoId.get(repo.repoId) ?? []).map((c) => ({
         sha: c.sha,
@@ -109,7 +109,7 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
   return { totals: computeTotals(repoViews), repos: repoViews };
 }
 
-export async function setRepoIgnoreControl(db: DrizzleDb, repoId: number, value: IgnoreControlValue): Promise<void> {
+export async function setRepoAssessControl(db: DrizzleDb, repoId: number, value: AssessControlValue): Promise<void> {
   if (value === "auto") {
     await db
       .update(repos)
@@ -119,6 +119,6 @@ export async function setRepoIgnoreControl(db: DrizzleDb, repoId: number, value:
   }
   await db
     .update(repos)
-    .set({ isIgnored: value === "yes", ignoreSource: "manual" })
+    .set({ isIgnored: value === "no", ignoreSource: "manual" })
     .where(eq(repos.repoId, repoId));
 }

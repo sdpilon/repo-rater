@@ -11,7 +11,7 @@ function fakeRepoCardView(overrides: Partial<RepoCardView> = {}): RepoCardView {
     isPrivate: false,
     isIgnored: false,
     ignoreReasons: [],
-    ignoreControl: "auto",
+    assessControl: "auto",
     assessment: { pct: null, band: "none", label: "Not yet assessed", text: "", gaps: [], readmeText: null },
     commits: [],
     issues: [],
