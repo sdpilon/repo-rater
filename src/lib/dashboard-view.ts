@@ -8,7 +8,7 @@
  * dashboard-queries.ts instead.
  */
 
-export type IgnoreControlValue = "auto" | "yes" | "no";
+export type AssessControlValue = "auto" | "yes" | "no";
 
 export interface RepoAssessmentView {
   pct: number | null;
@@ -49,7 +49,7 @@ export interface RepoCardView {
   isPrivate: boolean;
   isIgnored: boolean;
   ignoreReasons: string[];
-  ignoreControl: IgnoreControlValue;
+  assessControl: AssessControlValue;
   assessment: RepoAssessmentView;
   commits: RepoCommitView[];
   issues: RepoIssueView[];
