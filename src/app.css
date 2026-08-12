@@ -94,33 +94,38 @@ header.page .sub code { font-family: var(--mono); font-size: 0.85em; }
 }
 .repo-head { padding: 18px 20px 14px; }
 .repo-head .toprow {
-  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .repo-head h2 { margin: 0; font-size: 1.05rem; font-weight: 650; letter-spacing: -0.01em; }
 .repo-head h2 a { color: var(--ink); text-decoration: none; }
 .repo-head h2 a:hover { color: var(--accent-ink); text-decoration: underline; }
+.badges { display: inline-flex; align-items: baseline; gap: 8px; }
 .badge {
   font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em;
   padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line);
   color: var(--ink-2); background: var(--surface-2);
 }
 .badge.private { border-color: var(--warn); color: var(--warn); background: transparent; }
-.lang { font-size: 0.78rem; color: var(--ink-3); margin-left: auto; }
+.lang { font-size: 0.78rem; color: var(--ink-3); }
 .desc { color: var(--ink-2); font-size: 0.86rem; margin: 6px 0 0; }
-.ignore-control {
+.assess-group {
+  display: inline-flex; align-items: baseline; gap: 6px; margin-left: auto;
+}
+.assess-label { font-size: 0.72rem; color: var(--ink-3); }
+.assess-control {
   display: inline-flex; border: 1px solid var(--line); border-radius: 6px;
   overflow: hidden; font-size: 0.72rem;
 }
-.ignore-control label {
+.assess-control label {
   position: relative; padding: 2px 8px; cursor: pointer;
   color: var(--ink-2); user-select: none;
 }
-.ignore-control label.active { background: var(--accent); color: var(--surface); }
-.ignore-control input {
+.assess-control label.active { background: var(--accent); color: var(--surface); }
+.assess-control input {
   position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer;
 }
-.ignore-control label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
-.ignore-reason { font-size: 0.7rem; color: var(--ink-3); font-style: italic; }
+.assess-control label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+.assess-reason { font-size: 0.7rem; color: var(--ink-3); font-style: italic; }
 .repo.is-ignored { opacity: 0.55; }
 
 .meter-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }

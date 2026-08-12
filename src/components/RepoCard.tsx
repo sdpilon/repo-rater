@@ -41,31 +41,36 @@ export default function RepoCard(props: { repo: RepoCardView }) {
               {shortName()}
             </a>
           </h2>
-          <span class="badge" classList={{ private: props.repo.isPrivate }}>
-            {props.repo.isPrivate ? "private" : "public"}
-          </span>
-          <Show when={props.repo.language}>
-            <span class="lang">{props.repo.language}</span>
-          </Show>
-          <div class="ignore-control" role="radiogroup" aria-label="Ignore status">
-            <For each={["auto", "yes", "no"] as const}>
-              {(value) => (
-                <label classList={{ active: props.repo.assessControl === value }}>
-                  <input
-                    type="radio"
-                    name={`ignore-${props.repo.repoId}`}
-                    checked={props.repo.assessControl === value}
-                    disabled={submission.pending}
-                    onChange={() => handleAssessChange(value)}
-                  />
-                  {value === "auto" ? "Auto" : value === "yes" ? "Yes" : "No"}
-                </label>
-              )}
-            </For>
+          <div class="badges">
+            <span class="badge" classList={{ private: props.repo.isPrivate }}>
+              {props.repo.isPrivate ? "private" : "public"}
+            </span>
+            <Show when={props.repo.language}>
+              <span class="lang">{props.repo.language}</span>
+            </Show>
           </div>
-          <Show when={props.repo.ignoreReasons.length > 0}>
-            <span class="ignore-reason">auto: {props.repo.ignoreReasons.join(", ")}</span>
-          </Show>
+          <div class="assess-group">
+            <span class="assess-label">Assess:</span>
+            <div class="assess-control" role="radiogroup" aria-label="Assess status">
+              <For each={["auto", "yes", "no"] as const}>
+                {(value) => (
+                  <label classList={{ active: props.repo.assessControl === value }}>
+                    <input
+                      type="radio"
+                      name={`assess-${props.repo.repoId}`}
+                      checked={props.repo.assessControl === value}
+                      disabled={submission.pending}
+                      onChange={() => handleAssessChange(value)}
+                    />
+                    {value === "auto" ? "Auto" : value === "yes" ? "Yes" : "No"}
+                  </label>
+                )}
+              </For>
+            </div>
+            <Show when={props.repo.ignoreReasons.length > 0}>
+              <span class="assess-reason">auto: {props.repo.ignoreReasons.join(", ")}</span>
+            </Show>
+          </div>
         </div>
         <Show when={props.repo.description}>
           <p class="desc">{props.repo.description}</p>
