@@ -1,8 +1,8 @@
 import { useAction, useSubmission } from "@solidjs/router";
 import { For, Show } from "solid-js";
 import CollapsibleSection from "~/components/CollapsibleSection";
-import { toggleIgnore } from "~/lib/dashboard";
-import type { IgnoreControlValue, RepoCardView } from "~/lib/dashboard-queries";
+import { toggleAssess } from "~/lib/dashboard";
+import type { AssessControlValue, RepoCardView } from "~/lib/dashboard-queries";
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
 
@@ -18,14 +18,14 @@ function meterColor(pct: number | null): string {
 }
 
 export default function RepoCard(props: { repo: RepoCardView }) {
-  const toggle = useAction(toggleIgnore);
-  const submission = useSubmission(toggleIgnore, (input) => input[0] === props.repo.repoId);
+  const toggle = useAction(toggleAssess);
+  const submission = useSubmission(toggleAssess, (input) => input[0] === props.repo.repoId);
 
-  async function handleIgnoreChange(value: IgnoreControlValue) {
+  async function handleAssessChange(value: AssessControlValue) {
     try {
       await toggle(props.repo.repoId, value);
     } catch (err) {
-      alert(`Couldn't update ignore state: ${(err as Error).message}`);
+      alert(`Couldn't update assess state: ${(err as Error).message}`);
     }
   }
 
@@ -50,13 +50,13 @@ export default function RepoCard(props: { repo: RepoCardView }) {
           <div class="ignore-control" role="radiogroup" aria-label="Ignore status">
             <For each={["auto", "yes", "no"] as const}>
               {(value) => (
-                <label classList={{ active: props.repo.ignoreControl === value }}>
+                <label classList={{ active: props.repo.assessControl === value }}>
                   <input
                     type="radio"
                     name={`ignore-${props.repo.repoId}`}
-                    checked={props.repo.ignoreControl === value}
+                    checked={props.repo.assessControl === value}
                     disabled={submission.pending}
-                    onChange={() => handleIgnoreChange(value)}
+                    onChange={() => handleAssessChange(value)}
                   />
                   {value === "auto" ? "Auto" : value === "yes" ? "Yes" : "No"}
                 </label>
