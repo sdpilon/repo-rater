@@ -15,7 +15,7 @@ import { isAuthenticatedRequest, isPublicPath } from "~/lib/auth";
  * `/_server` (the RPC endpoint every "use server" query/action posts to,
  * including the login action itself) is intentionally left reachable —
  * blocking it here would also block the login submission. The
- * `assertAuthenticated()` guard inside `getDashboardData`/`toggleIgnore`
+ * `assertAuthenticated()` guard inside `getDashboardData`/`toggleAssess`
  * (see `~/lib/dashboard.ts`) is what actually keeps that endpoint from
  * leaking data unauthenticated.
  */
