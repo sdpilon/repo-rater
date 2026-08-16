@@ -40,4 +40,15 @@ describe("renderReadme", () => {
     expect(html).toContain('type="checkbox"');
     expect(html).toContain("disabled");
   });
+
+  it("strips <script> tags from malicious markdown input", () => {
+    const html = renderReadme("# Title\n\n<script>alert('xss')</script>");
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("alert(");
+  });
+
+  it("strips inline event-handler attributes like onerror", () => {
+    const html = renderReadme('<img src="x" onerror="alert(1)">');
+    expect(html).not.toContain("onerror");
+  });
 });
