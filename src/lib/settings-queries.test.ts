@@ -46,6 +46,14 @@ describe("validateGithubToken", () => {
     const result = await validateGithubToken("fake-token", fakeFactory);
     expect(result).toEqual({ ok: false, error: "Bad credentials" });
   });
+
+  it("resolves ok:false (not a rejected promise) when the real factory throws synchronously on a falsy token", async () => {
+    const result = await validateGithubToken("");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/PIPELINE_GH_TOKEN/);
+    }
+  });
 });
 
 describe("validateAnthropicKey", () => {
@@ -71,5 +79,13 @@ describe("validateAnthropicKey", () => {
     ) => import("@anthropic-ai/sdk").default;
     const result = await validateAnthropicKey("fake-key", fakeFactory);
     expect(result).toEqual({ ok: false, error: "invalid x-api-key" });
+  });
+
+  it("resolves ok:false (not a rejected promise) when the real factory throws synchronously on a falsy key", async () => {
+    const result = await validateAnthropicKey("");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/ANTHROPIC_API_KEY/);
+    }
   });
 });

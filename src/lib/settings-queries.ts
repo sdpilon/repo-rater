@@ -39,8 +39,8 @@ export async function validateGithubToken(
   token: string,
   octokitFactory: (env: NodeJS.ProcessEnv) => Octokit = createOctokit,
 ): Promise<ValidationResult> {
-  const octokit = octokitFactory({ PIPELINE_GH_TOKEN: token } as NodeJS.ProcessEnv);
   try {
+    const octokit = octokitFactory({ PIPELINE_GH_TOKEN: token } as NodeJS.ProcessEnv);
     await octokit.rest.users.getAuthenticated();
     return { ok: true };
   } catch (err) {
@@ -52,8 +52,8 @@ export async function validateAnthropicKey(
   apiKey: string,
   anthropicFactory: (env: NodeJS.ProcessEnv) => Anthropic = createAnthropicClient,
 ): Promise<ValidationResult> {
-  const client = anthropicFactory({ ANTHROPIC_API_KEY: apiKey } as NodeJS.ProcessEnv);
   try {
+    const client = anthropicFactory({ ANTHROPIC_API_KEY: apiKey } as NodeJS.ProcessEnv);
     await client.models.list();
     return { ok: true };
   } catch (err) {
