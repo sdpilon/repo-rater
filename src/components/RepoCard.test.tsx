@@ -80,3 +80,51 @@ describe("RepoCard assess-control placement", () => {
     expect(badges?.querySelector(".assess-control")).toBeNull();
   });
 });
+
+describe("RepoCard README rendering", () => {
+  it("renders README markdown as formatted HTML", () => {
+    const { container } = renderCard(
+      makeRepo({
+        assessment: {
+          pct: 50,
+          band: "ok",
+          label: "In progress",
+          text: "",
+          gaps: [],
+          readmeText: "# Title\n\n- one\n- two",
+        },
+      }),
+    );
+    const readme = container.querySelector(".readme");
+    expect(readme).toBeTruthy();
+    expect(readme?.innerHTML).toContain("<h1>Title</h1>");
+    expect(readme?.querySelectorAll("li").length).toBe(2);
+  });
+
+  it("still shows the no-README fallback when readmeText is null", () => {
+    const { container } = renderCard(
+      makeRepo({
+        assessment: { pct: 50, band: "ok", label: "In progress", text: "", gaps: [], readmeText: null },
+      }),
+    );
+    expect(container.querySelector(".readme")).toBeNull();
+    expect(screen.getByText("Not yet assessed — no README captured.")).toBeTruthy();
+  });
+
+  it("does not render a raw <script> element from malicious README content", () => {
+    const { container } = renderCard(
+      makeRepo({
+        assessment: {
+          pct: 50,
+          band: "ok",
+          label: "In progress",
+          text: "",
+          gaps: [],
+          readmeText: "<script>window.__pwned = true;</script>\n\nSafe text.",
+        },
+      }),
+    );
+    expect(container.querySelector(".readme script")).toBeNull();
+    expect(container.querySelector(".readme")?.textContent).toContain("Safe text.");
+  });
+});
