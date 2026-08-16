@@ -3,6 +3,7 @@ import { For, Show } from "solid-js";
 import CollapsibleSection from "~/components/CollapsibleSection";
 import { toggleAssess } from "~/lib/dashboard";
 import type { AssessControlValue, RepoCardView } from "~/lib/dashboard-queries";
+import { renderReadme } from "~/lib/render-markdown";
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
 
@@ -164,7 +165,7 @@ export default function RepoCard(props: { repo: RepoCardView }) {
             when={props.repo.assessment.readmeText}
             fallback={<div class="empty">Not yet assessed — no README captured.</div>}
           >
-            <pre class="readme">{props.repo.assessment.readmeText}</pre>
+            {(readmeText) => <div class="readme" innerHTML={renderReadme(readmeText())} />}
           </Show>
         </CollapsibleSection>
       </div>
