@@ -22,6 +22,48 @@ describe("validateDatabaseUrl", () => {
     const result = await validateDatabaseUrl("postgres://fake", fakeFactory);
     expect(result).toEqual({ ok: false, error: "connection refused" });
   });
+
+  // Finding 1: `pg` throws an AggregateError with an empty top-level
+  // `.message` whenever a hostname resolves to multiple addresses — exactly
+  // what happens connecting to `localhost` (::1 + 127.0.0.1), the most
+  // likely first thing a self-hoster types. The old `errorMessage()`
+  // returned `err.message`, i.e. "", leaving the UI showing nothing.
+  it("joins sub-error messages when the connection throws an AggregateError with an empty top-level message", async () => {
+    const aggregateError = new AggregateError(
+      [new Error("connect ECONNREFUSED 127.0.0.1:5432"), new Error("connect ECONNREFUSED ::1:5432")],
+      "",
+    );
+    const fakeDb = {
+      $client: {
+        query: async () => {
+          throw aggregateError;
+        },
+        end: async () => {},
+      },
+    };
+    const fakeFactory = (() => fakeDb) as unknown as typeof import("~/db/client").createDb;
+    const result = await validateDatabaseUrl("postgres://fake", fakeFactory);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).not.toBe("");
+      expect(result.error).toContain("ECONNREFUSED 127.0.0.1:5432");
+      expect(result.error).toContain("ECONNREFUSED ::1:5432");
+    }
+  });
+
+  it("never returns an empty error string, even for an error with no message at all", async () => {
+    const fakeDb = {
+      $client: {
+        query: async () => {
+          throw new Error("");
+        },
+        end: async () => {},
+      },
+    };
+    const fakeFactory = (() => fakeDb) as unknown as typeof import("~/db/client").createDb;
+    const result = await validateDatabaseUrl("postgres://fake", fakeFactory);
+    expect(result).toEqual({ ok: false, error: "Connection failed" });
+  });
 });
 
 describe("validateGithubToken", () => {

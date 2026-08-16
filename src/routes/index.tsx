@@ -19,7 +19,7 @@ export default function Home() {
   const status = createAsync(() => getCredentialStatus());
   const data = createAsync(async () => {
     const s = status();
-    if (!s?.databaseConfigured) return undefined;
+    if (!s?.database.configured) return undefined;
     return getDashboardData();
   });
 
@@ -50,7 +50,7 @@ export default function Home() {
       <Show when={status()}>
         {(s) => (
           <Show
-            when={s().databaseConfigured}
+            when={s().database.configured}
             fallback={
               <>
                 <header class="page">

@@ -16,8 +16,24 @@ import { createOctokit } from "~/pipeline/github/client";
 
 export type ValidationResult = { ok: true } | { ok: false; error: string };
 
+/**
+ * `pg` throws a Node `AggregateError` with an empty `.message` whenever a
+ * hostname resolves to multiple addresses — exactly what happens for
+ * `localhost` (`::1` + `127.0.0.1`), the single most likely first thing a
+ * self-hoster types. Left unhandled, `err.message` is `""` and the
+ * validation UI shows nothing at all. Join the wrapped sub-errors' messages
+ * instead, and never return an empty string.
+ */
 function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
+  if (typeof AggregateError !== "undefined" && err instanceof AggregateError) {
+    const joined = err.errors.map((subErr) => errorMessage(subErr)).join("; ");
+    if (joined) return joined;
+  }
+  // Skip String(err) as a fallback for Error instances — Error.prototype.toString()
+  // always yields at least "Error" (the name) even when .message is "", so it can
+  // never actually surface the "never empty" fallback below.
+  if (err instanceof Error) return err.message || "Connection failed";
+  return String(err) || "Connection failed";
 }
 
 export async function validateDatabaseUrl(

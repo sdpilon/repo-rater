@@ -26,20 +26,40 @@ function readConfigFile(configFilePath: string): Record<string, string> {
   }
 }
 
+/** Empty/whitespace-only values are treated as unset from either source — a blank submitted field (see settings.ts) or a blank env var shouldn't count as "configured". */
+function isBlank(value: string | undefined): boolean {
+  return value === undefined || value.trim() === "";
+}
+
 export function resolveConfig(key: string, options?: ConfigOptions): string | undefined {
   const envValue = process.env[key];
-  if (envValue) return envValue;
-  return readConfigFile(resolveConfigFilePath(options))[key];
+  if (!isBlank(envValue)) return envValue;
+  const fileValue = readConfigFile(resolveConfigFilePath(options))[key];
+  if (!isBlank(fileValue)) return fileValue;
+  return undefined;
 }
 
 export function isConfigured(key: string, options?: ConfigOptions): boolean {
   return resolveConfig(key, options) !== undefined;
 }
 
+/**
+ * Which source (if any) a key currently resolves from — used by the
+ * settings UI to tell a self-hoster "this is set via environment variable,
+ * changes here won't take effect" instead of silently no-op-ing a save.
+ */
+export function resolveConfigSource(key: string, options?: ConfigOptions): "env" | "file" | "unset" {
+  if (!isBlank(process.env[key])) return "env";
+  if (!isBlank(readConfigFile(resolveConfigFilePath(options))[key])) return "file";
+  return "unset";
+}
+
 export function setConfigValue(key: string, value: string, options?: ConfigOptions): void {
   const configFilePath = resolveConfigFilePath(options);
   const current = readConfigFile(configFilePath);
   current[key] = value;
-  mkdirSync(dirname(configFilePath), { recursive: true });
-  writeFileSync(configFilePath, JSON.stringify(current, null, 2));
+  // Config secrets (DB connection string, GitHub PAT, Anthropic key) should
+  // never land world-readable on a shared homelab box.
+  mkdirSync(dirname(configFilePath), { recursive: true, mode: 0o700 });
+  writeFileSync(configFilePath, JSON.stringify(current, null, 2), { mode: 0o600 });
 }
