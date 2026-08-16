@@ -12,6 +12,9 @@ app.config.timestamp_*.js
 .env
 .env*.local
 
+# Config data (holds secrets)
+data/
+
 # dependencies
 /node_modules
 
