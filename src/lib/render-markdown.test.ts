@@ -103,4 +103,23 @@ describe("renderReadme", () => {
     expect(htmlA).toContain("octocat/hello-world/blob/HEAD/docs/guide.md");
     expect(htmlB).toContain("octocat/other-repo/blob/HEAD/docs/guide.md");
   });
+
+  it("does not resolve a backslash-prefixed href to a third-party origin", () => {
+    const html = renderReadme("[evil](\\\\evil.com/p)", "octocat/hello-world");
+    expect(html).not.toMatch(/href="https:\/\/evil\.com/);
+    expect(html).toContain('href="https://github.com/octocat/hello-world/blob/HEAD/evil.com/p"');
+  });
+
+  it("does not resolve a backslash-prefixed image src to a third-party origin", () => {
+    const html = renderReadme("![evil](\\\\evil.com/p.png)", "octocat/hello-world");
+    expect(html).not.toMatch(/src="https:\/\/evil\.com/);
+    expect(html).toContain(
+      'src="https://raw.githubusercontent.com/octocat/hello-world/HEAD/evil.com/p.png"',
+    );
+  });
+
+  it("leaves protocol-relative link hrefs unchanged", () => {
+    const html = renderReadme("[ext](//example.com/x)", "octocat/hello-world");
+    expect(html).toContain('href="//example.com/x"');
+  });
 });

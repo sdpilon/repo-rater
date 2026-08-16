@@ -9,7 +9,8 @@ function isRelativeUrl(href: string): boolean {
 }
 
 function resolveAgainst(href: string, base: string): string {
-  return new URL(href.replace(/^\/+/, ""), base).toString();
+  const resolved = new URL(href.replace(/^[/\\]+/, ""), base);
+  return resolved.origin === new URL(base).origin ? resolved.toString() : href;
 }
 
 function buildMarked(fullName: string): Marked {
@@ -32,7 +33,7 @@ export function renderReadme(markdown: string, fullName: string): string {
   const key = `${fullName}:${markdown}`;
   const cached = cache.get(key);
   if (cached !== undefined) return cached;
-  const html = buildMarked(fullName).parse(markdown, { async: false }) as string;
+  const html = buildMarked(fullName).parse(markdown, { async: false });
   const sanitized = DOMPurify.sanitize(html);
   cache.set(key, sanitized);
   return sanitized;

@@ -131,7 +131,7 @@ describe("RepoCard README rendering", () => {
   it("resolves a relative README link against the repo's GitHub blob URL", () => {
     const { container } = renderCard(
       makeRepo({
-        fullName: "octocat/hello-world",
+        fullName: "acme/widgets",
         assessment: {
           pct: 50,
           band: "ok",
@@ -144,7 +144,7 @@ describe("RepoCard README rendering", () => {
     );
     const link = container.querySelector(".readme a");
     expect(link?.getAttribute("href")).toBe(
-      "https://github.com/octocat/hello-world/blob/HEAD/docs/guide.md",
+      "https://github.com/acme/widgets/blob/HEAD/docs/guide.md",
     );
   });
 });
