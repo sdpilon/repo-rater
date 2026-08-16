@@ -10,6 +10,8 @@
  * same reasoning as `dashboard-queries.ts`'s split from `dashboard.ts`.
  */
 
+import { isConfigured, resolveConfig } from "./config";
+
 export const AUTH_COOKIE = "site_auth";
 
 /** 30 days, in seconds. */
@@ -24,11 +26,16 @@ export function isPublicPath(pathname: string): boolean {
   );
 }
 
+/** Cheap presence check — true once APP_PASSWORD is set via env var or the config file. */
+export function isAppPasswordConfigured(): boolean {
+  return isConfigured("APP_PASSWORD");
+}
+
 export function requireAppPassword(): string {
-  const value = process.env.APP_PASSWORD;
+  const value = resolveConfig("APP_PASSWORD");
   if (!value) {
     throw new Error(
-      "APP_PASSWORD environment variable is required to run the dashboard — set it before running `pnpm dev`.",
+      "APP_PASSWORD is not configured — set the APP_PASSWORD environment variable or configure it via the config file before running `pnpm dev`.",
     );
   }
   return value;
@@ -67,8 +74,13 @@ export function buildAuthCookie(value: string): string {
   return attrs.join("; ");
 }
 
-/** True when `request` carries a cookie matching the configured APP_PASSWORD. */
+/**
+ * True when `request` carries a cookie matching the configured APP_PASSWORD
+ * — or unconditionally true when no APP_PASSWORD is configured at all (a
+ * self-hosted instance with no password gate, e.g. behind Tailscale).
+ */
 export function isAuthenticatedRequest(request: Request): boolean {
+  if (!isAppPasswordConfigured()) return true;
   const cookieValue = getCookieValue(request.headers.get("cookie"), AUTH_COOKIE);
   return cookieValue !== undefined && cookieValue === requireAppPassword();
 }

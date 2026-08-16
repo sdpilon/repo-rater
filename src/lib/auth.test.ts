@@ -1,12 +1,18 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   AUTH_COOKIE,
   buildAuthCookie,
   getCookieValue,
+  isAppPasswordConfigured,
   isAuthenticatedRequest,
   isPublicPath,
   requireAppPassword,
 } from "./auth";
+
+vi.mock("./config", () => ({
+  resolveConfig: (key: string) => process.env[key],
+  isConfigured: (key: string) => process.env[key] !== undefined,
+}));
 
 const originalPassword = process.env.APP_PASSWORD;
 const originalNodeEnv = process.env.NODE_ENV;
@@ -106,5 +112,21 @@ describe("isAuthenticatedRequest", () => {
     expect(
       isAuthenticatedRequest(new Request("http://localhost/", { headers: { cookie: "site_auth=wrong" } })),
     ).toBe(false);
+  });
+});
+
+describe("isAppPasswordConfigured", () => {
+  it("is false when APP_PASSWORD is unset, true when set", () => {
+    delete process.env.APP_PASSWORD;
+    expect(isAppPasswordConfigured()).toBe(false);
+    process.env.APP_PASSWORD = "hunter2";
+    expect(isAppPasswordConfigured()).toBe(true);
+  });
+});
+
+describe("isAuthenticatedRequest with no APP_PASSWORD configured", () => {
+  it("treats every request as authenticated when the gate is off", () => {
+    delete process.env.APP_PASSWORD;
+    expect(isAuthenticatedRequest(new Request("http://localhost/"))).toBe(true);
   });
 });
