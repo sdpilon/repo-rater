@@ -23,10 +23,18 @@ afterEach(() => {
 // @solidjs/router's useRouter()) throw "can only be used inside a Route"
 // outside a rendered router tree — a real <Router>/<Route> is required, not
 // just a bare render(). This mirrors RepoCard.test.tsx's established pattern.
-function renderPanel(status: CredentialStatus) {
+function renderPanel(status: CredentialStatus, showDatabaseField?: boolean) {
   return render(() => (
     <MemoryRouter>
-      <Route path="/" component={() => <CredentialsPanel status={status} />} />
+      <Route
+        path="/"
+        component={() => (
+          <CredentialsPanel
+            status={status}
+            showDatabaseField={showDatabaseField}
+          />
+        )}
+      />
     </MemoryRouter>
   ));
 }
@@ -48,5 +56,28 @@ describe("CredentialsPanel", () => {
       anthropicKeyConfigured: false,
     });
     expect(screen.getByText(/database.*configured/i)).toBeTruthy();
+  });
+
+  it("shows the database field by default", () => {
+    renderPanel({
+      databaseConfigured: false,
+      githubTokenConfigured: false,
+      anthropicKeyConfigured: false,
+    });
+    expect(screen.getByLabelText("Database connection string")).toBeTruthy();
+  });
+
+  it("hides the database field when showDatabaseField is false, but still shows the other two", () => {
+    renderPanel(
+      {
+        databaseConfigured: true,
+        githubTokenConfigured: false,
+        anthropicKeyConfigured: false,
+      },
+      false,
+    );
+    expect(screen.queryByLabelText("Database connection string")).toBeNull();
+    expect(screen.getByLabelText("GitHub personal access token")).toBeTruthy();
+    expect(screen.getByLabelText("Anthropic API key")).toBeTruthy();
   });
 });

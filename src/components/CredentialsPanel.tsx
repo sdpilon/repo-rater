@@ -57,16 +57,23 @@ function CredentialField(props: {
   );
 }
 
-export default function CredentialsPanel(props: { status: CredentialStatus }) {
+export default function CredentialsPanel(props: {
+  status: CredentialStatus;
+  showDatabaseField?: boolean;
+}) {
+  const showDatabaseField = () => props.showDatabaseField ?? true;
+
   return (
     <div class="credentials-panel">
-      <CredentialField
-        label="Database connection string"
-        fieldName="databaseUrl"
-        inputType="password"
-        configured={props.status.databaseConfigured}
-        action={saveDatabaseUrl}
-      />
+      <Show when={showDatabaseField()}>
+        <CredentialField
+          label="Database connection string"
+          fieldName="databaseUrl"
+          inputType="password"
+          configured={props.status.databaseConfigured}
+          action={saveDatabaseUrl}
+        />
+      </Show>
       <CredentialField
         label="GitHub personal access token"
         fieldName="githubToken"

@@ -119,7 +119,7 @@ export default function Home() {
 
             <details class="settings-section">
               <summary>Settings</summary>
-              <CredentialsPanel status={s()} />
+              <CredentialsPanel status={s()} showDatabaseField={false} />
             </details>
 
             <footer class="page">
