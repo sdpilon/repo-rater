@@ -1,6 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Octokit } from "octokit";
 import { createDb } from "../db/client";
+import { resolveConfig } from "../lib/config";
 import { createAnthropicClient } from "./anthropic/client";
 import type { Assessment, AssessmentInput } from "./anthropic/client";
 import type { DrizzleDb } from "./db-types";
@@ -232,28 +233,28 @@ export async function runPipeline({
 export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
   const args = parseArgs(argv);
 
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = resolveConfig("DATABASE_URL");
   if (!databaseUrl) {
     throw new Error(
-      "DATABASE_URL environment variable is required to run the pipeline — set it before running `node run.js`.",
+      "DATABASE_URL is not configured — set the DATABASE_URL environment variable or configure it via the dashboard settings before running `node run.js`.",
     );
   }
-  const githubToken = process.env.PIPELINE_GH_TOKEN;
+  const githubToken = resolveConfig("PIPELINE_GH_TOKEN");
   if (!githubToken) {
     throw new Error(
-      "PIPELINE_GH_TOKEN environment variable is required to run the pipeline — set it before running `node run.js`.",
+      "PIPELINE_GH_TOKEN is not configured — set the PIPELINE_GH_TOKEN environment variable or configure it via the dashboard settings before running `node run.js`.",
     );
   }
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+  const anthropicApiKey = resolveConfig("ANTHROPIC_API_KEY");
   if (!anthropicApiKey) {
     throw new Error(
-      "ANTHROPIC_API_KEY environment variable is required to run the pipeline — set it before running `node run.js`.",
+      "ANTHROPIC_API_KEY is not configured — set the ANTHROPIC_API_KEY environment variable or configure it via the dashboard settings before running `node run.js`.",
     );
   }
 
   const db = createDb(databaseUrl);
-  const octokit = createOctokit(process.env);
-  const anthropicClient = createAnthropicClient(process.env);
+  const octokit = createOctokit({ PIPELINE_GH_TOKEN: githubToken } as NodeJS.ProcessEnv);
+  const anthropicClient = createAnthropicClient({ ANTHROPIC_API_KEY: anthropicApiKey } as NodeJS.ProcessEnv);
 
   try {
     await runPipeline({ db, octokit, anthropicClient, args });
