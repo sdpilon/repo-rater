@@ -209,10 +209,11 @@ table.log td.date, table.log td.sha { color: var(--ink-3); }
   overflow-x: auto; margin: 0.6em 0;
 }
 .readme pre code { background: none; padding: 0; }
-.readme table { border-collapse: collapse; margin: 0.6em 0; font-size: 0.82rem; }
+.readme table { display: block; overflow-x: auto; border-collapse: collapse; margin: 0.6em 0; font-size: 0.82rem; max-width: 100%; }
 .readme th, .readme td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
 .readme th { background: var(--surface-2); font-weight: 600; }
 .readme a { color: var(--accent-ink); }
+.readme a:hover { text-decoration: underline; }
 .readme blockquote {
   margin: 0.6em 0; padding: 0.2em 0.9em; border-left: 3px solid var(--line); color: var(--ink-3);
 }
