@@ -127,4 +127,24 @@ describe("RepoCard README rendering", () => {
     expect(container.querySelector(".readme script")).toBeNull();
     expect(container.querySelector(".readme")?.textContent).toContain("Safe text.");
   });
+
+  it("resolves a relative README link against the repo's GitHub blob URL", () => {
+    const { container } = renderCard(
+      makeRepo({
+        fullName: "octocat/hello-world",
+        assessment: {
+          pct: 50,
+          band: "ok",
+          label: "In progress",
+          text: "",
+          gaps: [],
+          readmeText: "[guide](docs/guide.md)",
+        },
+      }),
+    );
+    const link = container.querySelector(".readme a");
+    expect(link?.getAttribute("href")).toBe(
+      "https://github.com/octocat/hello-world/blob/HEAD/docs/guide.md",
+    );
+  });
 });

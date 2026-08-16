@@ -165,7 +165,7 @@ export default function RepoCard(props: { repo: RepoCardView }) {
             when={props.repo.assessment.readmeText}
             fallback={<div class="empty">Not yet assessed — no README captured.</div>}
           >
-            {(readmeText) => <div class="readme" innerHTML={renderReadme(readmeText())} />}
+            {(readmeText) => <div class="readme" innerHTML={renderReadme(readmeText(), props.repo.fullName)} />}
           </Show>
         </CollapsibleSection>
       </div>
