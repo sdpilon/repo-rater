@@ -1,15 +1,27 @@
 import { Title } from "@solidjs/meta";
 import { action, redirect, useAction, useSubmission } from "@solidjs/router";
-import { buildAuthCookie, requireAppPassword } from "~/lib/auth";
+import { buildAuthCookie, isAppPasswordConfigured, requireAppPassword } from "~/lib/auth";
 
-const login = action(async (formData: FormData) => {
+/**
+ * Extracted (rather than inlined in `action(...)`) so it can be unit-tested
+ * directly without needing a live router context — `action()`'s wrapper
+ * requires one, this plain function doesn't.
+ */
+export async function loginAction(formData: FormData) {
   "use server";
+  if (!isAppPasswordConfigured()) {
+    // No password gate configured at all (e.g. a homelab instance behind
+    // Tailscale) — nothing meaningful to log in to, so just send them home.
+    throw redirect("/");
+  }
   const password = String(formData.get("password") ?? "");
   if (password !== requireAppPassword()) {
     return { error: "Incorrect password." };
   }
   throw redirect("/", { headers: { "Set-Cookie": buildAuthCookie(password) } });
-}, "login");
+}
+
+const login = action(loginAction, "login");
 
 export default function Login() {
   const submit = useAction(login);
