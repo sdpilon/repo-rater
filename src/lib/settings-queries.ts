@@ -16,6 +16,11 @@ import { createOctokit } from "~/pipeline/github/client";
 
 export type ValidationResult = { ok: true } | { ok: false; error: string };
 
+/** How long save-time DB validation waits for a connection before giving up
+ *  — an unreachable host/port (wrong IP, firewalled) would otherwise hang
+ *  indefinitely, since `pg` has no connect timeout by default. */
+const VALIDATION_CONNECT_TIMEOUT_MS = 5000;
+
 /**
  * `pg` throws a Node `AggregateError` with an empty `.message` whenever a
  * hostname resolves to multiple addresses — exactly what happens for
@@ -40,7 +45,7 @@ export async function validateDatabaseUrl(
   databaseUrl: string,
   dbFactory: typeof createDb = createDb,
 ): Promise<ValidationResult> {
-  const db = dbFactory(databaseUrl);
+  const db = dbFactory(databaseUrl, { connectionTimeoutMillis: VALIDATION_CONNECT_TIMEOUT_MS });
   try {
     await db.$client.query("SELECT 1");
     return { ok: true };

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -122,5 +122,23 @@ describe("setConfigValue", () => {
     setConfigValue("TEST_CONFIG_KEY", "value", { configFilePath: nestedPath });
     expect(statSync(nestedPath).mode & 0o777).toBe(0o600);
     expect(statSync(dirname(nestedPath)).mode & 0o777).toBe(0o700);
+  });
+
+  // Finding: `mode` on mkdirSync/writeFileSync only applies at creation —
+  // it's silently ignored when the directory/file already exists (e.g. a
+  // Docker bind-mount pre-created it with the host's default umask), so a
+  // pre-existing loosely-permissioned file/dir stayed world-readable.
+  it("tightens permissions on a pre-existing, loosely-permissioned file and directory", () => {
+    const dir = join(tempDir, "preexisting");
+    const nestedPath = join(dir, "config.json");
+    mkdirSync(dir, { mode: 0o755 });
+    writeFileSync(nestedPath, "{}", { mode: 0o644 });
+    expect(statSync(nestedPath).mode & 0o777).toBe(0o644);
+    expect(statSync(dir).mode & 0o777).toBe(0o755);
+
+    setConfigValue("TEST_CONFIG_KEY", "value", { configFilePath: nestedPath });
+
+    expect(statSync(nestedPath).mode & 0o777).toBe(0o600);
+    expect(statSync(dir).mode & 0o777).toBe(0o700);
   });
 });

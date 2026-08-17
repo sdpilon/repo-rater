@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 /**
@@ -59,7 +59,13 @@ export function setConfigValue(key: string, value: string, options?: ConfigOptio
   const current = readConfigFile(configFilePath);
   current[key] = value;
   // Config secrets (DB connection string, GitHub PAT, Anthropic key) should
-  // never land world-readable on a shared homelab box.
-  mkdirSync(dirname(configFilePath), { recursive: true, mode: 0o700 });
+  // never land world-readable on a shared homelab box. `mode` on mkdirSync/
+  // writeFileSync only applies when the directory/file is newly created —
+  // it's silently ignored if either already exists (e.g. a Docker bind-mount
+  // pre-created it with the host's umask) — so chmod explicitly afterward.
+  const configDir = dirname(configFilePath);
+  mkdirSync(configDir, { recursive: true, mode: 0o700 });
+  chmodSync(configDir, 0o700);
   writeFileSync(configFilePath, JSON.stringify(current, null, 2), { mode: 0o600 });
+  chmodSync(configFilePath, 0o600);
 }

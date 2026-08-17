@@ -16,7 +16,19 @@ import * as schema from "./schema";
  * (the underlying `pg` `Pool`) to close the connection when done — `main()`
  * in `pipeline/run.ts` is the intended caller for that.
  */
-export function createDb(databaseUrl: string): NodePgDatabase<typeof schema> & { $client: Pool } {
-  const pool = new Pool({ connectionString: databaseUrl });
+export interface CreateDbOptions {
+  /** Passed straight through to `pg.Pool` — how long to wait for a new
+   *  connection before rejecting, instead of `pg`'s default of no timeout.
+   *  Left unset for the pipeline's long-lived connection; save-time
+   *  credential validation sets this so an unreachable host/port fails
+   *  fast instead of hanging indefinitely. */
+  connectionTimeoutMillis?: number;
+}
+
+export function createDb(
+  databaseUrl: string,
+  options?: CreateDbOptions,
+): NodePgDatabase<typeof schema> & { $client: Pool } {
+  const pool = new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: options?.connectionTimeoutMillis });
   return drizzle(pool, { schema });
 }

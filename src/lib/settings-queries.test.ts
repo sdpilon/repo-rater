@@ -64,6 +64,20 @@ describe("validateDatabaseUrl", () => {
     const result = await validateDatabaseUrl("postgres://fake", fakeFactory);
     expect(result).toEqual({ ok: false, error: "Connection failed" });
   });
+
+  // Finding: an unreachable host/port (wrong IP, firewalled) hung forever
+  // with no connect timeout, contradicting "find out immediately".
+  it("passes a connect timeout to the factory so an unreachable host fails fast instead of hanging", async () => {
+    const fakeDb = { $client: { query: async () => ({}), end: async () => {} } };
+    let receivedOptions: unknown;
+    const fakeFactory = ((_url: string, options: unknown) => {
+      receivedOptions = options;
+      return fakeDb;
+    }) as unknown as typeof import("~/db/client").createDb;
+    await validateDatabaseUrl("postgres://fake", fakeFactory);
+    expect(receivedOptions).toEqual({ connectionTimeoutMillis: expect.any(Number) });
+    expect((receivedOptions as { connectionTimeoutMillis: number }).connectionTimeoutMillis).toBeGreaterThan(0);
+  });
 });
 
 describe("validateGithubToken", () => {
