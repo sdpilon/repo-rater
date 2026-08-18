@@ -2,9 +2,9 @@
   "name": "github-project-tracker",
   "type": "module",
   "scripts": {
-    "dev": "op run --environment awfmhhvd3m2pczed5p45annswa -- vite dev",
+    "dev": "vite dev",
     "build": "vite build",
-    "start": "op run --environment awfmhhvd3m2pczed5p45annswa -- node .output/server/index.mjs",
+    "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

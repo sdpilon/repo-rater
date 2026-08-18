@@ -29,12 +29,10 @@ Any of the four can instead be left unset and entered through the Settings UI on
 
 ```bash
 pnpm install
-pnpm exec vite dev
+pnpm dev
 ```
 
-> `package.json`'s `dev`/`start` scripts (`pnpm dev`/`pnpm start`) currently wrap the underlying command in `op run --environment <id> -- ...`, pulling the maintainer's own secrets from a personal 1Password Environment — that's specific to how the maintainer runs their own instance and won't work for anyone else (tracked as a known gap, `tracker-jm8.2.1`). Run the underlying command directly instead, as above, or `node .output/server/index.mjs` after `pnpm build` for a production-style run.
-
-Credentials aren't read from a `.env` file (this project has no `dotenv` dependency) — export them as real environment variables before starting the process (`export DATABASE_URL=... && pnpm exec vite dev`, a Docker Compose `env_file`, a systemd unit's `EnvironmentFile`, etc.), or leave them unset and add them through the credentials screen the dashboard shows once it's running.
+Credentials aren't read from a `.env` file (this project has no `dotenv` dependency) — export them as real environment variables before starting the process (`export DATABASE_URL=... && pnpm dev`, a Docker Compose `env_file`, a systemd unit's `EnvironmentFile`, etc.), or leave them unset and add them through the credentials screen the dashboard shows once it's running.
 
 Other useful commands:
 
