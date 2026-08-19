@@ -17,6 +17,7 @@ export interface RepoAssessmentView {
   text: string;
   gaps: string[];
   readmeText: string | null;
+  updatedAt: Date | null;
 }
 
 export interface RepoCommitView {
@@ -76,11 +77,17 @@ export function computeTotals(repos: RepoCardView[]): DashboardTotals {
     privateCount: repos.filter((r) => r.isPrivate).length,
     commitCount: repos.reduce((sum, r) => sum + r.commits.length, 0),
     prCount: repos.reduce((sum, r) => sum + r.pullRequests.length, 0),
-    mergedPrCount: repos.reduce((sum, r) => sum + r.pullRequests.filter((p) => p.mergedAt).length, 0),
+    mergedPrCount: repos.reduce(
+      (sum, r) => sum + r.pullRequests.filter((p) => p.mergedAt).length,
+      0,
+    ),
     issueCount: repos.reduce((sum, r) => sum + r.issues.length, 0),
   };
 }
 
-export function filterVisibleRepos(repos: RepoCardView[], hideIgnored: boolean): RepoCardView[] {
+export function filterVisibleRepos(
+  repos: RepoCardView[],
+  hideIgnored: boolean,
+): RepoCardView[] {
   return hideIgnored ? repos.filter((r) => !r.isIgnored) : repos;
 }

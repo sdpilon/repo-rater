@@ -1,6 +1,12 @@
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
-import { commits, issues, pullRequests, repoAssessments, repos } from "../db/schema";
+import {
+  commits,
+  issues,
+  pullRequests,
+  repoAssessments,
+  repos,
+} from "../db/schema";
 import type { DrizzleDb } from "../pipeline/db-types";
 import { createTestDb } from "../pipeline/test-helpers/pglite-db";
 import { getDashboardView, setRepoAssessControl } from "./dashboard-queries";
@@ -69,6 +75,7 @@ describe("getDashboardView", () => {
       text: "new assessment",
       gaps: [],
       readmeText: "new readme",
+      updatedAt: new Date("2026-02-01T00:00:00Z"),
     });
     expect(view.totals.privateCount).toBe(1);
   });
@@ -86,6 +93,7 @@ describe("getDashboardView", () => {
       text: "",
       gaps: [],
       readmeText: null,
+      updatedAt: null,
     });
   });
 
@@ -101,7 +109,10 @@ describe("getDashboardView", () => {
     const view = await getDashboardView(db);
     expect(view.repos[0].ignoreReasons).toEqual(["no README", "no activity"]);
 
-    await db.update(repos).set({ ignoreSource: "manual" }).where(eq(repos.repoId, 1));
+    await db
+      .update(repos)
+      .set({ ignoreSource: "manual" })
+      .where(eq(repos.repoId, 1));
     const manualView = await getDashboardView(db);
     expect(manualView.repos[0].ignoreReasons).toEqual([]);
   });
@@ -125,7 +136,11 @@ describe("getDashboardView", () => {
         lastUpdatedRunId: "run-1",
       },
     ]);
-    await db.insert(issues).values([{ repoId: 1, number: 1, state: "open", lastUpdatedRunId: "run-1" }]);
+    await db
+      .insert(issues)
+      .values([
+        { repoId: 1, number: 1, state: "open", lastUpdatedRunId: "run-1" },
+      ]);
 
     const view = await getDashboardView(db);
     expect(view.totals).toEqual({
@@ -146,15 +161,24 @@ describe("getDashboardView", () => {
     const autoView = await getDashboardView(db);
     expect(autoView.repos[0].assessControl).toBe("auto");
 
-    await db.update(repos).set({ ignoreSource: "manual", isIgnored: true }).where(eq(repos.repoId, 1));
+    await db
+      .update(repos)
+      .set({ ignoreSource: "manual", isIgnored: true })
+      .where(eq(repos.repoId, 1));
     const noView = await getDashboardView(db);
     expect(noView.repos[0].assessControl).toBe("no");
 
-    await db.update(repos).set({ ignoreSource: "manual", isIgnored: false }).where(eq(repos.repoId, 1));
+    await db
+      .update(repos)
+      .set({ ignoreSource: "manual", isIgnored: false })
+      .where(eq(repos.repoId, 1));
     const yesView = await getDashboardView(db);
     expect(yesView.repos[0].assessControl).toBe("yes");
 
-    await db.update(repos).set({ ignoreSource: "auto", isIgnored: true }).where(eq(repos.repoId, 1));
+    await db
+      .update(repos)
+      .set({ ignoreSource: "auto", isIgnored: true })
+      .where(eq(repos.repoId, 1));
     const autoIgnoredView = await getDashboardView(db);
     expect(autoIgnoredView.repos[0].assessControl).toBe("auto");
   });
@@ -197,4 +221,3 @@ describe("setRepoAssessControl", () => {
     expect(row.isIgnored).toBe(true); // unchanged until the next pipeline run
   });
 });
-

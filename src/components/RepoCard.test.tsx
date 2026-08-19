@@ -26,7 +26,15 @@ function makeRepo(overrides: Partial<RepoCardView> = {}): RepoCardView {
     isIgnored: false,
     ignoreReasons: [],
     assessControl: "auto",
-    assessment: { pct: 50, band: "ok", label: "In progress", text: "", gaps: [], readmeText: null },
+    assessment: {
+      pct: 50,
+      band: "ok",
+      label: "In progress",
+      text: "",
+      gaps: [],
+      readmeText: null,
+      updatedAt: null,
+    },
     commits: [],
     issues: [],
     pullRequests: [],
@@ -68,7 +76,9 @@ describe("RepoCard assess-control placement", () => {
 
   it("labels the radiogroup with an assess-specific aria-label", () => {
     renderCard(makeRepo());
-    expect(screen.getByRole("radiogroup", { name: "Assess status" })).toBeTruthy();
+    expect(
+      screen.getByRole("radiogroup", { name: "Assess status" }),
+    ).toBeTruthy();
   });
 
   it("keeps the visibility and language badges grouped together, separate from the assess control", () => {
@@ -92,6 +102,7 @@ describe("RepoCard README rendering", () => {
           text: "",
           gaps: [],
           readmeText: "# Title\n\n- one\n- two",
+          updatedAt: null,
         },
       }),
     );
@@ -104,11 +115,21 @@ describe("RepoCard README rendering", () => {
   it("still shows the no-README fallback when readmeText is null", () => {
     const { container } = renderCard(
       makeRepo({
-        assessment: { pct: 50, band: "ok", label: "In progress", text: "", gaps: [], readmeText: null },
+        assessment: {
+          pct: 50,
+          band: "ok",
+          label: "In progress",
+          text: "",
+          gaps: [],
+          readmeText: null,
+          updatedAt: null,
+        },
       }),
     );
     expect(container.querySelector(".readme")).toBeNull();
-    expect(screen.getByText("Not yet assessed — no README captured.")).toBeTruthy();
+    expect(
+      screen.getByText("Not yet assessed — no README captured."),
+    ).toBeTruthy();
   });
 
   it("does not render a raw <script> element from malicious README content", () => {
@@ -121,11 +142,14 @@ describe("RepoCard README rendering", () => {
           text: "",
           gaps: [],
           readmeText: "<script>window.__pwned = true;</script>\n\nSafe text.",
+          updatedAt: null,
         },
       }),
     );
     expect(container.querySelector(".readme script")).toBeNull();
-    expect(container.querySelector(".readme")?.textContent).toContain("Safe text.");
+    expect(container.querySelector(".readme")?.textContent).toContain(
+      "Safe text.",
+    );
   });
 
   it("resolves a relative README link against the repo's GitHub blob URL", () => {
@@ -139,6 +163,7 @@ describe("RepoCard README rendering", () => {
           text: "",
           gaps: [],
           readmeText: "[guide](docs/guide.md)",
+          updatedAt: null,
         },
       }),
     );
@@ -146,5 +171,39 @@ describe("RepoCard README rendering", () => {
     expect(link?.getAttribute("href")).toBe(
       "https://github.com/acme/widgets/blob/HEAD/docs/guide.md",
     );
+  });
+});
+
+describe("RepoCard last assessed at", () => {
+  it("shows a last-assessment date label as meter-row's second child when an assessment exists", () => {
+    const { container } = renderCard(
+      makeRepo({
+        assessment: {
+          pct: 50,
+          band: "ok",
+          label: "In progress",
+          text: "",
+          gaps: [],
+          readmeText: "# Title\n\n- one\n- two",
+          updatedAt: new Date(),
+        },
+      }),
+    );
+    const meterRow = container.querySelector(".meter-row");
+    expect(meterRow).toBeTruthy();
+    expect(meterRow?.children.length).toBe(4);
+    expect(meterRow?.children[0].className).toContain("status-chip");
+    expect(meterRow?.children[1].className).toContain("last-assessed");
+    expect(meterRow?.children[2].className).toContain("meter");
+    expect(meterRow?.children[3].className).toContain("meter-pct");
+  });
+  it("shows no date label in meter-row when an assessment doesn't exist", () => {
+    const { container } = renderCard(makeRepo({}));
+    const meterRow = container.querySelector(".meter-row");
+    expect(meterRow).toBeTruthy();
+    expect(meterRow?.children.length).toBe(3);
+    expect(meterRow?.children[0].className).toContain("status-chip");
+    expect(meterRow?.children[1].className).toContain("meter");
+    expect(meterRow?.children[2].className).toContain("meter-pct");
   });
 });
