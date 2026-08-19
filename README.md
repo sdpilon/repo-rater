@@ -1,57 +1,153 @@
-# github-project-tracker
+# GitHub Project Tracker
 
-A dashboard summarizing recent activity across your full GitHub account — discovered automatically, not a hardcoded list — plus an AI-written "stated goals vs. reality" assessment for each repo.
+> Self-hosted dashboard that scores your GitHub repos' actual progress against their stated goals using an LLM.
 
-The dashboard renders live from Postgres on every request (no static-file build step); its data is kept fresh by a scheduled pipeline, not a manually-run local script. The maintainer's own instance runs at https://github-project-tracker-chi.vercel.app, gated behind an app-level password — but the app itself is a bring-your-own-credentials, single-tenant tool: point it at your own Postgres database, GitHub personal access token, and Anthropic API key, and it tracks your account instead.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D24-brightgreen)](./package.json)
 
-## How it works
+Most GitHub dashboards measure activity, not whether a project is actually converging on what it says it's for. This is for anyone with more repos than time to check on them individually: instead of opening each one to see if it's stalled, abandoned, or done, you get an honest, evidence-based read pulled from its own README, commits, and issues. It runs entirely against your own database and your own credentials, not a hosted service with visibility into your account.
 
-- **The dashboard** — a SolidStart + Drizzle + Postgres + Octokit app.
-- **`src/pipeline/`** — discovers every repo in the account via Octokit, fetches readme/issues/PRs/commits/metadata for each, upserts into Postgres, and runs a content-hash-gated AI assessment (only re-calling the LLM when a repo's inputs actually changed).
-- Each repo card has an **Auto/Yes/No ignore control**, persisted straight to Postgres, so future pipeline runs skip generating an assessment for ignored repos. Ignore defaults are computed automatically (forks, archived repos, no-README repos, and no-activity repos default to ignored) — "Auto" hands a repo back to that automatic recomputation, "Yes"/"No" force it either way.
-- **Credentials are optional and independently settable**, not one blocking setup wizard: a fresh instance with no database configured shows a credentials-only screen; once a database is connected, the dashboard renders (empty, until GitHub/Anthropic credentials let the pipeline populate it) plus a Settings panel for adding or updating the GitHub token and Anthropic key at any time. Every credential is validated against the real service (a live DB query, an authenticated GitHub API call, a minimal Anthropic API call) before being saved — a bad value is rejected immediately, nothing invalid gets persisted.
-- **Config resolution is env-var-first, config-file-fallback.** For each of `DATABASE_URL`, `PIPELINE_GH_TOKEN`, `ANTHROPIC_API_KEY`, and `APP_PASSWORD`: an environment variable wins if set; otherwise the app falls back to a local JSON file (`./data/config.json` by default, `CONFIG_FILE_PATH`-overridable, `0600`-permissioned, gitignored) written by the Settings UI. Set env vars for a Docker Compose / systemd style deployment, or leave them unset and configure everything through the browser — both work, and they compose (e.g. env-var DB connection + UI-entered API keys). A credential that resolves from an env var is shown as read-only in the UI, since a value saved there would be silently shadowed.
-- **`APP_PASSWORD` is genuinely optional** and isn't a Settings-panel field (set it via environment variable only). Unset, the instance has no login gate at all — appropriate for a deployment already restricted by something like Tailscale, not for anything open to the public internet.
+## Table of contents
 
-## Self-hosting: environment variables
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Configuration](#configuration)
+- [Quick start](#quick-start)
+- [Usage](#usage)
+  - [Keeping data fresh](#keeping-data-fresh)
+- [Development](#development)
+  - [Tech stack](#tech-stack)
+- [License](#license)
 
-| Variable | Required | Purpose |
-|---|---|---|
-| `DATABASE_URL` | To unlock the dashboard | Postgres connection string. Nothing renders but the credentials screen until this is set. |
-| `PIPELINE_GH_TOKEN` | To run the pipeline | A GitHub personal access token with read access to the repos you want tracked (classic PAT with `repo` scope, or a fine-grained token with equivalent read permissions on the target account's repositories). |
-| `ANTHROPIC_API_KEY` | To run the pipeline | Used for the per-repo "stated goals vs. reality" assessment. |
-| `APP_PASSWORD` | No | Shared-secret login gate. Unset = no auth at all. |
-| `CONFIG_FILE_PATH` | No | Overrides where the credential fallback file is written/read. Defaults to `./data/config.json`. |
+## Features
 
-Any of the four can instead be left unset and entered through the Settings UI once the app is running — see "How it works" above.
+- **Automatic repo discovery** — finds every repo in the connected GitHub account itself; no hardcoded list to maintain.
+- **AI-written progress assessment per repo** — a 0–100 completion estimate, a good/warn/crit status, and a short evidence-based writeup that cites specific commits, issues, and PRs against the README's stated goals.
+- **Re-assessment only when something actually changed** — each repo's inputs are hashed, so the LLM is only called again when the README, commits, issues, or PRs meaningfully change, not on every refresh.
+- **Per-repo Assess control (Auto/Yes/No)** — force a repo assessed or excluded, or leave it on "Auto" and let smart defaults handle it (forks, archived repos, repos with no README, and repos with no activity are excluded by default).
+- **Rendered READMEs** — GitHub-flavored markdown, sanitized, with relative links and images resolved back to GitHub so they actually work.
+- **Everything lives in Postgres, rendered on every request** — no static rebuild step, no stale cache to invalidate.
+- **In-browser Settings panel** — add or update your database connection, GitHub token, and Anthropic key from the UI itself; each is validated against the real service before it's saved, so a bad value never gets persisted silently.
+- **Optional password gate** — a shared-secret login for instances exposed beyond your own network; leave it unset for something already behind something like Tailscale.
+- **Dark mode**, following your system preference.
 
-## Running locally
+## Prerequisites
+
+- **Node.js 24+** — the version pinned in `package.json`'s `engines` field.
+- **pnpm** — the only package manager this is tested and locked against (`pnpm-lock.yaml`). `npm install`/`yarn install` will likely still run, but resolve dependencies independently of the tested lockfile — not recommended.
+- **A Postgres database** — any Postgres works (a free [Neon](https://neon.tech) instance, a local install, a Docker container). Nothing Neon- or provider-specific is used beyond standard SQL.
+- **A GitHub personal access token and an Anthropic API key** — needed for the pipeline to actually populate the dashboard with data. The app itself only requires `DATABASE_URL` to run — add these two anytime through the Settings panel. Full details in [Configuration](#configuration), next.
+
+**Platform:** pure Node.js/TypeScript with no native or OS-specific dependencies — runs anywhere Node 24 runs. There's no packaged Docker image yet, so self-hosting today means running the Node process directly (via `pnpm dev`/`pnpm build && pnpm start`, a systemd unit, etc.) rather than a container.
+
+## Configuration
+
+Four settings control the app: `DATABASE_URL`, `PIPELINE_GH_TOKEN`, `ANTHROPIC_API_KEY`, and `APP_PASSWORD`. Each resolves the same way: an environment variable wins if it's set; otherwise the app falls back to a local JSON file (`./data/config.json` by default, override with `CONFIG_FILE_PATH`) written by the in-browser Settings panel. The two approaches compose freely — e.g. `DATABASE_URL` from an environment variable and the GitHub token entered through the UI. A value sourced from an environment variable shows as read-only in Settings, since anything saved there would be silently overridden by the env var anyway.
+
+| Variable            | Required                | Purpose                                                                                                                                                                                                                 |
+| ------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`      | To unlock the dashboard | Postgres connection string. Nothing renders but the credentials screen until this is set.                                                                                                                               |
+| `PIPELINE_GH_TOKEN` | To populate data        | A GitHub personal access token with read access to the repos you want tracked — a classic PAT with the`repo` scope, or a fine-grained token with equivalent read permissions on your account's repositories.            |
+| `ANTHROPIC_API_KEY` | To populate data        | Used to generate each repo's progress assessment.                                                                                                                                                                       |
+| `APP_PASSWORD`      | No                      | Shared-secret login cookie for the whole app. Unset means no login gate at all — fine behind something like Tailscale, not for anything reachable from the open internet. Env-var only; not exposed in the Settings UI. |
+
+Any of `DATABASE_URL`, `PIPELINE_GH_TOKEN`, or `ANTHROPIC_API_KEY` left unset can instead be entered through the Settings panel once the app is running. Each one is checked against the real service before being saved — a live `SELECT 1` for the database, an authenticated `users.getAuthenticated` call for the GitHub token, a `models.list` call for the Anthropic key — so a bad value is rejected immediately rather than silently persisted.
+
+The config file itself is written `0600` (owner read/write only) in a `0700` directory, and is gitignored by default — don't check it into version control if you relocate it.
+
+## Quick start
+
+```bash
+git clone https://github.com/sdpilon/github-project-tracker.git
+cd github-project-tracker
+pnpm install
+```
+
+Apply the database schema (one-time, per database):
+
+```bash
+DATABASE_URL="postgres://..." pnpm exec drizzle-kit migrate
+```
+
+Then start the app — `pnpm dev` for a dev server with hot reload, or `pnpm build && pnpm start` to run the production build:
+
+```bash
+pnpm dev
+# or
+pnpm build && pnpm start
+```
+
+Open `http://localhost:3000`. If `DATABASE_URL` isn't set as an environment variable, the app shows a credentials screen on first load — you can paste it in there instead of exporting it, along with your GitHub token and Anthropic key. See [Configuration](#configuration) for what each credential needs and every way to set it.
+
+Once credentials are in place, run the pipeline once to populate the dashboard with real data:
+
+```bash
+pnpm run pipeline
+```
+
+## Usage
+
+Once the dashboard loads with data, each repo gets a card showing its assessment — a completion percentage, a status label, evidence-based reasoning, and any gaps the LLM flagged — along with collapsible sections for its recent commits, issues, and pull requests, and its rendered README. A totals bar summarizes the account across all visible repos.
+
+Every card has an **Assess: Auto / Yes / No** control, answering "should this repo be assessed?":
+
+- **Auto** (default) — decided automatically by smart defaults (forks, archived repos, repos with no README, and repos with no activity are excluded from assessment).
+- **Yes** — force this repo to be assessed, regardless of the automatic rules.
+- **No** — force this repo to be excluded from assessment, regardless of the automatic rules.
+
+A **Hide ignored repos** toggle above the repo list filters excluded repos out of view entirely; it's remembered locally between visits.
+
+The **Settings** panel (bottom of the page) is available at any time to add or update credentials — you don't need to restart the app after changing them.
+
+### Keeping data fresh
+
+The app doesn't refresh itself in the background — running it just serves whatever is currently in Postgres. To pull in new commits/issues/PRs and re-run assessments, run the pipeline again:
+
+```bash
+pnpm run pipeline
+```
+
+Re-running it is cheap: assessments are only regenerated for repos whose README, commits, issues, or PRs actually changed since the last run — everything else is skipped. Schedule it however you'd schedule any recurring job on your setup (cron, a systemd timer, etc.).
+
+Two flags are available for pipeline runs:
+
+- `--dry-run` — reports what the pipeline would do (repos discovered, how many have no prior assessment) without writing anything.
+- `--limit N` — restricts the run to the first `N` discovered repos, useful for testing against a smaller slice of a large account.
+
+## Development
+
+### Tech stack
+
+- **[SolidJS](https://www.solidjs.com/) + [SolidStart](https://start.solidjs.com/)** — UI framework and full-stack meta-framework (routing, server actions/queries, SSR).
+- **[Vite](https://vite.dev/)** — dev server and build tool, with [Nitro](https://nitro.build/) as the server engine.
+- **[Drizzle ORM](https://orm.drizzle.team/)** — schema, queries, and migrations against Postgres.
+- **[Octokit](https://github.com/octokit/octokit.js)** — GitHub API client (discovery, README/commit/issue/PR fetching).
+- **[Anthropic SDK](https://github.com/anthropics/anthropic-sdk-typescript)** — LLM calls for the per-repo assessment.
+- **[marked](https://marked.js.org/) + [DOMPurify](https://github.com/cure53/DOMPurify)** — README markdown rendering and sanitization.
+- **TypeScript**, **[Biome](https://biomejs.dev/)** (lint/format), **[Vitest](https://vitest.dev/)** (tests) — tooling.
+
+Install dependencies:
 
 ```bash
 pnpm install
+```
+
+Run the dev server (hot reload):
+
+```bash
 pnpm dev
 ```
 
-Credentials aren't read from a `.env` file (this project has no `dotenv` dependency) — export them as real environment variables before starting the process (`export DATABASE_URL=... && pnpm dev`, a Docker Compose `env_file`, a systemd unit's `EnvironmentFile`, etc.), or leave them unset and add them through the credentials screen the dashboard shows once it's running.
-
-Other useful commands:
+Type-check, lint, and run the test suite:
 
 ```bash
 pnpm typecheck
 pnpm lint
 pnpm test
-pnpm run pipeline   # tsx src/pipeline/run.ts — discover, extract/load, enrich
 ```
 
-Pipeline flags: `--dry-run` (preview scope, no writes) and `--limit N` (restrict a real run to the first N discovered repos). The pipeline reads credentials through the same env-var/config-file resolution as the web app, so values saved via the Settings UI on a given host are picked up by pipeline runs on that same host too.
+`pnpm lint:fix` and `pnpm format` apply Biome's autofixes and formatting in place.
 
-## Project layout
+## License
 
-- `src/` — the whole live project: SolidStart dashboard, Drizzle/Postgres schema, credential resolver (`src/lib/config.ts`), and the discover/extract/enrich pipeline (`src/pipeline/`)
-- `.github/workflows/deploy.yml` — CI + Vercel deploy on push to `main` (the maintainer's own hosted instance; not required for self-hosting)
-- `.github/workflows/pipeline.yml` — scheduled pipeline run for that same hosted instance
-- `ARCHITECTURE.md` — design and full build history
-- `ROADMAP.md` — sequencing notes for what's next
-- `CLAUDE.md` — detailed contributor/agent notes (gotchas, auth model, etc.)
-
-This is a personal tool built partly as a learning exercise in incremental data-pipeline and full-stack app design — expect more architectural rigor than the dashboard's actual needs strictly require.
+[MIT](./LICENSE)

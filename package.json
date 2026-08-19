@@ -1,6 +1,19 @@
 {
   "name": "github-project-tracker",
+  "version": "0.1.0",
+  "description": "Self-hosted dashboard that scores your GitHub repos' actual progress against their stated goals using an LLM",
+  "private": true,
   "license": "MIT",
+  "author": "Spencer Pilon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdpilon/github-project-tracker.git"
+  },
+  "homepage": "https://github.com/sdpilon/github-project-tracker#readme",
+  "bugs": {
+    "url": "https://github.com/sdpilon/github-project-tracker/issues"
+  },
+  "keywords": ["github", "dashboard", "self-hosted", "solidstart", "llm", "postgres"],
   "type": "module",
   "scripts": {
     "dev": "vite dev",
