@@ -59,6 +59,8 @@ interface FakeRepoFixture {
   isIgnored: boolean;
   ignoreSource: "auto" | "manual";
   ignoreReasons: string[] | null;
+  /** Rendered on the card alongside the assessment when set; only assessed repos carry one, matching how the real pipeline only persists README text as part of an assessment's input snapshot. */
+  readme: string | null;
   commits: FakeCommit[];
   issues: FakeIssue[];
   pullRequests: FakePullRequest[];
@@ -85,6 +87,8 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       isIgnored: false,
       ignoreSource: "auto",
       ignoreReasons: null,
+      readme:
+        "# order-tracking-api\n\nREST API for tracking multi-warehouse order fulfillment status.\n\n## Roadmap\n\n- [x] Order creation with idempotency keys\n- [x] Webhook retry backoff\n- [ ] Partial shipment status\n\n## Running locally\n\n```\nnpm install\nnpm run dev\n```\n",
       commits: [
         { sha: "a1b2c3d", authorName: "demo-user", authoredAt: daysAgo(now, 1), message: "Add idempotency keys to order creation endpoint" },
         { sha: "b2c3d4e", authorName: "demo-user", authoredAt: daysAgo(now, 3), message: "Fix race condition in warehouse stock reservation" },
@@ -119,6 +123,8 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       isIgnored: false,
       ignoreSource: "auto",
       ignoreReasons: null,
+      readme:
+        "# recipe-notes\n\nA minimal note-taking app for recipes, with tag-based search.\n\n## Features\n\n- Tag-based filtering\n- Full-text search across all notes\n- One-click export to Markdown or PDF\n\nBuilt with SvelteKit.\n",
       commits: [
         { sha: "d4e5f6a", authorName: "demo-user", authoredAt: daysAgo(now, 5), message: "Add tag filter UI" },
         { sha: "e5f6a7b", authorName: "demo-user", authoredAt: daysAgo(now, 20), message: "Basic CRUD for recipes" },
@@ -150,6 +156,8 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       isIgnored: false,
       ignoreSource: "auto",
       ignoreReasons: null,
+      readme:
+        "# old-blog-generator\n\nA fully working static site generator for my personal blog, with themes and RSS support, built in a weekend.\n\n## Usage\n\n```\npython generate.py\n```\n\nMore themes coming soon!\n",
       commits: [
         { sha: "f6a7b8c", authorName: "demo-user", authoredAt: daysAgo(now, 210), message: "Initial commit" },
       ],
@@ -179,6 +187,7 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       isIgnored: false,
       ignoreSource: "auto",
       ignoreReasons: null,
+      readme: null,
       commits: [
         { sha: "a7b8c9d", authorName: "demo-user", authoredAt: daysAgo(now, 0), message: "Scaffold CLI with clap" },
       ],
@@ -200,6 +209,7 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       isIgnored: true,
       ignoreSource: "auto",
       ignoreReasons: ["fork"],
+      readme: null,
       commits: [],
       issues: [],
       pullRequests: [],
@@ -219,6 +229,8 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       isIgnored: false,
       ignoreSource: "auto",
       ignoreReasons: null,
+      readme:
+        "# internal-billing-service\n\nPrivate billing reconciliation service. Reconciles Stripe payouts against the internal ledger, and handles the full range of Stripe dispute types.\n\n## Deploying\n\nSee the internal runbook.\n",
       commits: [
         { sha: "b8c9d0e", authorName: "demo-user", authoredAt: daysAgo(now, 2), message: "Reconcile Stripe payouts against ledger" },
         { sha: "c9d0e1f", authorName: "demo-user", authoredAt: daysAgo(now, 8), message: "Add dead-letter queue for failed reconciliations" },
@@ -251,6 +263,7 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       isIgnored: true,
       ignoreSource: "auto",
       ignoreReasons: ["archived"],
+      readme: null,
       commits: [],
       issues: [],
       pullRequests: [],
@@ -390,7 +403,15 @@ export async function seedFakeData(
         label: fixture.assessment.label,
         text: fixture.assessment.text,
         gaps: fixture.assessment.gaps,
-        inputSnapshot: null,
+        inputSnapshot: {
+          fullName: fixture.fullName,
+          readmeText: fixture.readme ?? "",
+          commitMessages: fixture.commits.map((c) => c.message),
+          issueTitles: fixture.issues.map((i) => i.title),
+          issueStates: fixture.issues.map((i) => i.state),
+          prTitles: fixture.pullRequests.map((p) => p.title),
+          prStates: fixture.pullRequests.map((p) => p.state),
+        },
         createdAt: now,
       });
     }

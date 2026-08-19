@@ -80,6 +80,21 @@ describe("seedFakeData", () => {
     expect(repoRows.some((r) => r.isPrivate)).toBe(true);
   });
 
+  it("gives assessed repos a rendered README via the assessment's input snapshot", async () => {
+    const { db, close } = await createTestDb();
+    cleanup = close;
+
+    await seedFakeData(db);
+
+    const assessmentRows = await db.select().from(repoAssessments);
+    expect(assessmentRows.length).toBeGreaterThan(0);
+    for (const row of assessmentRows) {
+      const snapshot = row.inputSnapshot;
+      expect(snapshot).toMatchObject({ readmeText: expect.any(String) });
+      expect((snapshot as { readmeText: string }).readmeText.length).toBeGreaterThan(0);
+    }
+  });
+
   it("seeds commits, issues, and pull requests for the fake repos", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
