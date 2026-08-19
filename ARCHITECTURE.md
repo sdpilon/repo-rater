@@ -72,8 +72,7 @@ re-enrichment. Full design detail and verification transcripts:
 Replaced `tracker.html`'s hand-rolled `innerHTML` templating with real
 SolidStart components reading live Postgres data server-side — no
 static-file regeneration, no `inject.js` splice. Implemented as 9 tasks,
-per `docs/specs/2026-07-30-phase3-solidstart-frontend-design.md`
-and `docs/plans/2026-07-30-phase3-solidstart-frontend.md`. Full
+per `docs/specs/2026-07-30-phase3-solidstart-frontend-design.md`. Full
 child task breakdown: `bd show tracker-ur4`.
 
 ### New stack — Phase 4 (Vercel + GitHub Actions deploy, then cutover): complete

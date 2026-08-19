@@ -10,13 +10,20 @@ sequencing.
 The project's original DuckDB-backed pipeline (`pipeline/`, `tracker.html`)
 has been fully retired — see `ARCHITECTURE.md`'s "Original design (retired)"
 section and its "Status" section's Phase 4 write-up. Everything below is
-about the current stack: the SolidStart dashboard in `app/`, deployed live
-on Vercel, with a scheduled GitHub Actions pipeline keeping its Postgres
-data fresh.
+about the current stack: the SolidStart dashboard at the repo root,
+deployed live on Vercel, with a scheduled GitHub Actions pipeline keeping
+its Postgres data fresh.
 
 ## Now
 
-Nothing currently queued — see Next for what's up.
+- **Self-hostable / bring-your-own-credentials.** Tracked live as a `bd`
+  epic (`tracker-jm8`) rather than duplicated here — run `bd show
+  tracker-jm8` for current status. Goal: make this a distributable app
+  (single-tenant, no OAuth yet), then move the maintainer's own real-data
+  usage to a homelab deployment and convert the current Vercel production
+  instance into a public zero-auth demo (fake data). Phase 1 (credential
+  UI + env-var/config-file resolver) is merged and live; phases 2
+  (homelab cutover) and 3 (demo conversion) are next.
 
 ## Next
 

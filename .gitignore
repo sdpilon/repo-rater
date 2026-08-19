@@ -8,6 +8,9 @@ dist
 app.config.timestamp_*.js
 .claude/idea-seeds.md
 
+# beads issue tracker (local-only, not published with the repo)
+.beads/
+
 # Environment
 .env
 .env*.local
