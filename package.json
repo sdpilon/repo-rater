@@ -26,6 +26,7 @@
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
     "pipeline": "tsx src/pipeline/run.ts",
+    "seed:fake": "tsx src/pipeline/seed-fake-data.ts",
     "deps:outdated": "pnpm outdated",
     "deps:update": "pnpm update -i --latest"
   },
