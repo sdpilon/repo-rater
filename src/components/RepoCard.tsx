@@ -5,7 +5,21 @@ import { toggleAssess } from "~/lib/dashboard";
 import type { AssessControlValue, RepoCardView } from "~/lib/dashboard-queries";
 import { renderReadme } from "~/lib/render-markdown";
 
-const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+const dateFormatOptions: Intl.DateTimeFormatOptions = {
+  timeZone: "UTC",
+  month: "short",
+  day: "numeric",
+};
+const dateFormat = new Intl.DateTimeFormat("en-US", dateFormatOptions);
+const timestampFormat = new Intl.DateTimeFormat("en-US", {
+  ...dateFormatOptions,
+  hour: "numeric",
+  minute: "numeric",
+});
+
+function formatTimestamp(value: Date | null): string {
+  return value ? timestampFormat.format(value) : "";
+}
 
 function formatDate(value: Date | null): string {
   return value ? dateFormat.format(value) : "";
@@ -20,7 +34,10 @@ function meterColor(pct: number | null): string {
 
 export default function RepoCard(props: { repo: RepoCardView }) {
   const toggle = useAction(toggleAssess);
-  const submission = useSubmission(toggleAssess, (input) => input[0] === props.repo.repoId);
+  const submission = useSubmission(
+    toggleAssess,
+    (input) => input[0] === props.repo.repoId,
+  );
 
   async function handleAssessChange(value: AssessControlValue) {
     try {
@@ -38,7 +55,11 @@ export default function RepoCard(props: { repo: RepoCardView }) {
       <div class="repo-head">
         <div class="toprow">
           <h2>
-            <a href={`https://github.com/${props.repo.fullName}`} target="_blank" rel="noopener">
+            <a
+              href={`https://github.com/${props.repo.fullName}`}
+              target="_blank"
+              rel="noopener"
+            >
               {shortName()}
             </a>
           </h2>
@@ -52,10 +73,16 @@ export default function RepoCard(props: { repo: RepoCardView }) {
           </div>
           <div class="assess-group">
             <span class="assess-label">Assess:</span>
-            <div class="assess-control" role="radiogroup" aria-label="Assess status">
+            <div
+              class="assess-control"
+              role="radiogroup"
+              aria-label="Assess status"
+            >
               <For each={["auto", "yes", "no"] as const}>
                 {(value) => (
-                  <label classList={{ active: props.repo.assessControl === value }}>
+                  <label
+                    classList={{ active: props.repo.assessControl === value }}
+                  >
                     <input
                       type="radio"
                       name={`assess-${props.repo.repoId}`}
@@ -69,7 +96,9 @@ export default function RepoCard(props: { repo: RepoCardView }) {
               </For>
             </div>
             <Show when={props.repo.ignoreReasons.length > 0}>
-              <span class="assess-reason">auto: {props.repo.ignoreReasons.join(", ")}</span>
+              <span class="assess-reason">
+                auto: {props.repo.ignoreReasons.join(", ")}
+              </span>
             </Show>
           </div>
         </div>
@@ -77,12 +106,25 @@ export default function RepoCard(props: { repo: RepoCardView }) {
           <p class="desc">{props.repo.description}</p>
         </Show>
         <div class="meter-row">
-          <span class={`status-chip s-${assessment().band}`}>{assessment().label}</span>
+          <span class={`status-chip s-${assessment().band}`}>
+            {assessment().label}
+          </span>
+          <Show when={assessment().updatedAt}>
+            <button
+              type="button"
+              class="last-assessed date qtip tip-top"
+              data-tip={`Last assessed: ${formatTimestamp(assessment().updatedAt)}`}
+            >
+              {formatDate(assessment().updatedAt)}
+            </button>
+          </Show>
           <div
             class="meter"
             role="img"
             aria-label={`Estimated completion ${
-              assessment().pct == null ? "not measurable" : `${assessment().pct} percent`
+              assessment().pct == null
+                ? "not measurable"
+                : `${assessment().pct} percent`
             }`}
           >
             <div
@@ -92,7 +134,9 @@ export default function RepoCard(props: { repo: RepoCardView }) {
               }}
             />
           </div>
-          <span class="meter-pct">{assessment().pct == null ? "n/a" : `${assessment().pct}%`}</span>
+          <span class="meter-pct">
+            {assessment().pct == null ? "n/a" : `${assessment().pct}%`}
+          </span>
         </div>
       </div>
       <div class="assess">
@@ -105,8 +149,14 @@ export default function RepoCard(props: { repo: RepoCardView }) {
         </Show>
       </div>
       <div class="raw">
-        <CollapsibleSection title="Commits" count={String(props.repo.commits.length)}>
-          <Show when={props.repo.commits.length > 0} fallback={<div class="empty">No commits recorded.</div>}>
+        <CollapsibleSection
+          title="Commits"
+          count={String(props.repo.commits.length)}
+        >
+          <Show
+            when={props.repo.commits.length > 0}
+            fallback={<div class="empty">No commits recorded.</div>}
+          >
             <table class="log">
               <For each={props.repo.commits}>
                 {(commit) => (
@@ -120,7 +170,10 @@ export default function RepoCard(props: { repo: RepoCardView }) {
             </table>
           </Show>
         </CollapsibleSection>
-        <CollapsibleSection title="Pull requests" count={String(props.repo.pullRequests.length)}>
+        <CollapsibleSection
+          title="Pull requests"
+          count={String(props.repo.pullRequests.length)}
+        >
           <Show
             when={props.repo.pullRequests.length > 0}
             fallback={<div class="empty">No PRs opened or merged.</div>}
@@ -140,8 +193,14 @@ export default function RepoCard(props: { repo: RepoCardView }) {
             </table>
           </Show>
         </CollapsibleSection>
-        <CollapsibleSection title="Issues" count={String(props.repo.issues.length)}>
-          <Show when={props.repo.issues.length > 0} fallback={<div class="empty">No issue activity.</div>}>
+        <CollapsibleSection
+          title="Issues"
+          count={String(props.repo.issues.length)}
+        >
+          <Show
+            when={props.repo.issues.length > 0}
+            fallback={<div class="empty">No issue activity.</div>}
+          >
             <table class="log">
               <For each={props.repo.issues}>
                 {(issue) => (
@@ -159,13 +218,24 @@ export default function RepoCard(props: { repo: RepoCardView }) {
         </CollapsibleSection>
         <CollapsibleSection
           title="README"
-          count={props.repo.assessment.readmeText ? `${props.repo.assessment.readmeText.length} chars` : "missing"}
+          count={
+            props.repo.assessment.readmeText
+              ? `${props.repo.assessment.readmeText.length} chars`
+              : "missing"
+          }
         >
           <Show
             when={props.repo.assessment.readmeText}
-            fallback={<div class="empty">Not yet assessed — no README captured.</div>}
+            fallback={
+              <div class="empty">Not yet assessed — no README captured.</div>
+            }
           >
-            {(readmeText) => <div class="readme" innerHTML={renderReadme(readmeText(), props.repo.fullName)} />}
+            {(readmeText) => (
+              <div
+                class="readme"
+                innerHTML={renderReadme(readmeText(), props.repo.fullName)}
+              />
+            )}
           </Show>
         </CollapsibleSection>
       </div>

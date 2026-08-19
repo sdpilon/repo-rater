@@ -1,5 +1,11 @@
 import { desc, eq } from "drizzle-orm";
-import { commits, issues, pullRequests, repoAssessments, repos } from "../db/schema";
+import {
+  commits,
+  issues,
+  pullRequests,
+  repoAssessments,
+  repos,
+} from "../db/schema";
 import type { DrizzleDb } from "../pipeline/db-types";
 import {
   type AssessControlValue,
@@ -24,7 +30,9 @@ export * from "./dashboard-view";
  * importing only those should import ./dashboard-view directly.
  */
 
-function groupByRepoId<T extends { repoId: number }>(rows: T[]): Map<number, T[]> {
+function groupByRepoId<T extends { repoId: number }>(
+  rows: T[],
+): Map<number, T[]> {
   const map = new Map<number, T[]>();
   for (const row of rows) {
     const bucket = map.get(row.repoId);
@@ -35,7 +43,9 @@ function groupByRepoId<T extends { repoId: number }>(rows: T[]): Map<number, T[]
 }
 
 /** `rows` must already be ordered by (repoId, createdAt DESC) — the first row seen per repoId is kept as "latest". */
-function latestByRepoId<T extends { repoId: number }>(rows: T[]): Map<number, T> {
+function latestByRepoId<T extends { repoId: number }>(
+  rows: T[],
+): Map<number, T> {
   const map = new Map<number, T>();
   for (const row of rows) {
     if (!map.has(row.repoId)) map.set(row.repoId, row);
@@ -44,16 +54,21 @@ function latestByRepoId<T extends { repoId: number }>(rows: T[]): Map<number, T>
 }
 
 export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
-  const [repoRows, assessmentRows, commitRows, issueRows, prRows] = await Promise.all([
-    db.select().from(repos).orderBy(repos.fullName),
-    db
-      .select()
-      .from(repoAssessments)
-      .orderBy(repoAssessments.repoId, desc(repoAssessments.createdAt)),
-    db.select().from(commits).orderBy(desc(commits.authoredAt)),
-    db.select().from(issues).orderBy(desc(issues.createdAt)),
-    db.select().from(pullRequests).orderBy(desc(pullRequests.createdAt)),
-  ]);
+  const [repoRows, assessmentRows, commitRows, issueRows, prRows] =
+    await Promise.all([
+      db.select().from(repos).orderBy(repos.fullName),
+      db
+        .select()
+        .from(repoAssessments)
+        .orderBy(
+          repoAssessments.repoId,
+          desc(repoAssessments.createdAt),
+          desc(repoAssessments.assessmentId),
+        ),
+      db.select().from(commits).orderBy(desc(commits.authoredAt)),
+      db.select().from(issues).orderBy(desc(issues.createdAt)),
+      db.select().from(pullRequests).orderBy(desc(pullRequests.createdAt)),
+    ]);
 
   const latestAssessmentByRepoId = latestByRepoId(assessmentRows);
   const commitsByRepoId = groupByRepoId(commitRows);
@@ -62,7 +77,8 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
 
   const repoViews: RepoCardView[] = repoRows.map((repo) => {
     const assessmentRow = latestAssessmentByRepoId.get(repo.repoId);
-    const inputSnapshot = assessmentRow?.inputSnapshot as { readmeText?: string } | null | undefined;
+    const inputSnapshot = assessmentRow?.inputSnapshot as
+      { readmeText?: string } | null | undefined;
     const assessment: RepoAssessmentView = assessmentRow
       ? {
           pct: assessmentRow.pct,
@@ -71,8 +87,17 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
           text: assessmentRow.text ?? "",
           gaps: assessmentRow.gaps ?? [],
           readmeText: inputSnapshot?.readmeText ?? null,
+          updatedAt: assessmentRow.createdAt ?? null,
         }
-      : { pct: null, band: "none", label: "Not yet assessed", text: "", gaps: [], readmeText: null };
+      : {
+          pct: null,
+          band: "none",
+          label: "Not yet assessed",
+          text: "",
+          gaps: [],
+          readmeText: null,
+          updatedAt: null,
+        };
 
     return {
       repoId: repo.repoId,
@@ -82,8 +107,12 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
       language: repo.language,
       isPrivate: repo.isPrivate ?? false,
       isIgnored: repo.isIgnored,
-      ignoreReasons: repo.isIgnored && repo.ignoreSource === "auto" ? (repo.ignoreReasons ?? []) : [],
-      assessControl: repo.ignoreSource === "auto" ? "auto" : repo.isIgnored ? "no" : "yes",
+      ignoreReasons:
+        repo.isIgnored && repo.ignoreSource === "auto"
+          ? (repo.ignoreReasons ?? [])
+          : [],
+      assessControl:
+        repo.ignoreSource === "auto" ? "auto" : repo.isIgnored ? "no" : "yes",
       assessment,
       commits: (commitsByRepoId.get(repo.repoId) ?? []).map((c) => ({
         sha: c.sha,
@@ -109,7 +138,11 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
   return { totals: computeTotals(repoViews), repos: repoViews };
 }
 
-export async function setRepoAssessControl(db: DrizzleDb, repoId: number, value: AssessControlValue): Promise<void> {
+export async function setRepoAssessControl(
+  db: DrizzleDb,
+  repoId: number,
+  value: AssessControlValue,
+): Promise<void> {
   if (value === "auto") {
     await db
       .update(repos)

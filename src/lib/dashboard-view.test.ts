@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { computeTotals, filterVisibleRepos, type RepoCardView } from "./dashboard-view";
+import {
+  computeTotals,
+  filterVisibleRepos,
+  type RepoCardView,
+} from "./dashboard-view";
 
 function fakeRepoCardView(overrides: Partial<RepoCardView> = {}): RepoCardView {
   return {
@@ -12,7 +16,15 @@ function fakeRepoCardView(overrides: Partial<RepoCardView> = {}): RepoCardView {
     isIgnored: false,
     ignoreReasons: [],
     assessControl: "auto",
-    assessment: { pct: null, band: "none", label: "Not yet assessed", text: "", gaps: [], readmeText: null },
+    assessment: {
+      pct: null,
+      band: "none",
+      label: "Not yet assessed",
+      text: "",
+      gaps: [],
+      readmeText: null,
+      updatedAt: null,
+    },
     commits: [],
     issues: [],
     pullRequests: [],
@@ -31,8 +43,20 @@ describe("computeTotals", () => {
       fakeRepoCardView({
         repoId: 2,
         pullRequests: [
-          { number: 1, title: null, state: "open", createdAt: null, mergedAt: null },
-          { number: 2, title: null, state: "closed", createdAt: null, mergedAt: new Date() },
+          {
+            number: 1,
+            title: null,
+            state: "open",
+            createdAt: null,
+            mergedAt: null,
+          },
+          {
+            number: 2,
+            title: null,
+            state: "closed",
+            createdAt: null,
+            mergedAt: new Date(),
+          },
         ],
         issues: [{ number: 1, title: null, state: "open", createdAt: null }],
       }),
