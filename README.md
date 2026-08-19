@@ -152,6 +152,20 @@ pnpm test
 
 `pnpm run seed:fake` populates a fresh database with a small fake GitHub account (a handful of repos spanning good/warn/crit assessments, one unassessed, one auto-ignored fork, one private repo) instead of the real pipeline. It's how the screenshot/demo data in this README and elsewhere is generated — useful any time that needs refreshing, or for trying out the dashboard without wiring up real credentials. It refuses to run against a database that already has repos, to avoid mixing fake data into a real one — pass `--force` to seed anyway.
 
+A throwaway local Postgres works well for this — no real credentials needed at all:
+
+```bash
+docker run -d --name gpt-demo-db -e POSTGRES_PASSWORD=postgres -p 55432:5432 postgres:16-alpine
+
+export DATABASE_URL="postgres://postgres:postgres@localhost:55432/postgres"
+pnpm exec drizzle-kit migrate   # apply schema, one-time per database
+pnpm run seed:fake
+
+pnpm dev   # open http://localhost:3000 — no GitHub token or Anthropic key required
+```
+
+Drop the container when you're done: `docker rm -f gpt-demo-db`.
+
 ## License
 
 [MIT](./LICENSE)
