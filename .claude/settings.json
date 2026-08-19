@@ -15,24 +15,13 @@
       {
         "hooks": [
           {
-            "command": "bash \"$(git rev-parse --show-toplevel 2\u003e/dev/null || echo .)/.claude/hooks/warn-dirty-review.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)/.claude/hooks/warn-dirty-review.sh\"",
             "statusMessage": "Checking git status before review dispatch...",
             "timeout": 10,
             "type": "command"
           }
         ],
         "matcher": "Agent"
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash \"$(git rev-parse --show-toplevel 2\u003e/dev/null || echo .)/.claude/hooks/warn-docs-sync.sh\"",
-            "statusMessage": "Checking doc-sync status before commit...",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "Bash"
       }
     ],
     "SessionStart": [

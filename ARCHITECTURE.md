@@ -1,104 +1,134 @@
-# Architecture: from a hardcoded fetch script to a live Postgres dashboard
+# Architecture
 
-This document is a short pointer to the design/build history for
-`github-project-tracker`. The current, live-running system is a SolidStart
-+ Drizzle + Postgres (Neon) + Octokit dashboard, deployed to Vercel via
-GitHub Actions, with a second GitHub Actions workflow running the discover/
-extract/enrich pipeline on a schedule — see `CLAUDE.md`/`README.md` for how
-that current stack actually works day to day.
+This document describes the internal design of `github-project-tracker`: how
+data flows through the system and why it's shaped the way it is. For how to
+install, configure, and run the app, see `README.md`.
 
-Detailed build history (what was built, in what order, with what
-verification) lives in `bd` — each phase below is a closed epic with full
-design notes and live-verification transcripts in `bd show <id>` — rather
-than duplicated here, so this file doesn't drift the way a hand-maintained
-narrative can (a stale spec doc calling done work "Draft" is what prompted
-this file's own trim, 2026-08-09).
+## Overview
 
-## Original design (retired)
+The system has two independent parts that share one Postgres database:
 
-Before the rewrite, this project was a from-scratch, DuckDB-backed,
-medallion-style (bronze/silver/gold) pipeline (`pipeline/`), built
-partly as a learning exercise in incremental data-pipeline design: repo
-discovery via the `gh` CLI instead of a hardcoded list, per-repo watermarked
-incremental extraction to flat-file "bronze" JSON, idempotent upserts into
-DuckDB "silver" tables, content-hash-gated LLM re-assessment (only call the
-LLM when a repo's inputs actually changed), and a "gold" publish step that
-spliced the result into a static `tracker.html`. Discovery/extraction/
-loading/enrichment/publishing were five separately-isolated stages so one
-repo's failure never took down the whole run. GraphQL batching,
-concurrency/backoff tuning, and multi-tenancy were all explicitly
-considered and parked as unnecessary complexity at this project's ~60-repo,
-single-user scale.
+- **The app** — a SolidStart server that renders the dashboard from Postgres
+  on every request. It has no build-time data dependency and does no writing
+  of its own beyond the Assess control and credential settings.
+- **The pipeline** (`src/pipeline/`) — a CLI script that discovers every repo
+  in a GitHub account, fetches its activity, and writes an AI-generated
+  progress assessment into Postgres. It's the only thing that populates or
+  refreshes the data the app displays.
 
-**Fully retired as of Phase 4:** `pipeline/`, `tracker.html`, `schema.sql`,
-`inject.js`, `repos.json`, and the local `tracker.duckdb` file are all
-deleted — nothing above is runnable anymore. This section is kept only as a
-condensed pointer, not a current design: the full original write-up (five-
-stage architecture diagram, full DDL rationale, out-of-scope reasoning)
-lives in git history (see commit `660fc2b`, "docs: add scaled pipeline
-architecture design and DuckDB schema draft") and in `docs/postmortems/`,
-which are dated historical records and intentionally left unedited.
+They never call each other directly and don't need to run on the same
+machine or schedule — the pipeline just needs write access to the same
+database the app reads from.
 
-## Status
+## Data model
 
-Starting 2026-07-29, the project underwent a ground-up rewrite to
-**SolidStart + Drizzle + Postgres (Neon) + Octokit**, replacing DuckDB, the
-`gh` CLI, and the static `tracker.html`/`inject.js` publish step. That
-rewrite is now **fully complete and cut over**: the new stack runs live in
-production on Vercel, and the old stack has been deleted from the repo.
+Everything lives in Postgres, defined in `src/db/schema.ts` (Drizzle ORM).
+A few shapes are worth calling out because they encode real behavior, not
+just storage:
 
-### New stack — Phase 1 (Discover → Extract+Load): complete and live-verified
+- **`repos`** is the one row per tracked repo. `is_ignored` isn't a plain
+  boolean the pipeline sets once — it's recomputed on every run from
+  `ignore_reasons` (see "Ignore rules" below) unless `ignore_source` is
+  `'manual'`, in which case it's frozen at whatever the Assess control last
+  set. `assessment_source` follows the same `'auto'` / `'manual'` pattern
+  for whether a repo gets re-assessed automatically.
+- **`commits`, `issues`, `pull_requests`** are keyed by `(repo_id, sha)` /
+  `(repo_id, number)` and upserted every run. Each row also carries the
+  run ID that first ingested it (or last updated it), useful for tracing a
+  row back to when it entered the database.
+- **`fetch_watermarks`** stores one `last_fetched_at` per `(repo_id,
+  data_type)`, advanced to the run's start time — not the newest event time
+  in the fetched data — after a successful fetch. That's what makes each
+  pipeline run incremental: it only asks GitHub for activity since the last
+  successful fetch of that data type for that repo, rather than the whole
+  history every time. `fetch_failures` logs failures the same way, so a
+  data type that failed doesn't silently advance its watermark and skip
+  data on the next run.
+- **`repo_assessments`** is append-only — a new assessment is always
+  inserted, never updated in place. "The current assessment" for a repo is
+  just its latest row by `created_at`. Each row also stores `input_hash`
+  (see "Pipeline stages" below) and `input_snapshot`, a raw copy of
+  whatever was sent to the LLM, kept for debugging since there's no other
+  layer where that input is retained.
+- **`runs`** is one row per pipeline invocation: start/finish time, status,
+  and counts (repos discovered/fetched/failed, LLM calls made/skipped) —
+  useful for spotting a run that silently degraded (e.g. `reposFailed > 0`)
+  without re-reading logs.
 
-Ported discover/extract/load from the old DuckDB pipeline to Postgres
-(Neon) via Drizzle + Octokit, with per-repo/per-data-type failure isolation
-and no bronze flat-file layer (`extract-load.ts` merges extract+load into
-one atomic per-repo step). Live-verified 2026-07-30 against the real
-account (66 repos): two consecutive full runs produced identical row
-counts, confirming idempotency. Full module-by-module design detail and
-verification transcripts: `bd show tracker-8rb`.
+## Pipeline stages
 
-### New stack — Phase 2 (ignore-rules port + Anthropic-backed enrichment): complete and live-verified
+`src/pipeline/run.ts` runs three stages in sequence for every invocation:
+**discover → extract+load → enrich**. Each stage isolates failures at the
+narrowest level that makes sense, so one repo (or one data type within a
+repo) having a bad run never aborts the rest:
 
-Ported `ignore-rules.js` and `enrich.js`'s Anthropic-calling half, with the
-content-hash gate and manual-override (`assessment_source`) invariant
-preserved. Live-verified against the real GitHub account, Neon, and the
-Anthropic API: the content-hash gate correctly skipped re-assessment on an
-unchanged repo, and the manual-override gate correctly blocked
-re-enrichment. Full design detail and verification transcripts:
-`bd show tracker-20b`.
+1. **Discover** (`discover.ts`) — lists every repo in the account via
+   Octokit and upserts its metadata into `repos`. Fields like
+   `first_seen_at`, `is_ignored`, and `ignore_source` are deliberately left
+   out of the upsert's `SET` clause so an existing repo's state survives
+   being re-discovered; only genuinely new repos get default values.
+2. **Extract + load** (`extract-load.ts`) — for each discovered repo, fetches
+   commits/issues/PRs since that data type's last watermark and upserts
+   them. Each of the three data types has its own try/catch: a failure
+   fetching issues, say, is recorded in `fetch_failures` and that data
+   type's watermark isn't advanced, but commits and PRs for the same repo
+   still proceed normally.
+3. **Enrich** (`enrich.ts`) — for each repo not ignored and not on a manual
+   assessment override, hashes its current README + commit messages + issue/
+   PR titles and states into `input_hash`, and only calls the Anthropic API
+   if that hash differs from the repo's latest stored assessment. This is
+   what keeps a re-run cheap: a repo with no new activity produces the same
+   hash and is skipped entirely, no LLM call and no new database row.
 
-### New stack — Phase 3 (SolidStart frontend): complete
+There's no separate "publish" stage — the app reads `repos` and
+`repo_assessments` directly at request time, so there's nothing to
+regenerate or invalidate after enrichment finishes.
 
-Replaced `tracker.html`'s hand-rolled `innerHTML` templating with real
-SolidStart components reading live Postgres data server-side — no
-static-file regeneration, no `inject.js` splice. Implemented as 9 tasks,
-per `docs/specs/2026-07-30-phase3-solidstart-frontend-design.md`. Full
-child task breakdown: `bd show tracker-ur4`.
+## Ignore rules
 
-### New stack — Phase 4 (Vercel + GitHub Actions deploy, then cutover): complete
+Whether a repo gets assessed is governed by `ignore_source`, not just
+`is_ignored` directly:
 
-Deployed to Vercel via GitHub Actions (`deploy.yml`, `pipeline.yml`), added
-app-level shared-secret auth after discovering live that Vercel's
-Deployment Protection doesn't cover production on the Hobby plan, then
-retired the old DuckDB stack entirely. Live-verified 2026-08-02 (production
-matching local dev exactly; a scheduled pipeline run confirmed refreshing
-Postgres without a redeploy). Full design detail, the Vercel
-team-scoped-token gotcha, and verification transcripts: `bd show tracker-chm`.
+- **`'auto'`** (the default) — `is_ignored` is recomputed every pipeline run
+  by `computeSuggestedIgnore()` (`ignore-rules.ts`): a fork, an archived
+  repo, a repo with no README, or a repo with zero commits/issues/PRs is
+  ignored; anything else isn't. The specific reasons are persisted to
+  `ignore_reasons` so the dashboard can show why.
+- **`'manual'`** — set the moment someone uses the dashboard's Assess
+  Yes/No control. Once manual, the automatic recomputation above is
+  skipped entirely for that repo (both the `is_ignored` recompute and, for
+  a separate `assessment_source === 'manual'` override, the enrichment
+  step itself) until it's switched back to Auto.
 
-### Old stack (DuckDB) — status as of the rewrite starting
+This recomputation happens inside `enrichAll` (`enrich.ts`), not as a
+separate pass — a repo's README has to be fetched for the ignore check
+either way, so folding it into the same per-repo loop that does enrichment
+avoids fetching it twice.
 
-The Stage 0 vertical slice (Extract→Load→Enrich→Publish for a hardcoded
-2-repo scope, merged 2026-07-22) and Discovery's later wiring into the full
-account (2026-07-24) are documented in
-`docs/postmortems/2026-07-22-stage-0-vertical-slice.md` and the closed bd
-issues from that window (`tracker-9kj`, `tracker-nth`, `tracker-s10`) —
-not reproduced here.
+## Credentials & auth
 
-## Closing note
+**Credential resolution** (`config.ts`) is one function,
+`resolveConfig(key)`, used identically by the app and the pipeline: an
+environment variable wins if set; otherwise it falls back to a local JSON
+file (`./data/config.json` by default). The dashboard's Settings panel
+writes to that same file, so a credential can come from either source
+interchangeably — e.g. `DATABASE_URL` from the environment and the GitHub
+token typed into the UI. Before a credential typed into the UI is
+persisted, it's checked against the real service it's for (`SELECT 1` for
+the database, `users.getAuthenticated` for the GitHub token, `models.list`
+for the Anthropic key) so an invalid value is rejected immediately instead
+of silently written and failing later. A credential resolving from an
+environment variable shows as read-only in the UI, since saving through
+the form there would write the file but the app would keep using the
+unchanged environment variable regardless.
 
-Everything above Phase 1 describes code that no longer exists in this repo
-as of Phase 4's cutover — kept only as a pointer to where the historical
-record actually lives (`bd`, `docs/postmortems/`, git history), not as
-documentation of anything currently runnable. `CLAUDE.md` has the
-current-stack orientation for day-to-day work; `ROADMAP.md` has whatever's
-next.
+**Auth** is a single shared-secret cookie (`APP_PASSWORD`), appropriate
+for a single-user personal tool — no hashing, no session store, no
+accounts. It's unset by default (no login gate at all, e.g. behind
+Tailscale). It's enforced twice, deliberately: `middleware.ts` redirects
+any unauthenticated request to `/login`, but SolidStart's `action()`/
+`query()` calls all POST through one shared `/_server` RPC endpoint
+regardless of which page invoked them — so `getDashboardData` and
+`toggleAssess` (`dashboard.ts`) also call `assertAuthenticated()` directly,
+as a second gate at the RPC layer that doesn't depend on which route the
+request claims to be for.
