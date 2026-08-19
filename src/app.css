@@ -261,7 +261,7 @@ header.page .sub code {
     gap: 12px;
     margin-top: 14px;
 }
-.meter-row label.date {
+.meter-row .last-assessed.date {
     font-size: 0.7rem;
     color: var(--ink-3);
     font-style: italic;
@@ -630,8 +630,12 @@ footer.page {
     cursor: pointer;
     color: var(--ink-2);
     box-sizing: border-box;
-    font-style: normal;
     transition: all 0.1s ease-in-out;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-style: normal;
 }
 .qtip:hover {
     color: var(--ink);
@@ -667,7 +671,9 @@ footer.page {
     transition: all 0.1s ease-in-out;
 }
 .qtip:hover:before,
-.qtip:hover:after {
+.qtip:hover:after,
+.qtip:focus-visible:before,
+.qtip:focus-visible:after {
     visibility: visible;
     opacity: 1;
 }
@@ -681,53 +687,8 @@ footer.page {
 }
 .qtip.tip-top:after {
     border-width: 8px 8px 0 8px;
-    border-color: var(--bg) transparent transparent transparent;
+    border-color: var(--surface-2) transparent transparent transparent;
     top: -8px;
     left: 50%;
     transform: translate(-50%, 0);
-}
-/* bottom */
-.qtip.tip-bottom:before {
-    bottom: 0;
-    left: 50%;
-    transform: translate(-50%, calc(100% + 8px));
-    box-sizing: border-box;
-    border-radius: 3px;
-}
-.qtip.tip-bottom:after {
-    border-width: 0 8px 8px 8px;
-    border-color: transparent transparent var(--bg) transparent;
-    bottom: -8px;
-    left: 50%;
-    transform: translate(-50%, 0);
-}
-/* left */
-.qtip.tip-left:before {
-    left: 0;
-    top: 50%;
-    transform: translate(calc(-100% - 8px), -50%);
-    box-sizing: border-box;
-    border-radius: 3px;
-}
-.qtip.tip-left:after {
-    border-width: 8px 0 8px 8px;
-    border-color: transparent transparent transparent var(--bg);
-    left: -8px;
-    top: 50%;
-    transform: translate(0, -50%);
-}
-/*right*/
-.qtip.tip-right:before {
-    right: 0;
-    top: 50%;
-    transform: translate(calc(100% + 8px), -50%);
-    box-sizing: border-box;
-    border-radius: 3px;
-}
-.qtip.tip-right:after {
-    border-width: 8px 8px 8px 0;
-    border-color: transparent var(--bg) transparent transparent;
-    right: -8px;
-    top: 50%;
-    transform: translate(0, -50%);
 }

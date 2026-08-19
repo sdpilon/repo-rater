@@ -5,13 +5,14 @@ import { toggleAssess } from "~/lib/dashboard";
 import type { AssessControlValue, RepoCardView } from "~/lib/dashboard-queries";
 import { renderReadme } from "~/lib/render-markdown";
 
-const dateFormat = new Intl.DateTimeFormat("en-US", {
+const dateFormatOptions: Intl.DateTimeFormatOptions = {
+  timeZone: "UTC",
   month: "short",
   day: "numeric",
-});
+};
+const dateFormat = new Intl.DateTimeFormat("en-US", dateFormatOptions);
 const timestampFormat = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
+  ...dateFormatOptions,
   hour: "numeric",
   minute: "numeric",
 });
@@ -109,14 +110,13 @@ export default function RepoCard(props: { repo: RepoCardView }) {
             {assessment().label}
           </span>
           <Show when={assessment().updatedAt}>
-            <span class="last-assessed date">
-              <i
-                class="qtip tip-top"
-                data-tip={`Last assessed: ${formatTimestamp(assessment().updatedAt)}`}
-              >
-                {formatDate(assessment().updatedAt)}
-              </i>
-            </span>
+            <button
+              type="button"
+              class="last-assessed date qtip tip-top"
+              data-tip={`Last assessed: ${formatTimestamp(assessment().updatedAt)}`}
+            >
+              {formatDate(assessment().updatedAt)}
+            </button>
           </Show>
           <div
             class="meter"

@@ -60,7 +60,11 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
       db
         .select()
         .from(repoAssessments)
-        .orderBy(repoAssessments.repoId, desc(repoAssessments.createdAt)),
+        .orderBy(
+          repoAssessments.repoId,
+          desc(repoAssessments.createdAt),
+          desc(repoAssessments.assessmentId),
+        ),
       db.select().from(commits).orderBy(desc(commits.authoredAt)),
       db.select().from(issues).orderBy(desc(issues.createdAt)),
       db.select().from(pullRequests).orderBy(desc(pullRequests.createdAt)),
