@@ -12,10 +12,12 @@ working as described in `README.md`.
 - **No in-UI pipeline trigger.** Refreshing data means running `pnpm run
   pipeline` yourself (see README's "Keeping data fresh"); there's no button
   in the dashboard to kick off a run.
-- **A fresh database needs a manual migration step.** `drizzle-kit migrate`
-  has to be run once against a new Postgres instance before the app will
-  render (see README's Quick start) — it isn't applied automatically on
-  first connection.
+- **A fresh database needs a manual migration step, but only when
+  `DATABASE_URL` is set via environment variable.** Pasting it into the
+  in-app credentials screen applies the schema automatically as part of
+  saving; setting it as an environment variable skips that screen entirely,
+  so `drizzle-kit migrate` still has to be run once by hand first (see
+  README's Quick start).
 - **The maintainer's own deploy pipeline (`.github/workflows/`) is
   Vercel-specific.** That's how the maintainer's own instance ships, not a
   self-hosting requirement — self-hosting doesn't need GitHub Actions or
