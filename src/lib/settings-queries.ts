@@ -1,4 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import type { Octokit } from "octokit";
 import { createDb } from "~/db/client";
 import { createAnthropicClient } from "~/pipeline/anthropic/client";
@@ -44,10 +45,15 @@ function errorMessage(err: unknown): string {
 export async function validateDatabaseUrl(
   databaseUrl: string,
   dbFactory: typeof createDb = createDb,
+  migrateFn: typeof migrate = migrate,
 ): Promise<ValidationResult> {
   const db = dbFactory(databaseUrl, { connectionTimeoutMillis: VALIDATION_CONNECT_TIMEOUT_MS });
   try {
     await db.$client.query("SELECT 1");
+    // Applies drizzle/*.sql if they haven't been (idempotent — tracked in
+    // its own table) so a self-hoster pasting in a brand-new, schema-less
+    // Postgres never reaches the dashboard before it has tables.
+    await migrateFn(db, { migrationsFolder: "./drizzle" });
     return { ok: true };
   } catch (err) {
     return { ok: false, error: errorMessage(err) };

@@ -1,7 +1,7 @@
 import { MetaProvider } from "@solidjs/meta";
 import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
-import { Suspense } from "solid-js";
+import { ErrorBoundary, Suspense } from "solid-js";
 import "./app.css";
 
 export default function App() {
@@ -9,7 +9,27 @@ export default function App() {
     <Router
       root={(props) => (
         <MetaProvider>
-          <Suspense>{props.children}</Suspense>
+          <ErrorBoundary
+            fallback={(err, reset) => (
+              <div class="wrap">
+                <header class="page">
+                  <h1>Something went wrong</h1>
+                  <p class="credential-error">{err instanceof Error ? err.message : String(err)}</p>
+                </header>
+                <button
+                  type="button"
+                  onClick={() => {
+                    reset();
+                    window.location.href = "/";
+                  }}
+                >
+                  Back to settings
+                </button>
+              </div>
+            )}
+          >
+            <Suspense>{props.children}</Suspense>
+          </ErrorBoundary>
         </MetaProvider>
       )}
     >
