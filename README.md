@@ -63,13 +63,7 @@ cd github-project-tracker
 pnpm install
 ```
 
-Apply the database schema (one-time, per database):
-
-```bash
-DATABASE_URL="postgres://..." pnpm exec drizzle-kit migrate
-```
-
-Then start the app — `pnpm dev` for a dev server with hot reload, or `pnpm build && pnpm start` to run the production build:
+Start the app — `pnpm dev` for a dev server with hot reload, or `pnpm build && pnpm start` to run the production build:
 
 ```bash
 pnpm dev
@@ -77,7 +71,13 @@ pnpm dev
 pnpm build && pnpm start
 ```
 
-Open `http://localhost:3000`. If `DATABASE_URL` isn't set as an environment variable, the app shows a credentials screen on first load — you can paste it in there instead of exporting it, along with your GitHub token and Anthropic key. See [Configuration](#configuration) for what each credential needs and every way to set it.
+Open `http://localhost:3000`. If `DATABASE_URL` isn't set as an environment variable, the app shows a credentials screen on first load — paste it in there (along with your GitHub token and Anthropic key) and the database schema is applied automatically as part of saving, no separate migration step needed. See [Configuration](#configuration) for what each credential needs and every way to set it.
+
+If you're setting `DATABASE_URL` as an environment variable instead (skipping the credentials screen entirely), apply the schema yourself first, one-time per database:
+
+```bash
+DATABASE_URL="postgres://..." pnpm exec drizzle-kit migrate
+```
 
 Once credentials are in place, run the pipeline once to populate the dashboard with real data:
 

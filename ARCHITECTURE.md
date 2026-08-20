@@ -117,7 +117,12 @@ token typed into the UI. Before a credential typed into the UI is
 persisted, it's checked against the real service it's for (`SELECT 1` for
 the database, `users.getAuthenticated` for the GitHub token, `models.list`
 for the Anthropic key) so an invalid value is rejected immediately instead
-of silently written and failing later. A credential resolving from an
+of silently written and failing later. For `DATABASE_URL` specifically,
+that same connection also applies any pending Drizzle migrations
+(`settings-queries.ts`) right after the `SELECT 1` succeeds — idempotent,
+so a self-hoster pasting in a brand-new Postgres gets its schema applied
+at save time rather than hitting a missing-table error on first render. A
+credential resolving from an
 environment variable shows as read-only in the UI, since saving through
 the form there would write the file but the app would keep using the
 unchanged environment variable regardless.

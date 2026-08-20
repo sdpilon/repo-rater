@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { validateAnthropicKey, validateDatabaseUrl, validateGithubToken } from "./settings-queries";
 
+const noopMigrate = async () => {};
+
 describe("validateDatabaseUrl", () => {
   it("returns ok when the query succeeds", async () => {
     const fakeDb = { $client: { query: async () => ({}), end: async () => {} } };
     const fakeFactory = (() => fakeDb) as unknown as typeof import("~/db/client").createDb;
-    const result = await validateDatabaseUrl("postgres://fake", fakeFactory);
+    const result = await validateDatabaseUrl("postgres://fake", fakeFactory, noopMigrate);
     expect(result).toEqual({ ok: true });
   });
 
@@ -74,9 +76,33 @@ describe("validateDatabaseUrl", () => {
       receivedOptions = options;
       return fakeDb;
     }) as unknown as typeof import("~/db/client").createDb;
-    await validateDatabaseUrl("postgres://fake", fakeFactory);
+    await validateDatabaseUrl("postgres://fake", fakeFactory, noopMigrate);
     expect(receivedOptions).toEqual({ connectionTimeoutMillis: expect.any(Number) });
     expect((receivedOptions as { connectionTimeoutMillis: number }).connectionTimeoutMillis).toBeGreaterThan(0);
+  });
+
+  // A fresh, schema-less self-hosted Postgres passes the SELECT 1 check
+  // above but has no tables — this is the actual bug tracker-jm8.7 fixes.
+  it("applies pending migrations against the drizzle/ folder after a successful connection check", async () => {
+    const fakeDb = { $client: { query: async () => ({}), end: async () => {} } };
+    const fakeFactory = (() => fakeDb) as unknown as typeof import("~/db/client").createDb;
+    const migrateCalls: unknown[] = [];
+    const fakeMigrate = (async (db: unknown, config: unknown) => {
+      migrateCalls.push([db, config]);
+    }) as unknown as typeof import("drizzle-orm/node-postgres/migrator").migrate;
+    const result = await validateDatabaseUrl("postgres://fake", fakeFactory, fakeMigrate);
+    expect(result).toEqual({ ok: true });
+    expect(migrateCalls).toEqual([[fakeDb, { migrationsFolder: "./drizzle" }]]);
+  });
+
+  it("returns ok:false with a clear error when applying migrations fails", async () => {
+    const fakeDb = { $client: { query: async () => ({}), end: async () => {} } };
+    const fakeFactory = (() => fakeDb) as unknown as typeof import("~/db/client").createDb;
+    const failingMigrate = (async () => {
+      throw new Error("permission denied for schema public");
+    }) as unknown as typeof import("drizzle-orm/node-postgres/migrator").migrate;
+    const result = await validateDatabaseUrl("postgres://fake", fakeFactory, failingMigrate);
+    expect(result).toEqual({ ok: false, error: "permission denied for schema public" });
   });
 });
 
