@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A dashboard summarizing recent activity across the user's full GitHub account (discovered automatically, not a hardcoded list), plus an AI-written "stated goals vs. reality" assessment for each repo. A SolidStart + Drizzle + Postgres (Neon) + Octokit app that renders live from Postgres on every request (no static-file build step, no baked-in data block). Each repo card has an Auto/Yes/No assess control that persists straight to Postgres via a SolidStart server action ("Auto" hands the repo back to automatic recomputation; "Yes" force-assesses the repo, "No" force-ignores it), so future pipeline runs skip generating an assessment for ignored repos. `is_ignored`'s default isn't just `false` — the pipeline computes a smart default (forks, archived repos, no-README, no-activity all default to ignored) and recomputes it every run for any repo whose ignore control is still on "Auto"; see `src/pipeline/ignore-rules.ts` and the `ignore_source` column.
 
-The whole account, dashboard included, is a **live, deployed personal tool** — production is https://github-project-tracker-chi.vercel.app, gated behind an app-level password (see "Auth" below), not something you build/run locally to view.
+The whole account, dashboard included, is **Repo Rater**, a live, deployed personal tool — production is https://github-project-tracker-chi.vercel.app, gated behind an app-level password (see "Auth" below), not something you build/run locally to view.
 
 ## The two moving parts
 

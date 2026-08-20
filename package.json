@@ -1,5 +1,5 @@
 {
-  "name": "github-project-tracker",
+  "name": "repo-rater",
   "version": "0.1.0",
   "description": "Self-hosted dashboard that scores your GitHub repos' actual progress against their stated goals using an LLM",
   "private": true,
@@ -7,11 +7,11 @@
   "author": "Spencer Pilon",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sdpilon/github-project-tracker.git"
+    "url": "git+https://github.com/sdpilon/repo-rater.git"
   },
-  "homepage": "https://github.com/sdpilon/github-project-tracker#readme",
+  "homepage": "https://github.com/sdpilon/repo-rater#readme",
   "bugs": {
-    "url": "https://github.com/sdpilon/github-project-tracker/issues"
+    "url": "https://github.com/sdpilon/repo-rater/issues"
   },
   "keywords": ["github", "dashboard", "self-hosted", "solidstart", "llm", "postgres"],
   "type": "module",
