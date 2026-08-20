@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeTotals,
+  deriveAccountOwner,
   filterVisibleRepos,
   type RepoCardView,
 } from "./dashboard-view";
@@ -81,6 +82,30 @@ describe("computeTotals", () => {
       mergedPrCount: 0,
       issueCount: 0,
     });
+  });
+});
+
+describe("deriveAccountOwner", () => {
+  it("returns undefined for an empty list", () => {
+    expect(deriveAccountOwner([])).toBeUndefined();
+  });
+
+  it("returns the shared owner when all repos have the same prefix", () => {
+    const repos = [
+      fakeRepoCardView({ repoId: 1, fullName: "demo-user/order-tracking-api" }),
+      fakeRepoCardView({ repoId: 2, fullName: "demo-user/notes-cli" }),
+    ];
+
+    expect(deriveAccountOwner(repos)).toBe("demo-user");
+  });
+
+  it("returns undefined when repos span more than one owner", () => {
+    const repos = [
+      fakeRepoCardView({ repoId: 1, fullName: "demo-user/order-tracking-api" }),
+      fakeRepoCardView({ repoId: 2, fullName: "other-user/notes-cli" }),
+    ];
+
+    expect(deriveAccountOwner(repos)).toBeUndefined();
   });
 });
 

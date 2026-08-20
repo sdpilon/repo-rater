@@ -12,7 +12,7 @@ import CredentialsPanel from "~/components/CredentialsPanel";
 import RepoCard from "~/components/RepoCard";
 import Totals from "~/components/Totals";
 import { getDashboardData } from "~/lib/dashboard";
-import { computeTotals, filterVisibleRepos } from "~/lib/dashboard-view";
+import { computeTotals, deriveAccountOwner, filterVisibleRepos } from "~/lib/dashboard-view";
 import { getCredentialStatus } from "~/lib/settings";
 
 export default function Home() {
@@ -22,6 +22,8 @@ export default function Home() {
     if (!s?.database.configured) return undefined;
     return getDashboardData();
   });
+
+  const owner = createMemo(() => deriveAccountOwner(data()?.repos ?? []));
 
   const [hideIgnored, setHideIgnored] = createSignal(false);
 
@@ -64,8 +66,8 @@ export default function Home() {
             <header class="page">
               <h1>Project completion tracker</h1>
               <p class="sub">
-                github.com/<code>sdpilon</code> · live from Postgres, refreshed
-                by the enrichment pipeline
+                <Show when={owner()}>github.com/<code>{owner()}</code> · </Show>
+                live from Postgres, refreshed by the enrichment pipeline
               </p>
               <div class="notice">
                 Assessments are Claude's reading of each README's stated goals
