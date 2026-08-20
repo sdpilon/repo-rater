@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the internal design of `github-project-tracker`: how
+This document describes the internal design of `repo-rater`: how
 data flows through the system and why it's shaped the way it is. For how to
 install, configure, and run the app, see `README.md`.
 

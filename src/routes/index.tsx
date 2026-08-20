@@ -46,7 +46,7 @@ export default function Home() {
 
   return (
     <div class="wrap">
-      <Title>GitHub Project Tracker</Title>
+      <Title>Repo Rater</Title>
       <Show when={status()}>
         {(s) => (
           <Show
