@@ -1,10 +1,9 @@
 #!/bin/bash
 # PreToolUse hook on the Agent tool: warns (does not block) when dispatching
 # a subagent whose description looks like a review while the git tree has
-# uncommitted changes. See
-# docs/postmortems/2026-07-22-stage-0-vertical-slice.md item 2 — this exact
-# mistake (forgetting to commit before handoff) cost two full review rounds
-# on Stage 0.
+# uncommitted changes. Forgetting to commit before dispatching a review
+# subagent once cost two full review rounds — reviewers only see the
+# committed diff, not the working tree.
 set -euo pipefail
 
 input=$(cat)
