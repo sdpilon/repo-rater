@@ -56,7 +56,7 @@ export default function Home() {
             fallback={
               <>
                 <header class="page">
-                  <h1>Project completion tracker</h1>
+                  <h1>Repo Rater</h1>
                   <p class="sub">Add a database connection to get started.</p>
                 </header>
                 <CredentialsPanel status={s()} />
@@ -64,7 +64,7 @@ export default function Home() {
             }
           >
             <header class="page">
-              <h1>Project completion tracker</h1>
+              <h1>Repo Rater</h1>
               <p class="sub">
                 <Show when={owner()}>github.com/<code>{owner()}</code> · </Show>
                 live from Postgres, refreshed by the enrichment pipeline

@@ -7,6 +7,8 @@
 
 Most GitHub dashboards measure activity, not whether a project is actually converging on what it says it's for. This is for anyone with more repos than time to check on them individually: instead of opening each one to see if it's stalled, abandoned, or done, you get an honest, evidence-based read pulled from its own README, commits, and issues. It runs entirely against your own database and your own credentials, not a hosted service with visibility into your account.
 
+![Repo Rater dashboard showing repo cards with good/warn/crit AI assessments](.github/assets/dashboard.png)
+
 ## Table of contents
 
 - [Features](#features)
@@ -165,6 +167,13 @@ pnpm dev   # open http://localhost:3000 — no GitHub token or Anthropic key req
 ```
 
 Drop the container when you're done: `docker rm -f repo-rater-demo-db`.
+
+To regenerate `.github/assets/dashboard.png` from a UI change, with the dev server from above still running:
+
+```bash
+npx playwright install chromium   # one-time, downloads Playwright's managed browser
+pnpm run screenshot
+```
 
 ## License
 
