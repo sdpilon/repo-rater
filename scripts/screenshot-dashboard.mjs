@@ -38,7 +38,13 @@ try {
   page.on("pageerror", (err) => consoleErrors.push(String(err)));
 
   await page.goto(DASHBOARD_URL, { waitUntil: "networkidle" });
-  await page.waitForSelector("article.repo", { timeout: 15000 });
+
+  // SSR renders the full, unfiltered repo list before hydration runs; only
+  // once onMount reads the pre-seeded localStorage flag and applies the
+  // filter does the checkbox end up checked. Wait for that rather than for
+  // "article.repo" existing, which can resolve against the pre-hydration
+  // (unfiltered) DOM.
+  await page.waitForSelector(".hide-ignored-toggle input:checked", { timeout: 15000 });
 
   // Hide any dev-only fixed-position overlay (SolidStart's dev toolbar,
   // Vercel's dev-mode toolbar) so it doesn't show up in the screenshot.
@@ -54,7 +60,7 @@ try {
   const cardCount = await cards.count();
   if (cardCount === 0) {
     throw new Error(
-      "No repo cards found — is DATABASE_URL pointed at a database seeded via `pnpm run seed:fake`?",
+      "No repo cards found after filtering — is DATABASE_URL pointed at a database seeded via `pnpm run seed:fake`, or are all repos currently ignored?",
     );
   }
 
