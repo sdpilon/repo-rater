@@ -25,7 +25,10 @@ export default createMiddleware({
     if (pathname === "/_server" || isPublicPath(pathname)) return;
 
     if (!isAuthenticatedRequest(event.request)) {
-      return new Response(null, { status: 302, headers: { Location: "/login" } });
+      return new Response(null, {
+        status: 302,
+        headers: { Location: "/login" },
+      });
     }
   },
 });

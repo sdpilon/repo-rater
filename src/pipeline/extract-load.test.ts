@@ -77,12 +77,24 @@ describe("getWatermark / setWatermark", () => {
     const { db, close } = await createTestDb();
     cleanup = close;
 
-    await setWatermark(db, 1, "commits", new Date("2026-07-01T00:00:00.000Z"), "run_1");
+    await setWatermark(
+      db,
+      1,
+      "commits",
+      new Date("2026-07-01T00:00:00.000Z"),
+      "run_1",
+    );
     expect((await getWatermark(db, 1, "commits"))?.toISOString()).toBe(
       "2026-07-01T00:00:00.000Z",
     );
 
-    await setWatermark(db, 1, "commits", new Date("2026-07-02T00:00:00.000Z"), "run_2");
+    await setWatermark(
+      db,
+      1,
+      "commits",
+      new Date("2026-07-02T00:00:00.000Z"),
+      "run_2",
+    );
     expect((await getWatermark(db, 1, "commits"))?.toISOString()).toBe(
       "2026-07-02T00:00:00.000Z",
     );
@@ -120,7 +132,10 @@ describe("upsertIssue / upsertPr", () => {
     cleanup = close;
 
     await upsertPr(db, 1, PR, "run_1");
-    const rows = await db.select().from(pullRequests).where(eq(pullRequests.number, 5));
+    const rows = await db
+      .select()
+      .from(pullRequests)
+      .where(eq(pullRequests.number, 5));
     expect(rows[0].title).toBe("Add feature");
     expect(rows[0].mergedAt?.toISOString()).toBe("2026-07-02T00:00:00.000Z");
   });
@@ -131,9 +146,19 @@ describe("recordFailure", () => {
     const { db, close } = await createTestDb();
     cleanup = close;
 
-    await recordFailure(db, "run_1", 1, "commits", "rate limited", new Date("2026-07-22T00:00:00.000Z"));
+    await recordFailure(
+      db,
+      "run_1",
+      1,
+      "commits",
+      "rate limited",
+      new Date("2026-07-22T00:00:00.000Z"),
+    );
 
-    const rows = await db.select().from(fetchFailures).where(eq(fetchFailures.repoId, 1));
+    const rows = await db
+      .select()
+      .from(fetchFailures)
+      .where(eq(fetchFailures.repoId, 1));
     expect(rows).toHaveLength(1);
     expect(rows[0].runId).toBe("run_1");
     expect(rows[0].dataType).toBe("commits");
@@ -162,16 +187,31 @@ describe("extractLoadRepo", () => {
     expect(results).toHaveLength(3);
     expect(results.every((r) => r.status === "ok")).toBe(true);
 
-    const commitRows = await db.select().from(commits).where(eq(commits.repoId, 1));
+    const commitRows = await db
+      .select()
+      .from(commits)
+      .where(eq(commits.repoId, 1));
     expect(commitRows).toHaveLength(1);
-    const issueRows = await db.select().from(issues).where(eq(issues.repoId, 1));
+    const issueRows = await db
+      .select()
+      .from(issues)
+      .where(eq(issues.repoId, 1));
     expect(issueRows).toHaveLength(1);
-    const prRows = await db.select().from(pullRequests).where(eq(pullRequests.repoId, 1));
+    const prRows = await db
+      .select()
+      .from(pullRequests)
+      .where(eq(pullRequests.repoId, 1));
     expect(prRows).toHaveLength(1);
 
-    expect((await getWatermark(db, 1, "commits"))?.toISOString()).toBe(now.toISOString());
-    expect((await getWatermark(db, 1, "issues"))?.toISOString()).toBe(now.toISOString());
-    expect((await getWatermark(db, 1, "prs"))?.toISOString()).toBe(now.toISOString());
+    expect((await getWatermark(db, 1, "commits"))?.toISOString()).toBe(
+      now.toISOString(),
+    );
+    expect((await getWatermark(db, 1, "issues"))?.toISOString()).toBe(
+      now.toISOString(),
+    );
+    expect((await getWatermark(db, 1, "prs"))?.toISOString()).toBe(
+      now.toISOString(),
+    );
   });
 
   it("uses DEFAULT_SINCE as the since= cursor when no watermark is stored yet", async () => {
@@ -201,7 +241,13 @@ describe("extractLoadRepo", () => {
     const { db, close } = await createTestDb();
     cleanup = close;
 
-    await setWatermark(db, 1, "commits", new Date("2026-07-15T00:00:00.000Z"), "run_1");
+    await setWatermark(
+      db,
+      1,
+      "commits",
+      new Date("2026-07-15T00:00:00.000Z"),
+      "run_1",
+    );
 
     let capturedSince: string | null = null;
     await extractLoadRepo({
@@ -252,17 +298,30 @@ describe("extractLoadRepo", () => {
     // commits watermark was not advanced
     expect(await getWatermark(db, 1, "commits")).toBeNull();
     // issues/prs watermarks were advanced despite the commits failure
-    expect((await getWatermark(db, 1, "issues"))?.toISOString()).toBe(now.toISOString());
-    expect((await getWatermark(db, 1, "prs"))?.toISOString()).toBe(now.toISOString());
+    expect((await getWatermark(db, 1, "issues"))?.toISOString()).toBe(
+      now.toISOString(),
+    );
+    expect((await getWatermark(db, 1, "prs"))?.toISOString()).toBe(
+      now.toISOString(),
+    );
 
     // no commit rows were written, but issues/prs were
-    const commitRows = await db.select().from(commits).where(eq(commits.repoId, 1));
+    const commitRows = await db
+      .select()
+      .from(commits)
+      .where(eq(commits.repoId, 1));
     expect(commitRows).toHaveLength(0);
-    const issueRows = await db.select().from(issues).where(eq(issues.repoId, 1));
+    const issueRows = await db
+      .select()
+      .from(issues)
+      .where(eq(issues.repoId, 1));
     expect(issueRows).toHaveLength(1);
 
     // a fetch_failures row was recorded for the failing data type only
-    const failures = await db.select().from(fetchFailures).where(eq(fetchFailures.repoId, 1));
+    const failures = await db
+      .select()
+      .from(fetchFailures)
+      .where(eq(fetchFailures.repoId, 1));
     expect(failures).toHaveLength(1);
     expect(failures[0].dataType).toBe("commits");
     expect(failures[0].errorMessage).toMatch(/rate limited/);
@@ -322,8 +381,14 @@ describe("extractLoadAll", () => {
     });
 
     expect(results.filter((r) => r.status === "ok")).toHaveLength(6);
-    const repo1Commits = await db.select().from(commits).where(eq(commits.repoId, 1));
-    const repo2Commits = await db.select().from(commits).where(eq(commits.repoId, 2));
+    const repo1Commits = await db
+      .select()
+      .from(commits)
+      .where(eq(commits.repoId, 1));
+    const repo2Commits = await db
+      .select()
+      .from(commits)
+      .where(eq(commits.repoId, 2));
     expect(repo1Commits).toHaveLength(1);
     expect(repo2Commits).toHaveLength(1);
   });
@@ -352,7 +417,9 @@ describe("extractLoadAll", () => {
       },
     });
 
-    const brokenResult = results.find((r) => r.fullName === "sdpilon/broken-repo");
+    const brokenResult = results.find(
+      (r) => r.fullName === "sdpilon/broken-repo",
+    );
     expect(brokenResult?.status).toBe("error");
     expect(brokenResult?.dataType).toBe("repo");
     expect(brokenResult?.error).toMatch(/totally unexpected failure/);
@@ -362,10 +429,16 @@ describe("extractLoadAll", () => {
     );
     expect(okResults).toHaveLength(3);
 
-    const repo2Commits = await db.select().from(commits).where(eq(commits.repoId, 2));
+    const repo2Commits = await db
+      .select()
+      .from(commits)
+      .where(eq(commits.repoId, 2));
     expect(repo2Commits).toHaveLength(1);
     // The broken repo never reached extractLoadRepo, so it has no rows at all.
-    const repo1Commits = await db.select().from(commits).where(eq(commits.repoId, 1));
+    const repo1Commits = await db
+      .select()
+      .from(commits)
+      .where(eq(commits.repoId, 1));
     expect(repo1Commits).toHaveLength(0);
   });
 });

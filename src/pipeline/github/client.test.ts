@@ -91,7 +91,10 @@ describe("fetchReadme", () => {
 
     const readme = await fetchReadme("sdpilon/spilon.dev", octokit);
 
-    expect(getReadme).toHaveBeenCalledWith({ owner: "sdpilon", repo: "spilon.dev" });
+    expect(getReadme).toHaveBeenCalledWith({
+      owner: "sdpilon",
+      repo: "spilon.dev",
+    });
     expect(readme).toBe("# Hello");
   });
 
@@ -100,7 +103,9 @@ describe("fetchReadme", () => {
     const getReadme = vi.fn().mockRejectedValue(notFound);
     const octokit = makeFakeOctokit({ getReadme });
 
-    await expect(fetchReadme("sdpilon/spilon.dev", octokit)).rejects.toThrow("Not Found");
+    await expect(fetchReadme("sdpilon/spilon.dev", octokit)).rejects.toThrow(
+      "Not Found",
+    );
   });
 });
 
@@ -192,7 +197,11 @@ describe("fetchIssuesSince", () => {
     ]);
     const octokit = makeFakeOctokit({ paginate });
 
-    const issues = await fetchIssuesSince("sdpilon/spilon.dev", "2026-01-01T00:00:00Z", octokit);
+    const issues = await fetchIssuesSince(
+      "sdpilon/spilon.dev",
+      "2026-01-01T00:00:00Z",
+      octokit,
+    );
 
     expect(paginate).toHaveBeenCalledWith(octokit.rest.issues.listForRepo, {
       owner: "sdpilon",
@@ -271,7 +280,11 @@ describe("fetchPrsSince", () => {
     const paginateIterator = vi.fn().mockReturnValue(iterator());
     const octokit = makeFakeOctokit({ paginateIterator });
 
-    const prs = await fetchPrsSince("sdpilon/spilon.dev", "2026-07-01T00:00:00Z", octokit);
+    const prs = await fetchPrsSince(
+      "sdpilon/spilon.dev",
+      "2026-07-01T00:00:00Z",
+      octokit,
+    );
 
     expect(paginateIterator).toHaveBeenCalledWith(octokit.rest.pulls.list, {
       owner: "sdpilon",
@@ -384,10 +397,13 @@ describe("fetchAccountRepos", () => {
 
     const repos = await fetchAccountRepos(octokit);
 
-    expect(paginate).toHaveBeenCalledWith(octokit.rest.repos.listForAuthenticatedUser, {
-      affiliation: "owner",
-      per_page: 100,
-    });
+    expect(paginate).toHaveBeenCalledWith(
+      octokit.rest.repos.listForAuthenticatedUser,
+      {
+        affiliation: "owner",
+        per_page: 100,
+      },
+    );
     expect(repos.length).toBe(102);
   });
 

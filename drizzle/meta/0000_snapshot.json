@@ -50,10 +50,7 @@
       "compositePrimaryKeys": {
         "commits_repo_id_sha_pk": {
           "name": "commits_repo_id_sha_pk",
-          "columns": [
-            "repo_id",
-            "sha"
-          ]
+          "columns": ["repo_id", "sha"]
         }
       },
       "uniqueConstraints": {},
@@ -138,10 +135,7 @@
       "compositePrimaryKeys": {
         "fetch_watermarks_repo_id_data_type_pk": {
           "name": "fetch_watermarks_repo_id_data_type_pk",
-          "columns": [
-            "repo_id",
-            "data_type"
-          ]
+          "columns": ["repo_id", "data_type"]
         }
       },
       "uniqueConstraints": {},
@@ -207,10 +201,7 @@
       "compositePrimaryKeys": {
         "issues_repo_id_number_pk": {
           "name": "issues_repo_id_number_pk",
-          "columns": [
-            "repo_id",
-            "number"
-          ]
+          "columns": ["repo_id", "number"]
         }
       },
       "uniqueConstraints": {},
@@ -270,10 +261,7 @@
       "compositePrimaryKeys": {
         "pull_requests_repo_id_number_pk": {
           "name": "pull_requests_repo_id_number_pk",
-          "columns": [
-            "repo_id",
-            "number"
-          ]
+          "columns": ["repo_id", "number"]
         }
       },
       "uniqueConstraints": {},
@@ -388,10 +376,7 @@
       "compositePrimaryKeys": {
         "repo_discoveries_run_id_repo_id_pk": {
           "name": "repo_discoveries_run_id_repo_id_pk",
-          "columns": [
-            "run_id",
-            "repo_id"
-          ]
+          "columns": ["run_id", "repo_id"]
         }
       },
       "uniqueConstraints": {},

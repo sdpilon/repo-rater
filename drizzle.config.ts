@@ -9,7 +9,8 @@ import { defineConfig } from "drizzle-kit";
 // do connect) will fail loudly against this placeholder until a real
 // DATABASE_URL is set — that's intentional.
 const databaseUrl =
-  process.env.DATABASE_URL ?? "postgres://placeholder:placeholder@localhost:5432/placeholder";
+  process.env.DATABASE_URL ??
+  "postgres://placeholder:placeholder@localhost:5432/placeholder";
 
 export default defineConfig({
   dialect: "postgresql",

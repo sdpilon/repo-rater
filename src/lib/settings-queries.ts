@@ -47,7 +47,9 @@ export async function validateDatabaseUrl(
   dbFactory: typeof createDb = createDb,
   migrateFn: typeof migrate = migrate,
 ): Promise<ValidationResult> {
-  const db = dbFactory(databaseUrl, { connectionTimeoutMillis: VALIDATION_CONNECT_TIMEOUT_MS });
+  const db = dbFactory(databaseUrl, {
+    connectionTimeoutMillis: VALIDATION_CONNECT_TIMEOUT_MS,
+  });
   try {
     await db.$client.query("SELECT 1");
     // Applies drizzle/*.sql if they haven't been (idempotent — tracked in
@@ -67,7 +69,9 @@ export async function validateGithubToken(
   octokitFactory: (env: NodeJS.ProcessEnv) => Octokit = createOctokit,
 ): Promise<ValidationResult> {
   try {
-    const octokit = octokitFactory({ PIPELINE_GH_TOKEN: token } as NodeJS.ProcessEnv);
+    const octokit = octokitFactory({
+      PIPELINE_GH_TOKEN: token,
+    } as NodeJS.ProcessEnv);
     await octokit.rest.users.getAuthenticated();
     return { ok: true };
   } catch (err) {
@@ -77,10 +81,14 @@ export async function validateGithubToken(
 
 export async function validateAnthropicKey(
   apiKey: string,
-  anthropicFactory: (env: NodeJS.ProcessEnv) => Anthropic = createAnthropicClient,
+  anthropicFactory: (
+    env: NodeJS.ProcessEnv,
+  ) => Anthropic = createAnthropicClient,
 ): Promise<ValidationResult> {
   try {
-    const client = anthropicFactory({ ANTHROPIC_API_KEY: apiKey } as NodeJS.ProcessEnv);
+    const client = anthropicFactory({
+      ANTHROPIC_API_KEY: apiKey,
+    } as NodeJS.ProcessEnv);
     await client.models.list();
     return { ok: true };
   } catch (err) {

@@ -4,12 +4,17 @@ import { cleanup, render, screen, within } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CredentialStatus } from "./CredentialsPanel";
 
-const saveDatabaseUrlImpl = vi.fn(async (_formData: FormData) => ({ error: null }) as { error: string | null });
+const saveDatabaseUrlImpl = vi.fn(
+  async (_formData: FormData) => ({ error: null }) as { error: string | null },
+);
 
 vi.mock("~/lib/settings", async () => {
   const { action } = await import("@solidjs/router");
   return {
-    saveDatabaseUrl: action((formData: FormData) => saveDatabaseUrlImpl(formData), "saveDatabaseUrl"),
+    saveDatabaseUrl: action(
+      (formData: FormData) => saveDatabaseUrlImpl(formData),
+      "saveDatabaseUrl",
+    ),
     saveGithubToken: action(async () => ({ error: null }), "saveGithubToken"),
     saveAnthropicKey: action(async () => ({ error: null }), "saveAnthropicKey"),
   };
@@ -99,8 +104,15 @@ describe("CredentialsPanel", () => {
       // (unset) fields still render their normal editable forms with Save
       // buttons elsewhere on the page, so a page-wide query would false-fail.
       const envField = envNote.closest(".credential-field-env");
-      if (!envField) throw new Error("expected the env-sourced field to render inside .credential-field-env");
-      expect(within(envField as HTMLElement).queryByRole("button", { name: /save/i })).toBeNull();
+      if (!envField)
+        throw new Error(
+          "expected the env-sourced field to render inside .credential-field-env",
+        );
+      expect(
+        within(envField as HTMLElement).queryByRole("button", {
+          name: /save/i,
+        }),
+      ).toBeNull();
       expect(envField.querySelector("input")).toBeNull();
     });
 
@@ -111,7 +123,9 @@ describe("CredentialsPanel", () => {
         anthropicKey: { configured: false, source: "unset" },
         appPasswordConfigured: true,
       });
-      expect(screen.getByLabelText("GitHub personal access token")).toBeTruthy();
+      expect(
+        screen.getByLabelText("GitHub personal access token"),
+      ).toBeTruthy();
       expect(screen.getByLabelText("Anthropic API key")).toBeTruthy();
     });
   });
@@ -139,10 +153,13 @@ describe("CredentialsPanel", () => {
     });
     renderPanel(notConfiguredEnvNone);
 
-    const input = screen.getByLabelText("Database connection string") as HTMLInputElement;
+    const input = screen.getByLabelText(
+      "Database connection string",
+    ) as HTMLInputElement;
     input.value = "postgres://example";
     const form = input.closest("form");
-    if (!form) throw new Error("expected the database field to render inside a form");
+    if (!form)
+      throw new Error("expected the database field to render inside a form");
     form.requestSubmit();
 
     const errorText = await screen.findByText("unexpected server error");

@@ -203,7 +203,14 @@ describe("runDiscoveryScaffold", () => {
     const { db, close } = await createTestDb();
     cleanup = close;
 
-    const { runId, startedAt, repos: repoList, count, results, error } = await runDiscoveryScaffold({
+    const {
+      runId,
+      startedAt,
+      repos: repoList,
+      count,
+      results,
+      error,
+    } = await runDiscoveryScaffold({
       db,
       octokit: fakeOctokit,
       fetchRepos: fakeFetchRepos,
@@ -237,7 +244,10 @@ describe("runDiscoveryScaffold", () => {
     // (see the comment above runDiscoveryScaffold in discover.ts): no runs
     // row yet. Then exercise the full sequence the way a real caller
     // would, layering recordRunStart/recordRunFinish on top.
-    const runRowsBeforeRecord = await db.select().from(runs).where(eqRunIdRuns(runId));
+    const runRowsBeforeRecord = await db
+      .select()
+      .from(runs)
+      .where(eqRunIdRuns(runId));
     expect(runRowsBeforeRecord).toHaveLength(0);
 
     await recordRunStart(db, runId, startedAt, count);

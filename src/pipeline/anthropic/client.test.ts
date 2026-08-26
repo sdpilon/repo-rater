@@ -1,6 +1,10 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
-import { buildUserContent, createAnthropicClient, generateAssessment } from "./client";
+import {
+  buildUserContent,
+  createAnthropicClient,
+  generateAssessment,
+} from "./client";
 
 describe("createAnthropicClient", () => {
   it("throws when ANTHROPIC_API_KEY is missing", () => {
@@ -63,7 +67,9 @@ describe("generateAssessment", () => {
     const result = await generateAssessment(client, EMPTY_INPUT);
 
     expect(result).toEqual(STUB_ASSESSMENT);
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({ model: "claude-opus-4-8" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ model: "claude-opus-4-8" }),
+    );
   });
 
   it("throws a clear error when the response has no text content block", async () => {

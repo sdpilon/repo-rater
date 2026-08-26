@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { commits, issues, pullRequests, repoAssessments, repos } from "../db/schema";
+import {
+  commits,
+  issues,
+  pullRequests,
+  repoAssessments,
+  repos,
+} from "../db/schema";
 import { seedFakeData } from "./seed-fake-data";
 import { createTestDb } from "./test-helpers/pglite-db";
 
@@ -91,7 +97,9 @@ describe("seedFakeData", () => {
     for (const row of assessmentRows) {
       const snapshot = row.inputSnapshot;
       expect(snapshot).toMatchObject({ readmeText: expect.any(String) });
-      expect((snapshot as { readmeText: string }).readmeText.length).toBeGreaterThan(0);
+      expect(
+        (snapshot as { readmeText: string }).readmeText.length,
+      ).toBeGreaterThan(0);
     }
   });
 

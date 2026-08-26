@@ -13,7 +13,14 @@
   "bugs": {
     "url": "https://github.com/sdpilon/repo-rater/issues"
   },
-  "keywords": ["github", "dashboard", "self-hosted", "solidstart", "llm", "postgres"],
+  "keywords": [
+    "github",
+    "dashboard",
+    "self-hosted",
+    "solidstart",
+    "llm",
+    "postgres"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite dev",

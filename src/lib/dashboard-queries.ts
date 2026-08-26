@@ -78,7 +78,9 @@ export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
   const repoViews: RepoCardView[] = repoRows.map((repo) => {
     const assessmentRow = latestAssessmentByRepoId.get(repo.repoId);
     const inputSnapshot = assessmentRow?.inputSnapshot as
-      { readmeText?: string } | null | undefined;
+      | { readmeText?: string }
+      | null
+      | undefined;
     const assessment: RepoAssessmentView = assessmentRow
       ? {
           pct: assessmentRow.pct,

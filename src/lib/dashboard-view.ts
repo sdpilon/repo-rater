@@ -85,7 +85,9 @@ export function computeTotals(repos: RepoCardView[]): DashboardTotals {
   };
 }
 
-export function deriveAccountOwner(repos: { fullName: string }[]): string | undefined {
+export function deriveAccountOwner(
+  repos: { fullName: string }[],
+): string | undefined {
   const owners = new Set(repos.map((r) => r.fullName.split("/")[0]));
   return owners.size === 1 ? [...owners][0] : undefined;
 }

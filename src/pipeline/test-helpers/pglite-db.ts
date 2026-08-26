@@ -21,7 +21,10 @@ import type { DrizzleDb } from "../db-types";
 
 const drizzleDir = fileURLToPath(new URL("../../../drizzle", import.meta.url));
 
-export async function createTestDb(): Promise<{ db: DrizzleDb; close: () => Promise<void> }> {
+export async function createTestDb(): Promise<{
+  db: DrizzleDb;
+  close: () => Promise<void>;
+}> {
   const client = new PGlite();
   const migrationFiles = readdirSync(drizzleDir)
     .filter((name) => name.endsWith(".sql"))

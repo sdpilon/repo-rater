@@ -1,7 +1,10 @@
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
 import { repos } from "../db/schema";
-import { applyIgnoreDefaultForRepo, computeSuggestedIgnore } from "./ignore-rules";
+import {
+  applyIgnoreDefaultForRepo,
+  computeSuggestedIgnore,
+} from "./ignore-rules";
 import { createTestDb } from "./test-helpers/pglite-db";
 import type { DrizzleDb } from "./db-types";
 

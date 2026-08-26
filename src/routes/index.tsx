@@ -12,7 +12,11 @@ import CredentialsPanel from "~/components/CredentialsPanel";
 import RepoCard from "~/components/RepoCard";
 import Totals from "~/components/Totals";
 import { getDashboardData } from "~/lib/dashboard";
-import { computeTotals, deriveAccountOwner, filterVisibleRepos } from "~/lib/dashboard-view";
+import {
+  computeTotals,
+  deriveAccountOwner,
+  filterVisibleRepos,
+} from "~/lib/dashboard-view";
 import { getCredentialStatus } from "~/lib/settings";
 
 export default function Home() {
@@ -66,7 +70,9 @@ export default function Home() {
             <header class="page">
               <h1>Repo Rater</h1>
               <p class="sub">
-                <Show when={owner()}>github.com/<code>{owner()}</code> · </Show>
+                <Show when={owner()}>
+                  github.com/<code>{owner()}</code> ·{" "}
+                </Show>
                 live from Postgres, refreshed by the enrichment pipeline
               </p>
               <div class="notice">

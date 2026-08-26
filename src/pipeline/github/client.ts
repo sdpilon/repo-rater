@@ -94,13 +94,19 @@ function mapRawRepo(raw: RawRepo): RepoMeta {
   };
 }
 
-export async function fetchRepoMeta(fullName: string, octokit: Octokit): Promise<RepoMeta> {
+export async function fetchRepoMeta(
+  fullName: string,
+  octokit: Octokit,
+): Promise<RepoMeta> {
   const { owner, repo } = splitFullName(fullName);
   const { data } = await octokit.rest.repos.get({ owner, repo });
   return mapRawRepo(data);
 }
 
-export async function fetchReadme(fullName: string, octokit: Octokit): Promise<string> {
+export async function fetchReadme(
+  fullName: string,
+  octokit: Octokit,
+): Promise<string> {
   const { owner, repo } = splitFullName(fullName);
   // A missing README (404) is a real error case, same as the old
   // `gh api` version (a non-2xx response made execFileSync throw). Octokit
@@ -210,9 +216,12 @@ export async function fetchPrsSince(
 }
 
 export async function fetchAccountRepos(octokit: Octokit): Promise<RepoMeta[]> {
-  const repos = await octokit.paginate(octokit.rest.repos.listForAuthenticatedUser, {
-    affiliation: "owner",
-    per_page: 100,
-  });
+  const repos = await octokit.paginate(
+    octokit.rest.repos.listForAuthenticatedUser,
+    {
+      affiliation: "owner",
+      per_page: 100,
+    },
+  );
   return repos.map(mapRawRepo);
 }

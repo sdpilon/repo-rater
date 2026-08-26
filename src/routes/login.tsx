@@ -1,6 +1,10 @@
 import { Title } from "@solidjs/meta";
 import { action, redirect, useAction, useSubmission } from "@solidjs/router";
-import { buildAuthCookie, isAppPasswordConfigured, requireAppPassword } from "~/lib/auth";
+import {
+  buildAuthCookie,
+  isAppPasswordConfigured,
+  requireAppPassword,
+} from "~/lib/auth";
 
 /**
  * Extracted (rather than inlined in `action(...)`) so it can be unit-tested
@@ -27,7 +31,9 @@ export default function Login() {
   const submit = useAction(login);
   const submission = useSubmission(login);
 
-  async function handleSubmit(event: Event & { currentTarget: HTMLFormElement }) {
+  async function handleSubmit(
+    event: Event & { currentTarget: HTMLFormElement },
+  ) {
     event.preventDefault();
     await submit(new FormData(event.currentTarget));
   }
@@ -37,7 +43,10 @@ export default function Login() {
       <Title>Log in</Title>
       <form class="login-form" onSubmit={handleSubmit}>
         <h1 class="login-title">Log in</h1>
-        <p class="login-sub">This dashboard includes private repo data — enter the shared password to continue.</p>
+        <p class="login-sub">
+          This dashboard includes private repo data — enter the shared password
+          to continue.
+        </p>
         <label class="login-label" for="password">
           Password
         </label>
@@ -49,7 +58,9 @@ export default function Login() {
           required
           disabled={submission.pending}
         />
-        {submission.result?.error && <p class="login-error">{submission.result.error}</p>}
+        {submission.result?.error && (
+          <p class="login-error">{submission.result.error}</p>
+        )}
         <button type="submit" disabled={submission.pending}>
           {submission.pending ? "Checking…" : "Log in"}
         </button>

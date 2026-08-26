@@ -14,7 +14,9 @@ export default function App() {
               <div class="wrap">
                 <header class="page">
                   <h1>Something went wrong</h1>
-                  <p class="credential-error">{err instanceof Error ? err.message : String(err)}</p>
+                  <p class="credential-error">
+                    {err instanceof Error ? err.message : String(err)}
+                  </p>
                 </header>
                 <button
                   type="button"

@@ -1,8 +1,19 @@
-import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { isConfigured, resolveConfig, resolveConfigSource, setConfigValue } from "./config";
+import {
+  isConfigured,
+  resolveConfig,
+  resolveConfigSource,
+  setConfigValue,
+} from "./config";
 
 let tempDir: string;
 let configFilePath: string;
@@ -22,24 +33,34 @@ afterEach(() => {
 describe("resolveConfig", () => {
   it("returns undefined when neither env var nor file has the key", () => {
     delete process.env.TEST_CONFIG_KEY;
-    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath })).toBeUndefined();
+    expect(
+      resolveConfig("TEST_CONFIG_KEY", { configFilePath }),
+    ).toBeUndefined();
   });
 
   it("returns the env var value when set, ignoring the file", () => {
     process.env.TEST_CONFIG_KEY = "from-env";
     setConfigValue("TEST_CONFIG_KEY", "from-file", { configFilePath });
-    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath })).toBe("from-env");
+    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath })).toBe(
+      "from-env",
+    );
   });
 
   it("falls back to the config file when the env var is unset", () => {
     delete process.env.TEST_CONFIG_KEY;
     setConfigValue("TEST_CONFIG_KEY", "from-file", { configFilePath });
-    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath })).toBe("from-file");
+    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath })).toBe(
+      "from-file",
+    );
   });
 
   it("returns undefined when the config file doesn't exist yet", () => {
     delete process.env.TEST_CONFIG_KEY;
-    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath: join(tempDir, "missing.json") })).toBeUndefined();
+    expect(
+      resolveConfig("TEST_CONFIG_KEY", {
+        configFilePath: join(tempDir, "missing.json"),
+      }),
+    ).toBeUndefined();
   });
 
   // Finding 3: a blank DATABASE_URL submission must not be treated as
@@ -50,38 +71,52 @@ describe("resolveConfig", () => {
   it("treats an empty-string file value as unset, not as configured", () => {
     delete process.env.TEST_CONFIG_KEY;
     setConfigValue("TEST_CONFIG_KEY", "", { configFilePath });
-    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath })).toBeUndefined();
+    expect(
+      resolveConfig("TEST_CONFIG_KEY", { configFilePath }),
+    ).toBeUndefined();
     expect(isConfigured("TEST_CONFIG_KEY", { configFilePath })).toBe(false);
   });
 
   it("treats a whitespace-only env var as unset, falling back to the file", () => {
     process.env.TEST_CONFIG_KEY = "   ";
     setConfigValue("TEST_CONFIG_KEY", "from-file", { configFilePath });
-    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath })).toBe("from-file");
+    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath })).toBe(
+      "from-file",
+    );
   });
 
   it("treats a whitespace-only file value as unset when the env var is also unset", () => {
     delete process.env.TEST_CONFIG_KEY;
     setConfigValue("TEST_CONFIG_KEY", "   ", { configFilePath });
-    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath })).toBeUndefined();
+    expect(
+      resolveConfig("TEST_CONFIG_KEY", { configFilePath }),
+    ).toBeUndefined();
   });
 });
 
 describe("resolveConfigSource", () => {
   it("reports env, file, or unset depending on where the key resolves from", () => {
     delete process.env.TEST_CONFIG_KEY;
-    expect(resolveConfigSource("TEST_CONFIG_KEY", { configFilePath })).toBe("unset");
+    expect(resolveConfigSource("TEST_CONFIG_KEY", { configFilePath })).toBe(
+      "unset",
+    );
 
     setConfigValue("TEST_CONFIG_KEY", "from-file", { configFilePath });
-    expect(resolveConfigSource("TEST_CONFIG_KEY", { configFilePath })).toBe("file");
+    expect(resolveConfigSource("TEST_CONFIG_KEY", { configFilePath })).toBe(
+      "file",
+    );
 
     process.env.TEST_CONFIG_KEY = "from-env";
-    expect(resolveConfigSource("TEST_CONFIG_KEY", { configFilePath })).toBe("env");
+    expect(resolveConfigSource("TEST_CONFIG_KEY", { configFilePath })).toBe(
+      "env",
+    );
   });
 
   it("reports unset for a blank value from either source", () => {
     process.env.TEST_CONFIG_KEY = "   ";
-    expect(resolveConfigSource("TEST_CONFIG_KEY", { configFilePath })).toBe("unset");
+    expect(resolveConfigSource("TEST_CONFIG_KEY", { configFilePath })).toBe(
+      "unset",
+    );
   });
 });
 
@@ -98,7 +133,9 @@ describe("setConfigValue", () => {
   it("creates the parent directory and file if missing", () => {
     const nestedPath = join(tempDir, "nested", "dir", "config.json");
     setConfigValue("TEST_CONFIG_KEY", "value", { configFilePath: nestedPath });
-    expect(resolveConfig("TEST_CONFIG_KEY", { configFilePath: nestedPath })).toBe("value");
+    expect(
+      resolveConfig("TEST_CONFIG_KEY", { configFilePath: nestedPath }),
+    ).toBe("value");
   });
 
   it("merges with existing keys instead of overwriting the file", () => {

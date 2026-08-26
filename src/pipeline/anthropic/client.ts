@@ -8,10 +8,14 @@ import Anthropic from "@anthropic-ai/sdk";
  * is a faithful port, not a "corrected" rewrite against older API docs.
  */
 
-export function createAnthropicClient(env: NodeJS.ProcessEnv = process.env): Anthropic {
+export function createAnthropicClient(
+  env: NodeJS.ProcessEnv = process.env,
+): Anthropic {
   const apiKey = env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY environment variable is required to create an Anthropic client");
+    throw new Error(
+      "ANTHROPIC_API_KEY environment variable is required to create an Anthropic client",
+    );
   }
   return new Anthropic({ apiKey });
 }
@@ -67,10 +71,14 @@ export function buildUserContent({
   prStates,
 }: AssessmentInput): string {
   const commitsBlock =
-    commitMessages.length > 0 ? commitMessages.map((m) => `- ${m}`).join("\n") : "(no commits)";
+    commitMessages.length > 0
+      ? commitMessages.map((m) => `- ${m}`).join("\n")
+      : "(no commits)";
   const issuesBlock =
     issueTitles.length > 0
-      ? issueTitles.map((title, idx) => `- ${title} (${issueStates[idx]})`).join("\n")
+      ? issueTitles
+          .map((title, idx) => `- ${title} (${issueStates[idx]})`)
+          .join("\n")
       : "(no issues)";
   const prsBlock =
     prTitles.length > 0

@@ -46,7 +46,10 @@ function callAction<A extends (...args: never[]) => unknown>(
   action: A,
   ...args: Parameters<A>
 ): ReturnType<A> {
-  return (action as (...a: Parameters<A>) => ReturnType<A>).apply(fakeRouterContext, args);
+  return (action as (...a: Parameters<A>) => ReturnType<A>).apply(
+    fakeRouterContext,
+    args,
+  );
 }
 
 describe("getCredentialStatus", () => {
@@ -87,19 +90,31 @@ describe("saveDatabaseUrl", () => {
     const { setConfigValue } = await import("./config");
     const { saveDatabaseUrl } = await import("./settings");
 
-    const result = await callAction(saveDatabaseUrl, formDataWith("databaseUrl", "postgres://real"));
+    const result = await callAction(
+      saveDatabaseUrl,
+      formDataWith("databaseUrl", "postgres://real"),
+    );
 
     expect(result).toEqual({ error: null });
-    expect(setConfigValue).toHaveBeenCalledWith("DATABASE_URL", "postgres://real");
+    expect(setConfigValue).toHaveBeenCalledWith(
+      "DATABASE_URL",
+      "postgres://real",
+    );
   });
 
   it("does not persist and returns the error when validation fails", async () => {
     const { validateDatabaseUrl } = await import("./settings-queries");
-    vi.mocked(validateDatabaseUrl).mockResolvedValue({ ok: false, error: "connection refused" });
+    vi.mocked(validateDatabaseUrl).mockResolvedValue({
+      ok: false,
+      error: "connection refused",
+    });
     const { setConfigValue } = await import("./config");
     const { saveDatabaseUrl } = await import("./settings");
 
-    const result = await callAction(saveDatabaseUrl, formDataWith("databaseUrl", "postgres://bad"));
+    const result = await callAction(
+      saveDatabaseUrl,
+      formDataWith("databaseUrl", "postgres://bad"),
+    );
 
     expect(result).toEqual({ error: "connection refused" });
     expect(setConfigValue).not.toHaveBeenCalled();
@@ -116,9 +131,14 @@ describe("saveDatabaseUrl", () => {
     const { setConfigValue } = await import("./config");
     const { saveDatabaseUrl } = await import("./settings");
 
-    const result = await callAction(saveDatabaseUrl, formDataWith("databaseUrl", "   "));
+    const result = await callAction(
+      saveDatabaseUrl,
+      formDataWith("databaseUrl", "   "),
+    );
 
-    expect(result).toEqual({ error: "Database connection string is required." });
+    expect(result).toEqual({
+      error: "Database connection string is required.",
+    });
     expect(validateDatabaseUrl).not.toHaveBeenCalled();
     expect(setConfigValue).not.toHaveBeenCalled();
   });
@@ -136,7 +156,10 @@ describe("saveDatabaseUrl", () => {
     });
     const { saveDatabaseUrl } = await import("./settings");
 
-    const result = await callAction(saveDatabaseUrl, formDataWith("databaseUrl", "postgres://real"));
+    const result = await callAction(
+      saveDatabaseUrl,
+      formDataWith("databaseUrl", "postgres://real"),
+    );
 
     expect(result).toEqual({ error: "EACCES: permission denied" });
   });
@@ -149,10 +172,16 @@ describe("saveGithubToken", () => {
     const { setConfigValue } = await import("./config");
     const { saveGithubToken } = await import("./settings");
 
-    const result = await callAction(saveGithubToken, formDataWith("githubToken", "ghp_real"));
+    const result = await callAction(
+      saveGithubToken,
+      formDataWith("githubToken", "ghp_real"),
+    );
 
     expect(result).toEqual({ error: null });
-    expect(setConfigValue).toHaveBeenCalledWith("PIPELINE_GH_TOKEN", "ghp_real");
+    expect(setConfigValue).toHaveBeenCalledWith(
+      "PIPELINE_GH_TOKEN",
+      "ghp_real",
+    );
   });
 
   it("rejects a blank value without calling the validator or persisting anything", async () => {
@@ -160,9 +189,14 @@ describe("saveGithubToken", () => {
     const { setConfigValue } = await import("./config");
     const { saveGithubToken } = await import("./settings");
 
-    const result = await callAction(saveGithubToken, formDataWith("githubToken", ""));
+    const result = await callAction(
+      saveGithubToken,
+      formDataWith("githubToken", ""),
+    );
 
-    expect(result).toEqual({ error: "GitHub personal access token is required." });
+    expect(result).toEqual({
+      error: "GitHub personal access token is required.",
+    });
     expect(validateGithubToken).not.toHaveBeenCalled();
     expect(setConfigValue).not.toHaveBeenCalled();
   });
@@ -175,10 +209,16 @@ describe("saveAnthropicKey", () => {
     const { setConfigValue } = await import("./config");
     const { saveAnthropicKey } = await import("./settings");
 
-    const result = await callAction(saveAnthropicKey, formDataWith("anthropicKey", "sk-ant-real"));
+    const result = await callAction(
+      saveAnthropicKey,
+      formDataWith("anthropicKey", "sk-ant-real"),
+    );
 
     expect(result).toEqual({ error: null });
-    expect(setConfigValue).toHaveBeenCalledWith("ANTHROPIC_API_KEY", "sk-ant-real");
+    expect(setConfigValue).toHaveBeenCalledWith(
+      "ANTHROPIC_API_KEY",
+      "sk-ant-real",
+    );
   });
 
   it("rejects a blank value without calling the validator or persisting anything", async () => {
@@ -186,7 +226,10 @@ describe("saveAnthropicKey", () => {
     const { setConfigValue } = await import("./config");
     const { saveAnthropicKey } = await import("./settings");
 
-    const result = await callAction(saveAnthropicKey, formDataWith("anthropicKey", "   "));
+    const result = await callAction(
+      saveAnthropicKey,
+      formDataWith("anthropicKey", "   "),
+    );
 
     expect(result).toEqual({ error: "Anthropic API key is required." });
     expect(validateAnthropicKey).not.toHaveBeenCalled();

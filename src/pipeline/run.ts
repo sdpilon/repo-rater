@@ -105,15 +105,32 @@ export interface RunPipelineParams {
   anthropicClient: Anthropic;
   args: ParsedArgs;
   /** Injectable in tests in place of the real `fetchAccountRepos` Octokit call. */
-  fetchRepos?: (octokit: Octokit) => Promise<import("./github/client").RepoMeta[]>;
+  fetchRepos?: (
+    octokit: Octokit,
+  ) => Promise<import("./github/client").RepoMeta[]>;
   /** Injectable in tests in place of the real Octokit-backed fetch functions. */
-  fetchCommits?: (fullName: string, since: string, octokit: Octokit) => Promise<Commit[]>;
-  fetchIssues?: (fullName: string, since: string, octokit: Octokit) => Promise<Issue[]>;
-  fetchPrs?: (fullName: string, since: string, octokit: Octokit) => Promise<PullRequest[]>;
+  fetchCommits?: (
+    fullName: string,
+    since: string,
+    octokit: Octokit,
+  ) => Promise<Commit[]>;
+  fetchIssues?: (
+    fullName: string,
+    since: string,
+    octokit: Octokit,
+  ) => Promise<Issue[]>;
+  fetchPrs?: (
+    fullName: string,
+    since: string,
+    octokit: Octokit,
+  ) => Promise<PullRequest[]>;
   /** Injectable in tests in place of the real Octokit-backed fetchReadme. */
   fetchReadme?: (fullName: string, octokit: Octokit) => Promise<string>;
   /** Injectable in tests in place of the real Anthropic-backed assessment call. */
-  generateAssessment?: (client: Anthropic, input: AssessmentInput) => Promise<Assessment>;
+  generateAssessment?: (
+    client: Anthropic,
+    input: AssessmentInput,
+  ) => Promise<Assessment>;
 }
 
 export interface RunPipelineSummary {
@@ -189,7 +206,8 @@ export async function runPipeline({
     fetchIssues,
     fetchPrs,
   });
-  const { repoIds, reposFetchedOk, reposFailed } = computeRunCounts(extractResults);
+  const { repoIds, reposFetchedOk, reposFailed } =
+    computeRunCounts(extractResults);
 
   // No `publish` step — it's removed from the architecture entirely; the
   // SolidStart SSR route queries Postgres directly once the frontend phase
@@ -217,7 +235,9 @@ export async function runPipeline({
   console.log(
     `run ${runId}: ${reposFetchedOk} repos ok, ${reposFailed} repos with fetch errors, ` +
       `${llmCallsMade} enrichment calls made, ${llmCallsSkipped} skipped` +
-      (args.limit ? ` (limited to ${args.limit} of ${discoveredCount} discovered repos)` : ""),
+      (args.limit
+        ? ` (limited to ${args.limit} of ${discoveredCount} discovered repos)`
+        : ""),
   );
 
   return { runId, discoveredCount, reposFetchedOk, reposFailed };
@@ -230,7 +250,9 @@ export async function runPipeline({
  * downstream connection error), builds a real db/Octokit, runs the
  * pipeline, then closes the db connection.
  */
-export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
+export async function main(
+  argv: string[] = process.argv.slice(2),
+): Promise<void> {
   const args = parseArgs(argv);
 
   const databaseUrl = resolveConfig("DATABASE_URL");
@@ -253,8 +275,12 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
   }
 
   const db = createDb(databaseUrl);
-  const octokit = createOctokit({ PIPELINE_GH_TOKEN: githubToken } as NodeJS.ProcessEnv);
-  const anthropicClient = createAnthropicClient({ ANTHROPIC_API_KEY: anthropicApiKey } as NodeJS.ProcessEnv);
+  const octokit = createOctokit({
+    PIPELINE_GH_TOKEN: githubToken,
+  } as NodeJS.ProcessEnv);
+  const anthropicClient = createAnthropicClient({
+    ANTHROPIC_API_KEY: anthropicApiKey,
+  } as NodeJS.ProcessEnv);
 
   try {
     await runPipeline({ db, octokit, anthropicClient, args });

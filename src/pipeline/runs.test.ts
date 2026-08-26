@@ -33,7 +33,10 @@ describe("recordRunStart / recordRunFinish", () => {
     const runId = "run_test_1";
     await recordRunStart(db, runId, new Date("2026-07-23T00:00:00.000Z"), 5);
 
-    const afterStart = await db.select().from(runs).where(eq(runs.runId, runId));
+    const afterStart = await db
+      .select()
+      .from(runs)
+      .where(eq(runs.runId, runId));
     expect(afterStart).toHaveLength(1);
     expect(afterStart[0].status).toBe("partial");
     expect(afterStart[0].reposDiscovered).toBe(5);
@@ -48,13 +51,18 @@ describe("recordRunStart / recordRunFinish", () => {
       llmCallsSkipped: 2,
     });
 
-    const afterFinish = await db.select().from(runs).where(eq(runs.runId, runId));
+    const afterFinish = await db
+      .select()
+      .from(runs)
+      .where(eq(runs.runId, runId));
     expect(afterFinish).toHaveLength(1);
     expect(afterFinish[0].status).toBe("success");
     expect(afterFinish[0].reposFetchedOk).toBe(4);
     expect(afterFinish[0].reposFailed).toBe(1);
     expect(afterFinish[0].llmCallsMade).toBe(3);
     expect(afterFinish[0].llmCallsSkipped).toBe(2);
-    expect(afterFinish[0].finishedAt?.toISOString()).toBe("2026-07-23T00:05:00.000Z");
+    expect(afterFinish[0].finishedAt?.toISOString()).toBe(
+      "2026-07-23T00:05:00.000Z",
+    );
   });
 });

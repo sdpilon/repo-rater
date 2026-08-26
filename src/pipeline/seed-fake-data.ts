@@ -1,6 +1,13 @@
 import { eq, inArray } from "drizzle-orm";
 import { createDb } from "../db/client";
-import { commits, issues, pullRequests, repoAssessments, repos, runs } from "../db/schema";
+import {
+  commits,
+  issues,
+  pullRequests,
+  repoAssessments,
+  repos,
+  runs,
+} from "../db/schema";
 import { resolveConfig } from "../lib/config";
 import type { DrizzleDb } from "./db-types";
 
@@ -76,7 +83,8 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
     {
       repoId: 900001,
       fullName: "demo-user/order-tracking-api",
-      description: "REST API for tracking multi-warehouse order fulfillment status.",
+      description:
+        "REST API for tracking multi-warehouse order fulfillment status.",
       htmlUrl: "https://github.com/demo-user/order-tracking-api",
       defaultBranch: "main",
       language: "TypeScript",
@@ -90,16 +98,51 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       readme:
         "# order-tracking-api\n\nREST API for tracking multi-warehouse order fulfillment status.\n\n## Roadmap\n\n- [x] Order creation with idempotency keys\n- [x] Webhook retry backoff\n- [ ] Partial shipment status\n\n## Running locally\n\n```\nnpm install\nnpm run dev\n```\n",
       commits: [
-        { sha: "a1b2c3d", authorName: "demo-user", authoredAt: daysAgo(now, 1), message: "Add idempotency keys to order creation endpoint" },
-        { sha: "b2c3d4e", authorName: "demo-user", authoredAt: daysAgo(now, 3), message: "Fix race condition in warehouse stock reservation" },
-        { sha: "c3d4e5f", authorName: "demo-user", authoredAt: daysAgo(now, 6), message: "Add integration tests for fulfillment webhook" },
+        {
+          sha: "a1b2c3d",
+          authorName: "demo-user",
+          authoredAt: daysAgo(now, 1),
+          message: "Add idempotency keys to order creation endpoint",
+        },
+        {
+          sha: "b2c3d4e",
+          authorName: "demo-user",
+          authoredAt: daysAgo(now, 3),
+          message: "Fix race condition in warehouse stock reservation",
+        },
+        {
+          sha: "c3d4e5f",
+          authorName: "demo-user",
+          authoredAt: daysAgo(now, 6),
+          message: "Add integration tests for fulfillment webhook",
+        },
       ],
       issues: [
-        { number: 41, title: "Webhook retries don't back off", state: "closed", createdAt: daysAgo(now, 10), closedAt: daysAgo(now, 2), labels: ["bug"] },
-        { number: 44, title: "Support partial shipment status", state: "open", createdAt: daysAgo(now, 4), closedAt: null, labels: ["enhancement"] },
+        {
+          number: 41,
+          title: "Webhook retries don't back off",
+          state: "closed",
+          createdAt: daysAgo(now, 10),
+          closedAt: daysAgo(now, 2),
+          labels: ["bug"],
+        },
+        {
+          number: 44,
+          title: "Support partial shipment status",
+          state: "open",
+          createdAt: daysAgo(now, 4),
+          closedAt: null,
+          labels: ["enhancement"],
+        },
       ],
       pullRequests: [
-        { number: 52, title: "Idempotency keys for order creation", state: "merged", createdAt: daysAgo(now, 2), mergedAt: daysAgo(now, 1) },
+        {
+          number: 52,
+          title: "Idempotency keys for order creation",
+          state: "merged",
+          createdAt: daysAgo(now, 2),
+          mergedAt: daysAgo(now, 1),
+        },
       ],
       assessment: {
         pct: 88,
@@ -112,7 +155,8 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
     {
       repoId: 900002,
       fullName: "demo-user/recipe-notes",
-      description: "A minimal note-taking app for recipes, with tag-based search.",
+      description:
+        "A minimal note-taking app for recipes, with tag-based search.",
       htmlUrl: "https://github.com/demo-user/recipe-notes",
       defaultBranch: "main",
       language: "Svelte",
@@ -126,12 +170,36 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       readme:
         "# recipe-notes\n\nA minimal note-taking app for recipes, with tag-based search.\n\n## Features\n\n- Tag-based filtering\n- Full-text search across all notes\n- One-click export to Markdown or PDF\n\nBuilt with SvelteKit.\n",
       commits: [
-        { sha: "d4e5f6a", authorName: "demo-user", authoredAt: daysAgo(now, 5), message: "Add tag filter UI" },
-        { sha: "e5f6a7b", authorName: "demo-user", authoredAt: daysAgo(now, 20), message: "Basic CRUD for recipes" },
+        {
+          sha: "d4e5f6a",
+          authorName: "demo-user",
+          authoredAt: daysAgo(now, 5),
+          message: "Add tag filter UI",
+        },
+        {
+          sha: "e5f6a7b",
+          authorName: "demo-user",
+          authoredAt: daysAgo(now, 20),
+          message: "Basic CRUD for recipes",
+        },
       ],
       issues: [
-        { number: 3, title: "No way to export recipes", state: "open", createdAt: daysAgo(now, 30), closedAt: null, labels: [] },
-        { number: 5, title: "Search is case-sensitive", state: "open", createdAt: daysAgo(now, 12), closedAt: null, labels: ["bug"] },
+        {
+          number: 3,
+          title: "No way to export recipes",
+          state: "open",
+          createdAt: daysAgo(now, 30),
+          closedAt: null,
+          labels: [],
+        },
+        {
+          number: 5,
+          title: "Search is case-sensitive",
+          state: "open",
+          createdAt: daysAgo(now, 12),
+          closedAt: null,
+          labels: ["bug"],
+        },
       ],
       pullRequests: [],
       assessment: {
@@ -145,7 +213,8 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
     {
       repoId: 900003,
       fullName: "demo-user/old-blog-generator",
-      description: "Static site generator for a personal blog, built in a weekend.",
+      description:
+        "Static site generator for a personal blog, built in a weekend.",
       htmlUrl: "https://github.com/demo-user/old-blog-generator",
       defaultBranch: "main",
       language: "Python",
@@ -159,10 +228,22 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       readme:
         "# old-blog-generator\n\nA fully working static site generator for my personal blog, with themes and RSS support, built in a weekend.\n\n## Usage\n\n```\npython generate.py\n```\n\nMore themes coming soon!\n",
       commits: [
-        { sha: "f6a7b8c", authorName: "demo-user", authoredAt: daysAgo(now, 210), message: "Initial commit" },
+        {
+          sha: "f6a7b8c",
+          authorName: "demo-user",
+          authoredAt: daysAgo(now, 210),
+          message: "Initial commit",
+        },
       ],
       issues: [
-        { number: 1, title: "RSS feed is malformed", state: "open", createdAt: daysAgo(now, 200), closedAt: null, labels: ["bug"] },
+        {
+          number: 1,
+          title: "RSS feed is malformed",
+          state: "open",
+          createdAt: daysAgo(now, 200),
+          closedAt: null,
+          labels: ["bug"],
+        },
       ],
       pullRequests: [],
       assessment: {
@@ -170,7 +251,11 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
         band: "crit",
         label: "Stalled, README overstates status",
         text: "The README describes a 'fully working' generator with themes and RSS support, but there's a single initial commit and one long-open bug against the only shipped feature. No activity in over six months.",
-        gaps: ["Themes", "Working RSS feed", "Any activity since initial commit"],
+        gaps: [
+          "Themes",
+          "Working RSS feed",
+          "Any activity since initial commit",
+        ],
       },
     },
     {
@@ -189,7 +274,12 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       ignoreReasons: null,
       readme: null,
       commits: [
-        { sha: "a7b8c9d", authorName: "demo-user", authoredAt: daysAgo(now, 0), message: "Scaffold CLI with clap" },
+        {
+          sha: "a7b8c9d",
+          authorName: "demo-user",
+          authoredAt: daysAgo(now, 0),
+          message: "Scaffold CLI with clap",
+        },
       ],
       issues: [],
       pullRequests: [],
@@ -232,14 +322,37 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       readme:
         "# internal-billing-service\n\nPrivate billing reconciliation service. Reconciles Stripe payouts against the internal ledger, and handles the full range of Stripe dispute types.\n\n## Deploying\n\nSee the internal runbook.\n",
       commits: [
-        { sha: "b8c9d0e", authorName: "demo-user", authoredAt: daysAgo(now, 2), message: "Reconcile Stripe payouts against ledger" },
-        { sha: "c9d0e1f", authorName: "demo-user", authoredAt: daysAgo(now, 8), message: "Add dead-letter queue for failed reconciliations" },
+        {
+          sha: "b8c9d0e",
+          authorName: "demo-user",
+          authoredAt: daysAgo(now, 2),
+          message: "Reconcile Stripe payouts against ledger",
+        },
+        {
+          sha: "c9d0e1f",
+          authorName: "demo-user",
+          authoredAt: daysAgo(now, 8),
+          message: "Add dead-letter queue for failed reconciliations",
+        },
       ],
       issues: [
-        { number: 12, title: "Handle partial refunds in reconciliation", state: "closed", createdAt: daysAgo(now, 15), closedAt: daysAgo(now, 9), labels: [] },
+        {
+          number: 12,
+          title: "Handle partial refunds in reconciliation",
+          state: "closed",
+          createdAt: daysAgo(now, 15),
+          closedAt: daysAgo(now, 9),
+          labels: [],
+        },
       ],
       pullRequests: [
-        { number: 20, title: "Dead-letter queue for failed reconciliations", state: "merged", createdAt: daysAgo(now, 9), mergedAt: daysAgo(now, 8) },
+        {
+          number: 20,
+          title: "Dead-letter queue for failed reconciliations",
+          state: "merged",
+          createdAt: daysAgo(now, 9),
+          mergedAt: daysAgo(now, 8),
+        },
       ],
       assessment: {
         pct: 72,
@@ -294,11 +407,18 @@ async function isRepoTableEmpty(db: DrizzleDb): Promise<boolean> {
  * of colliding on the fixture's static primary keys. Never touches rows
  * outside that namespace, so real data alongside it is left alone.
  */
-async function clearPreviousFakeData(db: DrizzleDb, fakeRepoIds: number[]): Promise<void> {
-  await db.delete(repoAssessments).where(inArray(repoAssessments.repoId, fakeRepoIds));
+async function clearPreviousFakeData(
+  db: DrizzleDb,
+  fakeRepoIds: number[],
+): Promise<void> {
+  await db
+    .delete(repoAssessments)
+    .where(inArray(repoAssessments.repoId, fakeRepoIds));
   await db.delete(commits).where(inArray(commits.repoId, fakeRepoIds));
   await db.delete(issues).where(inArray(issues.repoId, fakeRepoIds));
-  await db.delete(pullRequests).where(inArray(pullRequests.repoId, fakeRepoIds));
+  await db
+    .delete(pullRequests)
+    .where(inArray(pullRequests.repoId, fakeRepoIds));
   await db.delete(repos).where(inArray(repos.repoId, fakeRepoIds));
   await db.delete(runs).where(eq(runs.runId, FAKE_RUN_ID));
 }
@@ -317,7 +437,10 @@ export async function seedFakeData(
   const runId = FAKE_RUN_ID;
   const fakeRepos = buildFakeRepos(now);
 
-  await clearPreviousFakeData(db, fakeRepos.map((r) => r.repoId));
+  await clearPreviousFakeData(
+    db,
+    fakeRepos.map((r) => r.repoId),
+  );
 
   await db.insert(runs).values({
     runId,
@@ -425,7 +548,9 @@ export async function seedFakeData(
  * from the environment/config file, connects, seeds, closes. `--force`
  * bypasses the empty-table guard.
  */
-export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
+export async function main(
+  argv: string[] = process.argv.slice(2),
+): Promise<void> {
   const force = argv.includes("--force");
 
   const databaseUrl = resolveConfig("DATABASE_URL");

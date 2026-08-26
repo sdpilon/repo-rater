@@ -2,7 +2,15 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import type { Octokit } from "octokit";
 import { afterEach, describe, expect, it } from "vitest";
-import { commits, issues, pullRequests, repoAssessments, repoDiscoveries, repos, runs } from "../db/schema";
+import {
+  commits,
+  issues,
+  pullRequests,
+  repoAssessments,
+  repoDiscoveries,
+  repos,
+  runs,
+} from "../db/schema";
 import type { Assessment } from "./anthropic/client";
 import type { DiscoveryResult } from "./discover";
 import type { ExtractLoadResult } from "./extract-load";
@@ -55,9 +63,15 @@ describe("parseArgs", () => {
   });
 
   it("rejects a non-positive-integer --limit value", () => {
-    expect(() => parseArgs(["--limit", "abc"])).toThrow(/--limit requires a positive integer/);
-    expect(() => parseArgs(["--limit", "0"])).toThrow(/--limit requires a positive integer/);
-    expect(() => parseArgs(["--limit", "-3"])).toThrow(/--limit requires a positive integer/);
+    expect(() => parseArgs(["--limit", "abc"])).toThrow(
+      /--limit requires a positive integer/,
+    );
+    expect(() => parseArgs(["--limit", "0"])).toThrow(
+      /--limit requires a positive integer/,
+    );
+    expect(() => parseArgs(["--limit", "-3"])).toThrow(
+      /--limit requires a positive integer/,
+    );
   });
 });
 
@@ -76,9 +90,16 @@ describe("buildRepoList", () => {
   it("excludes repos discovery couldn't upsert", () => {
     const discoveryResults: DiscoveryResult[] = [
       { repoId: 1, fullName: "sdpilon/a", status: "ok" },
-      { repoId: null, fullName: "sdpilon/broken", status: "error", error: "boom" },
+      {
+        repoId: null,
+        fullName: "sdpilon/broken",
+        status: "error",
+        error: "boom",
+      },
     ];
-    expect(buildRepoList(discoveryResults, null)).toEqual([{ repoId: 1, fullName: "sdpilon/a" }]);
+    expect(buildRepoList(discoveryResults, null)).toEqual([
+      { repoId: 1, fullName: "sdpilon/a" },
+    ]);
   });
 
   it("applies a limit by taking the first N", () => {
@@ -119,7 +140,12 @@ describe("computeRunCounts", () => {
 
   it("counts a repo as failed (not ok) when only one of its data types errors", () => {
     const extractResults: ExtractLoadResult[] = [
-      { fullName: "sdpilon/spilon.dev", repoId: 1, dataType: "commits", status: "ok" },
+      {
+        fullName: "sdpilon/spilon.dev",
+        repoId: 1,
+        dataType: "commits",
+        status: "ok",
+      },
       {
         fullName: "sdpilon/spilon.dev",
         repoId: 1,
@@ -127,7 +153,12 @@ describe("computeRunCounts", () => {
         status: "error",
         error: "rate limited",
       },
-      { fullName: "sdpilon/spilon.dev", repoId: 1, dataType: "prs", status: "ok" },
+      {
+        fullName: "sdpilon/spilon.dev",
+        repoId: 1,
+        dataType: "prs",
+        status: "ok",
+      },
     ];
     const counts = computeRunCounts(extractResults);
     expect(counts.reposFetchedOk).toBe(0);
@@ -136,8 +167,18 @@ describe("computeRunCounts", () => {
 
   it("reports all repos ok when nothing failed", () => {
     const extractResults: ExtractLoadResult[] = [
-      { fullName: "sdpilon/spilon.dev", repoId: 1, dataType: "commits", status: "ok" },
-      { fullName: "sdpilon/typst-resume", repoId: 2, dataType: "commits", status: "ok" },
+      {
+        fullName: "sdpilon/spilon.dev",
+        repoId: 1,
+        dataType: "commits",
+        status: "ok",
+      },
+      {
+        fullName: "sdpilon/typst-resume",
+        repoId: 2,
+        dataType: "commits",
+        status: "ok",
+      },
     ];
     const counts = computeRunCounts(extractResults);
     expect(counts.reposFetchedOk).toBe(2);

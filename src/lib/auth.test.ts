@@ -31,7 +31,9 @@ describe("getCookieValue", () => {
   });
 
   it("finds the named cookie among several", () => {
-    expect(getCookieValue("a=1; site_auth=hunter2; b=3", AUTH_COOKIE)).toBe("hunter2");
+    expect(getCookieValue("a=1; site_auth=hunter2; b=3", AUTH_COOKIE)).toBe(
+      "hunter2",
+    );
   });
 
   it("returns undefined when the named cookie isn't present", () => {
@@ -39,7 +41,9 @@ describe("getCookieValue", () => {
   });
 
   it("decodes URI-encoded values", () => {
-    expect(getCookieValue("site_auth=hello%20world", AUTH_COOKIE)).toBe("hello world");
+    expect(getCookieValue("site_auth=hello%20world", AUTH_COOKIE)).toBe(
+      "hello world",
+    );
   });
 
   it("tolerates values that aren't validly encoded", () => {
@@ -102,15 +106,23 @@ describe("isPublicPath", () => {
 describe("isAuthenticatedRequest", () => {
   it("is true when the cookie matches APP_PASSWORD", () => {
     process.env.APP_PASSWORD = "hunter2";
-    const request = new Request("http://localhost/", { headers: { cookie: "site_auth=hunter2" } });
+    const request = new Request("http://localhost/", {
+      headers: { cookie: "site_auth=hunter2" },
+    });
     expect(isAuthenticatedRequest(request)).toBe(true);
   });
 
   it("is false when the cookie is missing or wrong", () => {
     process.env.APP_PASSWORD = "hunter2";
-    expect(isAuthenticatedRequest(new Request("http://localhost/"))).toBe(false);
+    expect(isAuthenticatedRequest(new Request("http://localhost/"))).toBe(
+      false,
+    );
     expect(
-      isAuthenticatedRequest(new Request("http://localhost/", { headers: { cookie: "site_auth=wrong" } })),
+      isAuthenticatedRequest(
+        new Request("http://localhost/", {
+          headers: { cookie: "site_auth=wrong" },
+        }),
+      ),
     ).toBe(false);
   });
 });

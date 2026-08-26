@@ -2,7 +2,13 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import type { Octokit } from "octokit";
 import { afterEach, describe, expect, it } from "vitest";
-import { commits, issues, pullRequests, repoAssessments, repos } from "../db/schema";
+import {
+  commits,
+  issues,
+  pullRequests,
+  repoAssessments,
+  repos,
+} from "../db/schema";
 import type { Assessment } from "./anthropic/client";
 import type { DrizzleDb } from "./db-types";
 import {
@@ -53,14 +59,42 @@ async function insertRepo(
 
 describe("computeInputHash", () => {
   it("differs when issueStates differs", () => {
-    const hash1 = computeInputHash("hello", ["fix bug"], ["Bug"], ["open"], [], []);
-    const hash2 = computeInputHash("hello", ["fix bug"], ["Bug"], ["closed"], [], []);
+    const hash1 = computeInputHash(
+      "hello",
+      ["fix bug"],
+      ["Bug"],
+      ["open"],
+      [],
+      [],
+    );
+    const hash2 = computeInputHash(
+      "hello",
+      ["fix bug"],
+      ["Bug"],
+      ["closed"],
+      [],
+      [],
+    );
     expect(hash1).not.toBe(hash2);
   });
 
   it("differs when prTitles differs", () => {
-    const hash1 = computeInputHash("hello", ["fix bug"], ["Bug"], ["open"], [], []);
-    const hash2 = computeInputHash("hello", ["fix bug"], ["Bug"], ["open"], ["Add feature"], []);
+    const hash1 = computeInputHash(
+      "hello",
+      ["fix bug"],
+      ["Bug"],
+      ["open"],
+      [],
+      [],
+    );
+    const hash2 = computeInputHash(
+      "hello",
+      ["fix bug"],
+      ["Bug"],
+      ["open"],
+      ["Add feature"],
+      [],
+    );
     expect(hash1).not.toBe(hash2);
   });
 
@@ -91,8 +125,18 @@ describe("readEnrichInputs", () => {
     cleanup = close;
 
     await db.insert(commits).values([
-      { repoId: 1, sha: "bbb", message: "second commit", firstIngestedRunId: "run_1" },
-      { repoId: 1, sha: "aaa", message: "first commit", firstIngestedRunId: "run_1" },
+      {
+        repoId: 1,
+        sha: "bbb",
+        message: "second commit",
+        firstIngestedRunId: "run_1",
+      },
+      {
+        repoId: 1,
+        sha: "aaa",
+        message: "first commit",
+        firstIngestedRunId: "run_1",
+      },
     ]);
     await db.insert(issues).values([
       {
@@ -162,12 +206,17 @@ describe("enrichRepo", () => {
     });
 
     expect(result.called).toBe(true);
-    const rows = await db.select().from(repoAssessments).where(eq(repoAssessments.repoId, 1));
+    const rows = await db
+      .select()
+      .from(repoAssessments)
+      .where(eq(repoAssessments.repoId, 1));
     expect(rows).toHaveLength(1);
     expect(rows[0].pct).toBe(62);
     expect(rows[0].band).toBe("warn");
     expect(rows[0].gaps).toEqual(["needs more tests"]);
-    expect(rows[0].inputSnapshot).toMatchObject({ fullName: "sdpilon/spilon.dev" });
+    expect(rows[0].inputSnapshot).toMatchObject({
+      fullName: "sdpilon/spilon.dev",
+    });
   });
 
   it("skips the LLM call when the input hash is unchanged since the last assessment", async () => {
@@ -192,7 +241,11 @@ describe("enrichRepo", () => {
       generateAssessment,
     };
 
-    await enrichRepo({ ...base, runId: "run_1", now: new Date("2026-07-22T00:00:00Z") });
+    await enrichRepo({
+      ...base,
+      runId: "run_1",
+      now: new Date("2026-07-22T00:00:00Z"),
+    });
     const second = await enrichRepo({
       ...base,
       runId: "run_2",
@@ -201,7 +254,10 @@ describe("enrichRepo", () => {
 
     expect(second.called).toBe(false);
     expect(callCount).toBe(1);
-    const rows = await db.select().from(repoAssessments).where(eq(repoAssessments.repoId, 1));
+    const rows = await db
+      .select()
+      .from(repoAssessments)
+      .where(eq(repoAssessments.repoId, 1));
     expect(rows).toHaveLength(1);
   });
 
@@ -235,7 +291,10 @@ describe("enrichRepo", () => {
     });
 
     expect(second.called).toBe(true);
-    const rows = await db.select().from(repoAssessments).where(eq(repoAssessments.repoId, 1));
+    const rows = await db
+      .select()
+      .from(repoAssessments)
+      .where(eq(repoAssessments.repoId, 1));
     expect(rows).toHaveLength(2);
   });
 });
@@ -271,8 +330,17 @@ describe("enrichAll", () => {
     const { db, close } = await createTestDb();
     cleanup = close;
     await insertRepo(db, { repoId: 1, fullName: "sdpilon/active-repo" });
-    await insertRepo(db, { repoId: 2, fullName: "sdpilon/fork-repo", isFork: true });
-    await db.insert(commits).values({ repoId: 1, sha: "aaa", message: "fix", firstIngestedRunId: "run_1" });
+    await insertRepo(db, {
+      repoId: 2,
+      fullName: "sdpilon/fork-repo",
+      isFork: true,
+    });
+    await db.insert(commits).values({
+      repoId: 1,
+      sha: "aaa",
+      message: "fix",
+      firstIngestedRunId: "run_1",
+    });
 
     let llmCalls = 0;
     const result = await enrichAll({
@@ -297,7 +365,10 @@ describe("enrichAll", () => {
     expect(forkRow.isIgnored).toBe(true);
     expect(forkRow.ignoreSource).toBe("auto");
 
-    const assessments = await db.select().from(repoAssessments).where(eq(repoAssessments.repoId, 1));
+    const assessments = await db
+      .select()
+      .from(repoAssessments)
+      .where(eq(repoAssessments.repoId, 1));
     expect(assessments).toHaveLength(1);
   });
 
@@ -306,7 +377,11 @@ describe("enrichAll", () => {
     cleanup = close;
     // Not currently ignored, but zero activity this run — should become
     // ignored and skip enrichment within the same enrichAll call.
-    await insertRepo(db, { repoId: 1, fullName: "sdpilon/quiet-repo", isIgnored: false });
+    await insertRepo(db, {
+      repoId: 1,
+      fullName: "sdpilon/quiet-repo",
+      isIgnored: false,
+    });
 
     const result = await enrichAll({
       db,
@@ -383,7 +458,10 @@ describe("enrichAll", () => {
     expect(result.llmCallsMade).toBe(0);
     expect(result.llmCallsSkipped).toBe(1);
     expect(llmCalls).toBe(0);
-    const assessments = await db.select().from(repoAssessments).where(eq(repoAssessments.repoId, 1));
+    const assessments = await db
+      .select()
+      .from(repoAssessments)
+      .where(eq(repoAssessments.repoId, 1));
     expect(assessments).toHaveLength(0);
   });
 

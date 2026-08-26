@@ -13,7 +13,11 @@ export interface ConfigOptions {
 }
 
 function resolveConfigFilePath(options?: ConfigOptions): string {
-  return options?.configFilePath ?? process.env.CONFIG_FILE_PATH ?? "./data/config.json";
+  return (
+    options?.configFilePath ??
+    process.env.CONFIG_FILE_PATH ??
+    "./data/config.json"
+  );
 }
 
 function readConfigFile(configFilePath: string): Record<string, string> {
@@ -31,7 +35,10 @@ function isBlank(value: string | undefined): boolean {
   return value === undefined || value.trim() === "";
 }
 
-export function resolveConfig(key: string, options?: ConfigOptions): string | undefined {
+export function resolveConfig(
+  key: string,
+  options?: ConfigOptions,
+): string | undefined {
   const envValue = process.env[key];
   if (!isBlank(envValue)) return envValue;
   const fileValue = readConfigFile(resolveConfigFilePath(options))[key];
@@ -48,13 +55,21 @@ export function isConfigured(key: string, options?: ConfigOptions): boolean {
  * settings UI to tell a self-hoster "this is set via environment variable,
  * changes here won't take effect" instead of silently no-op-ing a save.
  */
-export function resolveConfigSource(key: string, options?: ConfigOptions): "env" | "file" | "unset" {
+export function resolveConfigSource(
+  key: string,
+  options?: ConfigOptions,
+): "env" | "file" | "unset" {
   if (!isBlank(process.env[key])) return "env";
-  if (!isBlank(readConfigFile(resolveConfigFilePath(options))[key])) return "file";
+  if (!isBlank(readConfigFile(resolveConfigFilePath(options))[key]))
+    return "file";
   return "unset";
 }
 
-export function setConfigValue(key: string, value: string, options?: ConfigOptions): void {
+export function setConfigValue(
+  key: string,
+  value: string,
+  options?: ConfigOptions,
+): void {
   const configFilePath = resolveConfigFilePath(options);
   const current = readConfigFile(configFilePath);
   current[key] = value;
@@ -66,6 +81,8 @@ export function setConfigValue(key: string, value: string, options?: ConfigOptio
   const configDir = dirname(configFilePath);
   mkdirSync(configDir, { recursive: true, mode: 0o700 });
   chmodSync(configDir, 0o700);
-  writeFileSync(configFilePath, JSON.stringify(current, null, 2), { mode: 0o600 });
+  writeFileSync(configFilePath, JSON.stringify(current, null, 2), {
+    mode: 0o600,
+  });
   chmodSync(configFilePath, 0o600);
 }

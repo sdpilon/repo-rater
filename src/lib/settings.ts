@@ -2,7 +2,11 @@ import { action, query } from "@solidjs/router";
 import { isAppPasswordConfigured } from "./auth";
 import { assertAuthenticated } from "./auth-guard";
 import { resolveConfigSource, setConfigValue } from "./config";
-import { validateAnthropicKey, validateDatabaseUrl, validateGithubToken } from "./settings-queries";
+import {
+  validateAnthropicKey,
+  validateDatabaseUrl,
+  validateGithubToken,
+} from "./settings-queries";
 
 export interface CredentialFieldStatus {
   configured: boolean;
@@ -43,7 +47,9 @@ function persist(key: string, value: string): { error: string | null } {
     setConfigValue(key, value);
     return { error: null };
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Failed to save the value." };
+    return {
+      error: err instanceof Error ? err.message : "Failed to save the value.",
+    };
   }
 }
 

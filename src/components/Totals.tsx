@@ -7,7 +7,10 @@ export default function Totals(props: { totals: DashboardTotals }) {
       [props.totals.repoCount, "active repos"],
       [props.totals.privateCount, "private"],
       [props.totals.commitCount, "commits"],
-      [`${props.totals.mergedPrCount}/${props.totals.prCount}`, "PRs merged/opened"],
+      [
+        `${props.totals.mergedPrCount}/${props.totals.prCount}`,
+        "PRs merged/opened",
+      ],
       [props.totals.issueCount, "issues touched"],
     ] as const;
 

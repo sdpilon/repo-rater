@@ -50,7 +50,12 @@ export async function applyIgnoreDefaultForRepo(
   input: Omit<SuggestedIgnoreInput, "isFork" | "isArchived">,
 ): Promise<{ ignored: boolean; reasons: string[] }> {
   const [repoRow] = await db
-    .select({ isFork: repos.isFork, isArchived: repos.isArchived, ignoreSource: repos.ignoreSource, isIgnored: repos.isIgnored })
+    .select({
+      isFork: repos.isFork,
+      isArchived: repos.isArchived,
+      ignoreSource: repos.ignoreSource,
+      isIgnored: repos.isIgnored,
+    })
     .from(repos)
     .where(eq(repos.repoId, repoId));
 

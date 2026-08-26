@@ -42,7 +42,10 @@ export function requireAppPassword(): string {
 }
 
 /** Reads a single cookie's value out of a raw `Cookie` request header. */
-export function getCookieValue(cookieHeader: string | null | undefined, name: string): string | undefined {
+export function getCookieValue(
+  cookieHeader: string | null | undefined,
+  name: string,
+): string | undefined {
   if (!cookieHeader) return undefined;
   for (const part of cookieHeader.split(";")) {
     const eq = part.indexOf("=");
@@ -81,6 +84,9 @@ export function buildAuthCookie(value: string): string {
  */
 export function isAuthenticatedRequest(request: Request): boolean {
   if (!isAppPasswordConfigured()) return true;
-  const cookieValue = getCookieValue(request.headers.get("cookie"), AUTH_COOKIE);
+  const cookieValue = getCookieValue(
+    request.headers.get("cookie"),
+    AUTH_COOKIE,
+  );
   return cookieValue !== undefined && cookieValue === requireAppPassword();
 }

@@ -39,7 +39,11 @@ export interface DiscoverReposResult {
  * `values(...)` branch still supplies sane defaults for a genuinely new
  * row. No pre-SELECT needed.
  */
-export async function upsertRepo(db: DrizzleDb, meta: RepoMeta, now: Date): Promise<void> {
+export async function upsertRepo(
+  db: DrizzleDb,
+  meta: RepoMeta,
+  now: Date,
+): Promise<void> {
   await db
     .insert(repos)
     .values({
@@ -123,7 +127,11 @@ export async function discoverRepos({
     try {
       await upsertRepo(db, meta, now);
       await recordDiscovery(db, runId, meta.repoId, now);
-      results.push({ repoId: meta.repoId, fullName: meta.fullName, status: "ok" });
+      results.push({
+        repoId: meta.repoId,
+        fullName: meta.fullName,
+        status: "ok",
+      });
     } catch (err) {
       results.push({
         repoId: meta.repoId,
@@ -162,6 +170,12 @@ export async function runDiscoveryScaffold({
 }): Promise<{ runId: string; startedAt: Date } & DiscoverReposResult> {
   const runId = makeRunId();
   const startedAt = new Date();
-  const result = await discoverRepos({ db, runId, now: startedAt, octokit, fetchRepos });
+  const result = await discoverRepos({
+    db,
+    runId,
+    now: startedAt,
+    octokit,
+    fetchRepos,
+  });
   return { runId, startedAt, ...result };
 }

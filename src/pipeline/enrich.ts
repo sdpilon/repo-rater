@@ -2,7 +2,13 @@ import { createHash } from "node:crypto";
 import type Anthropic from "@anthropic-ai/sdk";
 import { count, desc, eq, inArray } from "drizzle-orm";
 import type { Octokit } from "octokit";
-import { commits, issues, pullRequests, repoAssessments, repos } from "../db/schema";
+import {
+  commits,
+  issues,
+  pullRequests,
+  repoAssessments,
+  repos,
+} from "../db/schema";
 import { generateAssessment as realGenerateAssessment } from "./anthropic/client";
 import type { Assessment, AssessmentInput } from "./anthropic/client";
 import type { DrizzleDb } from "./db-types";
@@ -63,7 +69,10 @@ export interface EnrichInputs {
  * `enrichAll` right when it's needed (matching the old "always fresh, never
  * cached" README semantic).
  */
-export async function readEnrichInputs(db: DrizzleDb, repoId: number): Promise<EnrichInputs> {
+export async function readEnrichInputs(
+  db: DrizzleDb,
+  repoId: number,
+): Promise<EnrichInputs> {
   const commitRows = await db
     .select({ message: commits.message })
     .from(commits)
@@ -94,9 +103,15 @@ async function getActivityCounts(
   repoId: number,
 ): Promise<{ commitCount: number; issueCount: number; prCount: number }> {
   const [commitRows, issueRows, prRows] = await Promise.all([
-    db.select({ count: count() }).from(commits).where(eq(commits.repoId, repoId)),
+    db
+      .select({ count: count() })
+      .from(commits)
+      .where(eq(commits.repoId, repoId)),
     db.select({ count: count() }).from(issues).where(eq(issues.repoId, repoId)),
-    db.select({ count: count() }).from(pullRequests).where(eq(pullRequests.repoId, repoId)),
+    db
+      .select({ count: count() })
+      .from(pullRequests)
+      .where(eq(pullRequests.repoId, repoId)),
   ]);
   return {
     commitCount: Number(commitRows[0]?.count ?? 0),
@@ -114,7 +129,10 @@ export interface EnrichRepoParams extends EnrichInputs {
   readmeText: string;
   now: Date;
   /** Injectable in tests in place of the real Anthropic-backed call. */
-  generateAssessment?: (client: Anthropic, input: AssessmentInput) => Promise<Assessment>;
+  generateAssessment?: (
+    client: Anthropic,
+    input: AssessmentInput,
+  ) => Promise<Assessment>;
 }
 
 /**
@@ -186,7 +204,10 @@ export async function enrichRepo({
 }
 
 /** Ported from the old `countUnassessedRepos`, used by `run.ts`'s dry-run branch. */
-export async function countUnassessedRepos(db: DrizzleDb, repoIds: Set<number>): Promise<number> {
+export async function countUnassessedRepos(
+  db: DrizzleDb,
+  repoIds: Set<number>,
+): Promise<number> {
   const ids = Array.from(repoIds);
   if (ids.length === 0) return 0;
   const assessedRows = await db
@@ -222,7 +243,10 @@ export interface EnrichAllParams {
   /** Injectable in tests in place of the real Octokit-backed fetchReadme. */
   fetchReadme?: (fullName: string, octokit: Octokit) => Promise<string>;
   /** Injectable in tests in place of the real Anthropic-backed call. */
-  generateAssessment?: (client: Anthropic, input: AssessmentInput) => Promise<Assessment>;
+  generateAssessment?: (
+    client: Anthropic,
+    input: AssessmentInput,
+  ) => Promise<Assessment>;
 }
 
 /**
@@ -243,7 +267,10 @@ export async function enrichAll({
   now,
   fetchReadme = realFetchReadme,
   generateAssessment = realGenerateAssessment,
-}: EnrichAllParams): Promise<{ llmCallsMade: number; llmCallsSkipped: number }> {
+}: EnrichAllParams): Promise<{
+  llmCallsMade: number;
+  llmCallsSkipped: number;
+}> {
   let llmCallsMade = 0;
   let llmCallsSkipped = 0;
 
@@ -268,7 +295,11 @@ export async function enrichAll({
       let readmeText: string | null = null;
 
       if (repoRow.ignoreSource !== "manual") {
-        readmeText = await fetchReadmeSafely(fetchReadme, repoRow.fullName, octokit);
+        readmeText = await fetchReadmeSafely(
+          fetchReadme,
+          repoRow.fullName,
+          octokit,
+        );
         const counts = await getActivityCounts(db, repoId);
         const result = await applyIgnoreDefaultForRepo(db, repoId, {
           readme: readmeText,
@@ -283,7 +314,11 @@ export async function enrichAll({
       }
 
       if (readmeText === null) {
-        readmeText = await fetchReadmeSafely(fetchReadme, repoRow.fullName, octokit);
+        readmeText = await fetchReadmeSafely(
+          fetchReadme,
+          repoRow.fullName,
+          octokit,
+        );
       }
 
       const inputs = await readEnrichInputs(db, repoId);
@@ -302,7 +337,9 @@ export async function enrichAll({
       if (result.called) llmCallsMade += 1;
       else llmCallsSkipped += 1;
     } catch (err) {
-      console.error(`run ${runId}: enrichment failed for repo ${repoId}, skipping: ${String(err)}`);
+      console.error(
+        `run ${runId}: enrichment failed for repo ${repoId}, skipping: ${String(err)}`,
+      );
       llmCallsSkipped += 1;
     }
   }

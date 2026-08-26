@@ -22,7 +22,9 @@ const OUTPUT_PATH = path.resolve(
 
 const browser = await chromium.launch();
 try {
-  const context = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+  const context = await browser.newContext({
+    viewport: { width: 1400, height: 1000 },
+  });
   // Pre-seed localStorage before any app code runs, rather than clicking the
   // checkbox post-load — avoids a race with the persisting effect in
   // src/routes/index.tsx.
@@ -44,7 +46,9 @@ try {
   // filter does the checkbox end up checked. Wait for that rather than for
   // "article.repo" existing, which can resolve against the pre-hydration
   // (unfiltered) DOM.
-  await page.waitForSelector(".hide-ignored-toggle input:checked", { timeout: 15000 });
+  await page.waitForSelector(".hide-ignored-toggle input:checked", {
+    timeout: 15000,
+  });
 
   // Hide any dev-only fixed-position overlay (SolidStart's dev toolbar,
   // Vercel's dev-mode toolbar) so it doesn't show up in the screenshot.
@@ -74,9 +78,14 @@ try {
   });
 
   if (consoleErrors.length > 0) {
-    console.warn("Console errors during capture (screenshot still written):", consoleErrors);
+    console.warn(
+      "Console errors during capture (screenshot still written):",
+      consoleErrors,
+    );
   }
-  console.log(`Wrote ${OUTPUT_PATH} (${cardCount >= CARD_COUNT ? CARD_COUNT : cardCount} cards, ${clipHeight}px tall)`);
+  console.log(
+    `Wrote ${OUTPUT_PATH} (${cardCount >= CARD_COUNT ? CARD_COUNT : cardCount} cards, ${clipHeight}px tall)`,
+  );
 } finally {
   await browser.close();
 }

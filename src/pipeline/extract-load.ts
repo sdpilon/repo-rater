@@ -1,6 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import type { Octokit } from "octokit";
-import { commits, fetchFailures, fetchWatermarks, issues, pullRequests } from "../db/schema";
+import {
+  commits,
+  fetchFailures,
+  fetchWatermarks,
+  issues,
+  pullRequests,
+} from "../db/schema";
 import type { DrizzleDb } from "./db-types";
 import {
   type Commit,
@@ -74,7 +80,12 @@ export async function getWatermark(
   const rows = await db
     .select({ lastFetchedAt: fetchWatermarks.lastFetchedAt })
     .from(fetchWatermarks)
-    .where(and(eq(fetchWatermarks.repoId, repoId), eq(fetchWatermarks.dataType, dataType)));
+    .where(
+      and(
+        eq(fetchWatermarks.repoId, repoId),
+        eq(fetchWatermarks.dataType, dataType),
+      ),
+    );
   return rows.length > 0 ? rows[0].lastFetchedAt : null;
 }
 
@@ -218,7 +229,9 @@ export async function recordFailure(
   errorMessage: string,
   occurredAt: Date,
 ): Promise<void> {
-  await db.insert(fetchFailures).values({ runId, repoId, dataType, errorMessage, occurredAt });
+  await db
+    .insert(fetchFailures)
+    .values({ runId, repoId, dataType, errorMessage, occurredAt });
 }
 
 export interface ExtractLoadResult {
@@ -292,10 +305,23 @@ export async function extractLoadRepo({
       // Advance to run time, not max-event time in the fetched rows — see
       // the comment on setWatermark above.
       await setWatermark(db, repoId, dataType, now, runId);
-      results.push({ fullName, repoId, dataType, status: "ok", since, fetchedAt: now });
+      results.push({
+        fullName,
+        repoId,
+        dataType,
+        status: "ok",
+        since,
+        fetchedAt: now,
+      });
     } catch (err) {
       await recordFailure(db, runId, repoId, dataType, String(err), now);
-      results.push({ fullName, repoId, dataType, status: "error", error: String(err) });
+      results.push({
+        fullName,
+        repoId,
+        dataType,
+        status: "error",
+        error: String(err),
+      });
     }
   }
 
@@ -323,7 +349,9 @@ export interface ExtractLoadAllParams {
    * isolation would even apply) can be exercised without contriving a real
    * DB failure. Defaults to the real `extractLoadRepo`.
    */
-  extractLoadOne?: (params: ExtractLoadRepoParams) => Promise<ExtractLoadResult[]>;
+  extractLoadOne?: (
+    params: ExtractLoadRepoParams,
+  ) => Promise<ExtractLoadResult[]>;
 }
 
 /**

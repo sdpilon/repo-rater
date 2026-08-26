@@ -29,6 +29,9 @@ export function createDb(
   databaseUrl: string,
   options?: CreateDbOptions,
 ): NodePgDatabase<typeof schema> & { $client: Pool } {
-  const pool = new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: options?.connectionTimeoutMillis });
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    connectionTimeoutMillis: options?.connectionTimeoutMillis,
+  });
   return drizzle(pool, { schema });
 }

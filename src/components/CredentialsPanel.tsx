@@ -33,7 +33,9 @@ function submissionErrorMessage(submission: {
 }): string | undefined {
   if (submission.result?.error) return submission.result.error;
   if (submission.error !== undefined) {
-    return submission.error instanceof Error ? submission.error.message : "Something went wrong. Please try again.";
+    return submission.error instanceof Error
+      ? submission.error.message
+      : "Something went wrong. Please try again.";
   }
   return undefined;
 }
@@ -73,7 +75,8 @@ function CredentialField(props: {
         <div class="credential-field credential-field-env">
           <span class="credential-field-label">{props.label}</span>
           <p class="credential-status">
-            {props.label} is set via environment variable — changes here won't take effect.
+            {props.label} is set via environment variable — changes here won't
+            take effect.
           </p>
         </div>
       }
@@ -81,7 +84,8 @@ function CredentialField(props: {
       <form class="credential-field" onSubmit={handleSubmit}>
         <label for={props.fieldName}>{props.label}</label>
         <p class="credential-status">
-          {props.label} is {props.status.configured ? "configured" : "not configured"}.
+          {props.label} is{" "}
+          {props.status.configured ? "configured" : "not configured"}.
         </p>
         <input
           id={props.fieldName}
@@ -145,9 +149,9 @@ export default function CredentialsPanel(props: {
       </Show>
       <Show when={!props.status.appPasswordConfigured}>
         <p class="credentials-note">
-          No password is configured — this instance has no login gate. Fine behind a
-          private network (e.g. Tailscale); set APP_PASSWORD via environment variable
-          if this is reachable from elsewhere.
+          No password is configured — this instance has no login gate. Fine
+          behind a private network (e.g. Tailscale); set APP_PASSWORD via
+          environment variable if this is reachable from elsewhere.
         </p>
       </Show>
     </div>
