@@ -178,7 +178,7 @@ pnpm run screenshot
 
 ## AI disclosure
 
-Parts of this codebase, including this README, were written with AI coding assistance. The specific tool/vendor isn't named here by choice.
+Parts of this codebase, including this README, were written with AI coding assistance.
 
 **Used for:** implementation, refactoring, debugging, tests, docs, architecture/design decisions, security and code review, CI/config files, commit messages, and research into unfamiliar APIs.
 
