@@ -19,6 +19,7 @@ Most GitHub dashboards measure activity, not whether a project is actually conve
   - [Keeping data fresh](#keeping-data-fresh)
 - [Development](#development)
   - [Tech stack](#tech-stack)
+- [AI disclosure](#ai-disclosure)
 - [License](#license)
 
 ## Features
@@ -174,6 +175,14 @@ To regenerate `.github/assets/dashboard.png` from a UI change, with the dev serv
 npx playwright install chromium   # one-time, downloads Playwright's managed browser
 pnpm run screenshot
 ```
+
+## AI disclosure
+
+Parts of this codebase, including this README, were written with AI coding assistance. The specific tool/vendor isn't named here by choice.
+
+**Used for:** implementation, refactoring, debugging, tests, docs, architecture/design decisions, security and code review, CI/config files, commit messages, and research into unfamiliar APIs.
+
+**Oversight:** everything lands through the same CI gate (typecheck, lint, tests) as any other change, is reviewed and edited before merging, and gets rewritten or discarded when it's wrong. No other contributors are involved, so there's no separate human peer review beyond that.
 
 ## License
 
