@@ -6,6 +6,7 @@ import {
   type AssessControlValue,
 } from "./dashboard-queries";
 import { getDb, isDbConfigured } from "./server-db";
+import { isDemoMode } from "./demo-mode";
 
 export const getDashboardData = query(async () => {
   "use server";
@@ -23,6 +24,8 @@ export const toggleAssess = action(
   async (repoId: number, value: AssessControlValue) => {
     "use server";
     assertAuthenticated();
+    if (isDemoMode())
+      throw new Error("Demo mode is enabled; changes are restricted.");
     await setRepoAssessControl(getDb(), repoId, value);
     return json(null, { revalidate: getDashboardData.key });
   },
