@@ -27,7 +27,7 @@ export default function Home() {
     return getDashboardData();
   });
 
-  const owner = createMemo(() => deriveAccountOwner(data()?.repos ?? []));
+  const owner = createMemo(() => deriveAccountOwner(data()?.view?.repos ?? []));
 
   const [hideIgnored, setHideIgnored] = createSignal(false);
 
@@ -85,12 +85,16 @@ export default function Home() {
             <Show when={data()}>
               {(dashboard) => {
                 const visibleRepos = createMemo(() =>
-                  filterVisibleRepos(dashboard().repos, hideIgnored()),
+                  filterVisibleRepos(
+                    dashboard().view?.repos ?? [],
+                    hideIgnored(),
+                  ),
                 );
-                const visibleTotals = createMemo(() =>
-                  hideIgnored()
-                    ? computeTotals(visibleRepos())
-                    : dashboard().totals,
+                const visibleTotals = createMemo(
+                  () =>
+                    (hideIgnored()
+                      ? computeTotals(visibleRepos())
+                      : dashboard().view?.totals) ?? computeTotals([]),
                 );
 
                 return (
@@ -116,7 +120,12 @@ export default function Home() {
                     >
                       <div id="repos">
                         <For each={visibleRepos()}>
-                          {(repo) => <RepoCard repo={repo} />}
+                          {(repo) => (
+                            <RepoCard
+                              repo={repo}
+                              demoMode={dashboard().isDemoMode}
+                            />
+                          )}
                         </For>
                       </div>
                     </Show>

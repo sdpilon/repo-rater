@@ -4,11 +4,17 @@ import {
   getDashboardView,
   setRepoAssessControl,
   type AssessControlValue,
+  type DashboardView,
 } from "./dashboard-queries";
 import { getDb, isDbConfigured } from "./server-db";
 import { isDemoMode } from "./demo-mode";
 
-export const getDashboardData = query(async () => {
+interface DashboardData {
+  view: DashboardView | undefined;
+  isDemoMode: boolean;
+}
+
+export const getDashboardData = query(async (): Promise<DashboardData> => {
   "use server";
   assertAuthenticated();
   // Defense-in-depth: a direct POST to /_server?id=dashboard on an
@@ -16,8 +22,8 @@ export const getDashboardData = query(async () => {
   // route already gates on getCredentialStatus()'s database.configured
   // before calling this, but that's client-driven and this RPC endpoint is
   // reachable directly regardless of what the page rendered.
-  if (!isDbConfigured()) return undefined;
-  return getDashboardView(getDb());
+  if (!isDbConfigured()) return { view: undefined, isDemoMode: isDemoMode() };
+  return { view: await getDashboardView(getDb()), isDemoMode: isDemoMode() };
 }, "dashboard");
 
 export const toggleAssess = action(

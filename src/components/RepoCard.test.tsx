@@ -42,10 +42,13 @@ function makeRepo(overrides: Partial<RepoCardView> = {}): RepoCardView {
   };
 }
 
-function renderCard(repo: RepoCardView) {
+function renderCard(repo: RepoCardView, demoMode = false) {
   return render(() => (
     <MemoryRouter>
-      <Route path="/" component={() => <RepoCard repo={repo} />} />
+      <Route
+        path="/"
+        component={() => <RepoCard repo={repo} demoMode={demoMode} />}
+      />
     </MemoryRouter>
   ));
 }
@@ -88,6 +91,26 @@ describe("RepoCard assess-control placement", () => {
     expect(badges?.textContent).toContain("public");
     expect(badges?.textContent).toContain("TypeScript");
     expect(badges?.querySelector(".assess-control")).toBeNull();
+  });
+});
+
+describe("RepoCard demo mode", () => {
+  it("disables the assess radio inputs when demoMode is true", () => {
+    renderCard(makeRepo(), true);
+    const radios = screen.getAllByRole("radio");
+    expect(radios.length).toBeGreaterThan(0);
+    for (const radio of radios) {
+      expect((radio as HTMLInputElement).disabled).toBe(true);
+    }
+  });
+
+  it("leaves the assess radio inputs enabled when demoMode is false", () => {
+    renderCard(makeRepo(), false);
+    const radios = screen.getAllByRole("radio");
+    expect(radios.length).toBeGreaterThan(0);
+    for (const radio of radios) {
+      expect((radio as HTMLInputElement).disabled).toBe(false);
+    }
   });
 });
 

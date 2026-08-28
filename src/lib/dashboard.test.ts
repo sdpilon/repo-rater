@@ -64,15 +64,17 @@ function callAction<A extends (...args: never[]) => unknown>(
 // unconfigured instance previously fell through to getDb(), which throws,
 // instead of failing cleanly.
 describe("getDashboardData", () => {
-  it("returns undefined without touching the DB when unconfigured", async () => {
+  it("returns an undefined view without touching the DB when unconfigured", async () => {
     const { isDbConfigured, getDb } = await import("./server-db");
     vi.mocked(isDbConfigured).mockReturnValue(false);
     const { getDashboardView } = await import("./dashboard-queries");
+    const { isDemoMode } = await import("./demo-mode");
+    vi.mocked(isDemoMode).mockReturnValue(false);
     const { getDashboardData } = await import("./dashboard");
 
     const result = await getDashboardData();
 
-    expect(result).toBeUndefined();
+    expect(result).toEqual({ view: undefined, isDemoMode: false });
     expect(getDb).not.toHaveBeenCalled();
     expect(getDashboardView).not.toHaveBeenCalled();
   });
@@ -85,12 +87,31 @@ describe("getDashboardData", () => {
     const { getDashboardView } = await import("./dashboard-queries");
     const fakeView = { repos: [], totals: {} };
     vi.mocked(getDashboardView).mockResolvedValue(fakeView as never);
+    const { isDemoMode } = await import("./demo-mode");
+    vi.mocked(isDemoMode).mockReturnValue(false);
     const { getDashboardData } = await import("./dashboard");
 
     const result = await getDashboardData();
 
     expect(getDashboardView).toHaveBeenCalledWith(fakeDb);
-    expect(result).toEqual(fakeView);
+    expect(result).toEqual({ view: fakeView, isDemoMode: false });
+  });
+
+  it("reports isDemoMode true in the payload when demo mode is enabled", async () => {
+    const { isDbConfigured, getDb } = await import("./server-db");
+    vi.mocked(isDbConfigured).mockReturnValue(true);
+    const fakeDb = { fake: "db" };
+    vi.mocked(getDb).mockReturnValue(fakeDb as never);
+    const { getDashboardView } = await import("./dashboard-queries");
+    const fakeView = { repos: [], totals: {} };
+    vi.mocked(getDashboardView).mockResolvedValue(fakeView as never);
+    const { isDemoMode } = await import("./demo-mode");
+    vi.mocked(isDemoMode).mockReturnValue(true);
+    const { getDashboardData } = await import("./dashboard");
+
+    const result = await getDashboardData();
+
+    expect(result).toEqual({ view: fakeView, isDemoMode: true });
   });
 });
 

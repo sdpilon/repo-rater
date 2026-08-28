@@ -32,7 +32,10 @@ function meterColor(pct: number | null): string {
   return "var(--crit)";
 }
 
-export default function RepoCard(props: { repo: RepoCardView }) {
+export default function RepoCard(props: {
+  repo: RepoCardView;
+  demoMode: boolean;
+}) {
   const toggle = useAction(toggleAssess);
   const submission = useSubmission(
     toggleAssess,
@@ -87,8 +90,10 @@ export default function RepoCard(props: { repo: RepoCardView }) {
                       type="radio"
                       name={`assess-${props.repo.repoId}`}
                       checked={props.repo.assessControl === value}
-                      disabled={submission.pending}
+                      disabled={submission.pending || props.demoMode}
                       onChange={() => handleAssessChange(value)}
+                      class="qtip tip-top"
+                      data-tip={`Disabled on the public demo`}
                     />
                     {value === "auto" ? "Auto" : value === "yes" ? "Yes" : "No"}
                   </label>
