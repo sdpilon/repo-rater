@@ -3,6 +3,7 @@
 # step from app/ to the repo root (see tracker-s3a / ARCHITECTURE.md).
 .beads/
 .claude/
+.github/
 ARCHITECTURE.md
 ROADMAP.md
 CLAUDE.md
