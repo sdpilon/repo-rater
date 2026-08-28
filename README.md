@@ -151,6 +151,10 @@ pnpm test
 
 `pnpm lint:fix` and `pnpm format` apply Biome's autofixes and formatting in place.
 
+### Public demo
+
+A live instance seeded entirely with fake data runs at [repo-rater-demo.vercel.app](https://repo-rater-demo.vercel.app) — not connected to any real GitHub account, useful for a quick look before setting anything up yourself. `DEMO_MODE=true` disables the Assess control there so visitors can't mutate the shared demo database.
+
 ### Seeding fake data
 
 `pnpm run seed:fake` populates a fresh database with a small fake GitHub account (a handful of repos spanning good/warn/crit assessments, one unassessed, one auto-ignored fork, one private repo) instead of the real pipeline. It's how the screenshot/demo data in this README and elsewhere is generated — useful any time that needs refreshing, or for trying out the dashboard without wiring up real credentials. It refuses to run against a database that already has repos, to avoid mixing fake data into a real one — pass `--force` to seed anyway.

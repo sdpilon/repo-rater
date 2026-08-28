@@ -137,3 +137,9 @@ regardless of which page invoked them — so `getDashboardData` and
 `toggleAssess` (`dashboard.ts`) also call `assertAuthenticated()` directly,
 as a second gate at the RPC layer that doesn't depend on which route the
 request claims to be for.
+
+**`DEMO_MODE`** is a third behavior-gating env var alongside
+`DATABASE_URL`/`APP_PASSWORD` (`demo-mode.ts`) — when set to `"true"`,
+`toggleAssess` is rejected server-side and the UI disables the Assess
+control, so the public demo site's shared database can't be mutated by
+visitors.
