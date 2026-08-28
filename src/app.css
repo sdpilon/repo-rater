@@ -220,7 +220,6 @@ header.page .sub code {
   display: inline-flex;
   border: 1px solid var(--line);
   border-radius: 6px;
-  overflow: hidden;
   font-size: 0.72rem;
 }
 .assess-control label {
@@ -229,6 +228,12 @@ header.page .sub code {
   cursor: pointer;
   color: var(--ink-2);
   user-select: none;
+}
+.assess-control label:first-child {
+  border-radius: 5px 0 0 5px;
+}
+.assess-control label:last-child {
+  border-radius: 0 5px 5px 0;
 }
 .assess-control label.active {
   background: var(--accent);
@@ -244,6 +249,13 @@ header.page .sub code {
 .assess-control label:has(input:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+.assess-control:has(input:disabled) {
+  opacity: 0.5;
+}
+.assess-control input:disabled,
+.assess-control label:has(input:disabled) {
+  cursor: not-allowed;
 }
 .assess-reason {
   font-size: 0.7rem;
@@ -649,7 +661,8 @@ footer.page {
   line-height: 1.2em;
   padding: 0.5em;
   font-style: normal;
-  box-shadow: 0 1px 3px var(--bg);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   min-width: 120px;
   text-align: center;
   opacity: 0;
@@ -688,6 +701,21 @@ footer.page {
   border-width: 8px 8px 0 8px;
   border-color: var(--surface-2) transparent transparent transparent;
   top: -8px;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+/*bottom*/
+.qtip.tip-bottom:before {
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, calc(100% + 8px));
+  box-sizing: border-box;
+  border-radius: 3px;
+}
+.qtip.tip-bottom:after {
+  border-width: 0 8px 8px 8px;
+  border-color: transparent transparent var(--surface-2) transparent;
+  bottom: -8px;
   left: 50%;
   transform: translate(-50%, 0);
 }

@@ -84,7 +84,14 @@ export default function RepoCard(props: {
               <For each={["auto", "yes", "no"] as const}>
                 {(value) => (
                   <label
-                    classList={{ active: props.repo.assessControl === value }}
+                    classList={{
+                      active: props.repo.assessControl === value,
+                      qtip: props.demoMode,
+                      "tip-bottom": props.demoMode,
+                    }}
+                    data-tip={
+                      props.demoMode ? "Disabled on the public demo" : undefined
+                    }
                   >
                     <input
                       type="radio"
@@ -92,8 +99,6 @@ export default function RepoCard(props: {
                       checked={props.repo.assessControl === value}
                       disabled={submission.pending || props.demoMode}
                       onChange={() => handleAssessChange(value)}
-                      class="qtip tip-top"
-                      data-tip={`Disabled on the public demo`}
                     />
                     {value === "auto" ? "Auto" : value === "yes" ? "Yes" : "No"}
                   </label>
