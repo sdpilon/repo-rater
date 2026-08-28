@@ -126,7 +126,7 @@ Two flags are available for pipeline runs:
 - **[Drizzle ORM](https://orm.drizzle.team/)** — schema, queries, and migrations against Postgres.
 - **[Octokit](https://github.com/octokit/octokit.js)** — GitHub API client (discovery, README/commit/issue/PR fetching).
 - **[Anthropic SDK](https://github.com/anthropics/anthropic-sdk-typescript)** — LLM calls for the per-repo assessment.
-- **[marked](https://marked.js.org/) + [DOMPurify](https://github.com/cure53/DOMPurify)** — README markdown rendering and sanitization.
+- **[marked](https://marked.js.org/)** — README markdown rendering, sanitized with **[DOMPurify](https://github.com/cure53/DOMPurify)** client-side and **[sanitize-html](https://github.com/apostrophecms/sanitize-html)** server-side.
 - **TypeScript**, **[Biome](https://biomejs.dev/)** (lint/format), **[Vitest](https://vitest.dev/)** (tests) — tooling.
 
 Install dependencies:
