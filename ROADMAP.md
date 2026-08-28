@@ -18,10 +18,6 @@ working as described in `README.md`.
   saving; setting it as an environment variable skips that screen entirely,
   so `drizzle-kit migrate` still has to be run once by hand first (see
   README's Quick start).
-- **The maintainer's own deploy pipeline (`.github/workflows/`) is
-  Vercel-specific.** That's how the maintainer's own instance ships, not a
-  self-hosting requirement — self-hosting doesn't need GitHub Actions or
-  Vercel at all, just a running Node process and a reachable Postgres.
 
 ## Explicitly not planned
 
