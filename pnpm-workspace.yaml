@@ -2,5 +2,16 @@
 # doesn't walk up past this directory looking for a workspace file
 # further up the filesystem. Single-package repo (no old nested app/
 # workspace anymore — flattened to the repo root 2026-08-08).
+#
+# storeDir pins the pnpm content-addressable store to its normal global
+# location. Without this, node_modules can end up recorded against
+# whatever store-dir a given install happened to resolve (e.g. a
+# sandboxed process falling back to a project-local one), and any later
+# install/script run with a different effective config sees that as
+# incompatible and offers to wipe and reinstall node_modules from
+# scratch. macOS-specific path — harmless but non-idiomatic if this repo
+# is ever installed on Linux, where it'll just create an equivalently
+# named local `~/Library/pnpm/store` instead of the XDG-standard path.
+storeDir: ~/Library/pnpm/store
 allowBuilds:
   esbuild: true
