@@ -15,6 +15,9 @@ app.config.timestamp_*.js
 .env
 .env*.local
 
+# Local pnpm store pin (machine-specific path — see .npmrc)
+.npmrc
+
 # Config data (holds secrets)
 data/
 
