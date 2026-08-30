@@ -6,15 +6,12 @@ dist
 .netlify
 .vinxi
 app.config.timestamp_*.js
-.claude/idea-seeds.md
-
-# beads issue tracker (local-only, not published with the repo)
 .beads/
 
 # Environment
 .env
 .env*.local
-
+.env*
 
 # Config data (holds secrets)
 data/
@@ -35,4 +32,8 @@ gitignore
 # System Files
 .DS_Store
 Thumbs.db
-.env*
+
+*.md
+!README.md
+!ARCHITECTURE.md
+!SECURITY.md
