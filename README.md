@@ -3,7 +3,7 @@
 > Self-hosted dashboard that scores your GitHub repos' actual progress against their stated goals using an LLM.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D24-brightgreen)](./package.json)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](./package.json)
 
 Most GitHub dashboards measure activity, not whether a project is actually converging on what it says it's for. This is for anyone with more repos than time to check on them individually: instead of opening each one to see if it's stalled, abandoned, or done, you get an honest, evidence-based read pulled from its own README, commits, and issues. It runs entirely against your own database and your own credentials, not a hosted service with visibility into your account.
 
@@ -36,12 +36,12 @@ Most GitHub dashboards measure activity, not whether a project is actually conve
 
 ## Prerequisites
 
-- **Node.js 24+** — the version pinned in `package.json`'s `engines` field.
+- **Node.js 22+** — the version pinned in `package.json`'s `engines` field.
 - **pnpm** — the only package manager this is tested and locked against (`pnpm-lock.yaml`). `npm install`/`yarn install` will likely still run, but resolve dependencies independently of the tested lockfile — not recommended.
 - **A Postgres database** — any Postgres works (a free [Neon](https://neon.tech) instance, a local install, a Docker container). Nothing Neon- or provider-specific is used beyond standard SQL.
 - **A GitHub personal access token and an Anthropic API key** — needed for the pipeline to actually populate the dashboard with data. The app itself only requires `DATABASE_URL` to run — add these two anytime through the Settings panel. Full details in [Configuration](#configuration), next.
 
-**Platform:** pure Node.js/TypeScript with no native or OS-specific dependencies — runs anywhere Node 24 runs. There's no packaged Docker image yet, so self-hosting today means running the Node process directly (via `pnpm dev`/`pnpm build && pnpm start`, a systemd unit, etc.) rather than a container.
+**Platform:** pure Node.js/TypeScript with no native or OS-specific dependencies — runs anywhere Node 22 runs. There's no packaged Docker image yet, so self-hosting today means running the Node process directly (via `pnpm dev`/`pnpm build && pnpm start`, a systemd unit, etc.) rather than a container.
 
 ## Configuration
 
