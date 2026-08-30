@@ -97,6 +97,15 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/favicon.ico")).toBe(true);
   });
 
+  it("allows the other favicon assets exactly", () => {
+    expect(isPublicPath("/favicon-16x16.png")).toBe(true);
+    expect(isPublicPath("/favicon-32x32.png")).toBe(true);
+    expect(isPublicPath("/apple-touch-icon.png")).toBe(true);
+    expect(isPublicPath("/android-chrome-192x192.png")).toBe(true);
+    expect(isPublicPath("/android-chrome-512x512.png")).toBe(true);
+    expect(isPublicPath("/site.webmanifest")).toBe(true);
+  });
+
   it("blocks everything else", () => {
     expect(isPublicPath("/")).toBe(false);
     expect(isPublicPath("/about")).toBe(false);

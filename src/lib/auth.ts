@@ -18,7 +18,17 @@ export const AUTH_COOKIE = "site_auth";
 export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
 /** Paths the auth gate lets through unauthenticated. Prefix-matched. */
-export const PUBLIC_PATH_PREFIXES = ["/login", "/_build/", "/favicon.ico"];
+export const PUBLIC_PATH_PREFIXES = [
+  "/login",
+  "/_build/",
+  "/favicon.ico",
+  "/favicon-16x16.png",
+  "/favicon-32x32.png",
+  "/apple-touch-icon.png",
+  "/android-chrome-192x192.png",
+  "/android-chrome-512x512.png",
+  "/site.webmanifest",
+];
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATH_PREFIXES.some((prefix) =>
