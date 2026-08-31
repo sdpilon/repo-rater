@@ -1,0 +1,35 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: context
+    attributes:
+      label: Where are you running this?
+      options:
+        - Self-hosted (following the README)
+        - The public demo (repo-rater-demo.vercel.app)
+        - Reading the code, not running it
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect instead?
+      description: Be specific — "it broke" doesn't help as much as the actual error, page, or behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact sequence that triggers it, not "sometimes happens."
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or errors
+      description: Server logs, browser console output, pipeline output — whatever's relevant. Leave blank if none.
+    validations:
+      required: false
