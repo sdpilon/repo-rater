@@ -1,6 +1,4 @@
-# Non-build files Vercel's upload doesn't need. `vercel deploy` started
-# picking these up after the 2026-08-08 repo flatten moved the deploy
-# step from app/ to the repo root (see tracker-s3a / ARCHITECTURE.md).
+# Non-build files Vercel's upload doesn't need.
 .beads/
 .claude/
 .github/
