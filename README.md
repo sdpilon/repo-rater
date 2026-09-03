@@ -15,6 +15,7 @@ Most GitHub dashboards measure activity, not whether a project is actually conve
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [Quick start](#quick-start)
+  - [Docker](#docker)
 - [Usage](#usage)
   - [Keeping data fresh](#keeping-data-fresh)
 - [Development](#development)
@@ -41,7 +42,7 @@ Most GitHub dashboards measure activity, not whether a project is actually conve
 - **A Postgres database** — any Postgres works (a free [Neon](https://neon.tech) instance, a local install, a Docker container). Nothing Neon- or provider-specific is used beyond standard SQL.
 - **A GitHub personal access token and an Anthropic API key** — needed for the pipeline to actually populate the dashboard with data. The app itself only requires `DATABASE_URL` to run — add these two anytime through the Settings panel. Full details in [Configuration](#configuration), next.
 
-**Platform:** pure Node.js/TypeScript with no native or OS-specific dependencies — runs anywhere Node 22 runs. There's no packaged Docker image yet, so self-hosting today means running the Node process directly (via `pnpm dev`/`pnpm build && pnpm start`, a systemd unit, etc.) rather than a container.
+**Platform:** pure Node.js/TypeScript with no native or OS-specific dependencies — runs anywhere Node 22 runs. A multi-stage `Dockerfile` is included for containerized self-hosting (see [Docker](#docker)), or run the Node process directly (via `pnpm dev`/`pnpm build && pnpm start`, a systemd unit, etc.) if you'd rather not use a container.
 
 ## Configuration
 
@@ -87,6 +88,22 @@ Once credentials are in place, run the pipeline once to populate the dashboard w
 ```bash
 pnpm run pipeline
 ```
+
+### Docker
+
+A multi-stage `Dockerfile` is included, producing a ~164MB image (`node:22-alpine` plus the built app — no source tree, `node_modules`, or build toolchain baked in):
+
+```bash
+docker build --tag repo-rater .
+docker run -d --name repo-rater \
+  -p 8372:8372 \
+  -e DATABASE_URL="postgres://..." \
+  -e PIPELINE_GH_TOKEN="..." \
+  -e ANTHROPIC_API_KEY="..." \
+  repo-rater
+```
+
+The app listens on port `8372` by default (set via the `PORT` env var, matching the image's `EXPOSE`). The container only runs the app server — the pipeline isn't run inside it; run `pnpm run pipeline` separately (from a checkout, a scheduled job, etc.) pointed at the same `DATABASE_URL`.
 
 ## Usage
 
