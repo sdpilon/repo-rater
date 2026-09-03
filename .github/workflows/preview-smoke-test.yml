@@ -39,6 +39,14 @@ jobs:
         if: github.event.deployment_status.state == 'success'
         env:
           PREVIEW_URL: ${{ github.event.deployment_status.target_url }}
+          # Preview deployments sit behind Vercel's own platform-level SSO
+          # wall by default (unlike production on this plan — see the
+          # comment on isAuthenticatedRequest's caller in middleware.ts).
+          # This bypasses that wall so the curl below actually reaches the
+          # app instead of a 302 to vercel.com/sso-api. Generated in the
+          # Vercel project's Settings -> Deployment Protection -> Protection
+          # Bypass for Automation, stored as a repo Actions secret.
+          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           echo "Checking $PREVIEW_URL"
 
@@ -47,7 +55,9 @@ jobs:
           max_attempts=5
           while [ "$attempt" -lt "$max_attempts" ]; do
             attempt=$((attempt + 1))
-            status=$(curl -sS -o /tmp/body.html -w '%{http_code}' "$PREVIEW_URL" || echo "000")
+            status=$(curl -sS -o /tmp/body.html -w '%{http_code}' \
+              -H "x-vercel-protection-bypass: $BYPASS_SECRET" \
+              "$PREVIEW_URL" || echo "000")
             if [ "$status" = "200" ]; then
               break
             fi
