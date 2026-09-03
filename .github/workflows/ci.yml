@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,6 +36,9 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      - name: Format check
+        run: pnpm run format:check
 
       - name: Test
         run: pnpm test
