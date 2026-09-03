@@ -61,11 +61,13 @@ describe("getDb", () => {
     const fakeDb = {};
     const dbFactory = vi.fn().mockReturnValue(fakeDb);
     const migrateFn = vi.fn().mockResolvedValue(undefined);
+    const materialize = vi.fn().mockResolvedValue("/tmp/fake-migrations");
 
-    await getDb(dbFactory, migrateFn);
+    await getDb(dbFactory, migrateFn, materialize);
 
+    expect(materialize).toHaveBeenCalledTimes(1);
     expect(migrateFn).toHaveBeenCalledWith(fakeDb, {
-      migrationsFolder: "./drizzle",
+      migrationsFolder: "/tmp/fake-migrations",
     });
   });
 
