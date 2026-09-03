@@ -23,7 +23,10 @@ export const getDashboardData = query(async (): Promise<DashboardData> => {
   // before calling this, but that's client-driven and this RPC endpoint is
   // reachable directly regardless of what the page rendered.
   if (!isDbConfigured()) return { view: undefined, isDemoMode: isDemoMode() };
-  return { view: await getDashboardView(getDb()), isDemoMode: isDemoMode() };
+  return {
+    view: await getDashboardView(await getDb()),
+    isDemoMode: isDemoMode(),
+  };
 }, "dashboard");
 
 export const toggleAssess = action(
@@ -32,7 +35,7 @@ export const toggleAssess = action(
     assertAuthenticated();
     if (isDemoMode())
       throw new Error("Demo mode is enabled; changes are restricted.");
-    await setRepoAssessControl(getDb(), repoId, value);
+    await setRepoAssessControl(await getDb(), repoId, value);
     return json(null, { revalidate: getDashboardData.key });
   },
   "toggleAssess",
