@@ -4,6 +4,7 @@ import type { Octokit } from "octokit";
 import { createDb } from "~/db/client";
 import { createAnthropicClient } from "~/pipeline/anthropic/client";
 import { createOctokit } from "~/pipeline/github/client";
+import { materializeMigrationsFolder } from "./migrations";
 
 /**
  * Save-time validation for each self-host credential: attempt a real call
@@ -46,6 +47,7 @@ export async function validateDatabaseUrl(
   databaseUrl: string,
   dbFactory: typeof createDb = createDb,
   migrateFn: typeof migrate = migrate,
+  materialize: typeof materializeMigrationsFolder = materializeMigrationsFolder,
 ): Promise<ValidationResult> {
   const db = dbFactory(databaseUrl, {
     connectionTimeoutMillis: VALIDATION_CONNECT_TIMEOUT_MS,
@@ -55,7 +57,8 @@ export async function validateDatabaseUrl(
     // Applies drizzle/*.sql if they haven't been (idempotent — tracked in
     // its own table) so a self-hoster pasting in a brand-new, schema-less
     // Postgres never reaches the dashboard before it has tables.
-    await migrateFn(db, { migrationsFolder: "./drizzle" });
+    const migrationsFolder = await materialize();
+    await migrateFn(db, { migrationsFolder });
     return { ok: true };
   } catch (err) {
     return { ok: false, error: errorMessage(err) };
