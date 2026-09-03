@@ -37,12 +37,53 @@ describe("getDb", () => {
   it("throws a clear error when unconfigured", async () => {
     delete process.env.DATABASE_URL;
     const { getDb } = await import("./server-db");
-    expect(() => getDb()).toThrow(/DATABASE_URL/);
+    await expect(getDb()).rejects.toThrow(/DATABASE_URL/);
   });
 
-  it("memoizes the client across calls", async () => {
+  it("memoizes the client across calls, applying migrations only once", async () => {
     process.env.DATABASE_URL = "postgres://localhost/test";
     const { getDb } = await import("./server-db");
-    expect(getDb()).toBe(getDb());
+    const fakeDb = {};
+    const dbFactory = vi.fn().mockReturnValue(fakeDb);
+    const migrateFn = vi.fn().mockResolvedValue(undefined);
+
+    const first = await getDb(dbFactory, migrateFn);
+    const second = await getDb(dbFactory, migrateFn);
+
+    expect(first).toBe(second);
+    expect(dbFactory).toHaveBeenCalledTimes(1);
+    expect(migrateFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies drizzle migrations on first call, same as the settings-UI save path", async () => {
+    process.env.DATABASE_URL = "postgres://localhost/test";
+    const { getDb } = await import("./server-db");
+    const fakeDb = {};
+    const dbFactory = vi.fn().mockReturnValue(fakeDb);
+    const migrateFn = vi.fn().mockResolvedValue(undefined);
+
+    await getDb(dbFactory, migrateFn);
+
+    expect(migrateFn).toHaveBeenCalledWith(fakeDb, {
+      migrationsFolder: "./drizzle",
+    });
+  });
+
+  it("does not cache the client when migration fails, so a later call can retry", async () => {
+    process.env.DATABASE_URL = "postgres://localhost/test";
+    const { getDb } = await import("./server-db");
+    const fakeDb = {};
+    const dbFactory = vi.fn().mockReturnValue(fakeDb);
+    const migrateFn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("boom"))
+      .mockResolvedValueOnce(undefined);
+
+    await expect(getDb(dbFactory, migrateFn)).rejects.toThrow("boom");
+    const db = await getDb(dbFactory, migrateFn);
+
+    expect(db).toBe(fakeDb);
+    expect(dbFactory).toHaveBeenCalledTimes(2);
+    expect(migrateFn).toHaveBeenCalledTimes(2);
   });
 });

@@ -121,7 +121,11 @@ of silently written and failing later. For `DATABASE_URL` specifically,
 that same connection also applies any pending Drizzle migrations
 (`settings-queries.ts`) right after the `SELECT 1` succeeds — idempotent,
 so a self-hoster pasting in a brand-new Postgres gets its schema applied
-at save time rather than hitting a missing-table error on first render. A
+at save time rather than hitting a missing-table error on first render.
+The same idempotent migration also runs from `server-db.ts`'s `getDb()`,
+the app's lazy request-time DB client — so a `DATABASE_URL` set purely via
+environment variable (the Docker/container path, which never touches the
+Settings UI) gets its schema applied on first request too. A
 credential resolving from an
 environment variable shows as read-only in the UI, since saving through
 the form there would write the file but the app would keep using the

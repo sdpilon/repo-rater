@@ -11,6 +11,7 @@ RUN pnpm run build
 FROM node:22-alpine
 WORKDIR /app
 COPY --from=build /app/.output /app/.output
+COPY --from=build /app/drizzle /app/drizzle
 ENV PORT=8372
 EXPOSE 8372
 CMD [ "node", ".output/server/index.mjs" ]
