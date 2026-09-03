@@ -152,15 +152,13 @@ Run the dev server (hot reload):
 pnpm dev
 ```
 
-Type-check, lint, and run the test suite:
+Run the same checks CI does (type-check, lint, format check, tests) in one go:
 
 ```bash
-pnpm typecheck
-pnpm lint
-pnpm test
+pnpm check
 ```
 
-`pnpm lint:fix` and `pnpm format` apply Biome's autofixes and formatting in place.
+`pnpm tidy` applies Biome's lint and format autofixes in place.
 
 ### Public demo
 
