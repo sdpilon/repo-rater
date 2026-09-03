@@ -29,6 +29,9 @@ jobs:
       contains(fromJSON('["success", "failure", "error"]'), github.event.deployment_status.state)
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Fail if the Vercel deployment itself didn't succeed
         if: github.event.deployment_status.state != 'success'
         run: |
@@ -42,38 +45,9 @@ jobs:
           # Preview deployments sit behind Vercel's own platform-level SSO
           # wall by default (unlike production on this plan — see the
           # comment on isAuthenticatedRequest's caller in middleware.ts).
-          # This bypasses that wall so the curl below actually reaches the
+          # This bypasses that wall so the script below actually reaches the
           # app instead of a 302 to vercel.com/sso-api. Generated in the
           # Vercel project's Settings -> Deployment Protection -> Protection
           # Bypass for Automation, stored as a repo Actions secret.
           BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: |
-          echo "Checking $PREVIEW_URL"
-
-          status="000"
-          attempt=0
-          max_attempts=5
-          while [ "$attempt" -lt "$max_attempts" ]; do
-            attempt=$((attempt + 1))
-            status=$(curl -sS -o /tmp/body.html -w '%{http_code}' \
-              -H "x-vercel-protection-bypass: $BYPASS_SECRET" \
-              "$PREVIEW_URL" || echo "000")
-            if [ "$status" = "200" ]; then
-              break
-            fi
-            echo "Attempt $attempt/$max_attempts: got HTTP $status, retrying in 3s..."
-            sleep 3
-          done
-
-          echo "Final HTTP status: $status"
-          if [ "$status" != "200" ]; then
-            echo "::error::Preview deploy returned HTTP $status after $max_attempts attempts"
-            exit 1
-          fi
-
-          if grep -q "Something went wrong" /tmp/body.html; then
-            echo "::error::Preview deploy rendered the error boundary fallback (\"Something went wrong\")"
-            exit 1
-          fi
-
-          echo "Preview deploy looks healthy"
+        run: .github/scripts/preview-smoke-test.sh
