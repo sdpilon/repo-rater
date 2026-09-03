@@ -1,0 +1,69 @@
+name: Preview Smoke Test
+
+# Vercel's own GitHub integration reports its build/deploy result as a
+# commit *status* (context "Vercel"), not a check-run — that only tells you
+# the build succeeded, not that the app actually renders once it's live.
+# This reacts to that same deployment_status event and curls the real
+# preview URL, so it catches the case that motivated this workflow: a
+# build that succeeds but a page that crashes at runtime (e.g. "Can't find
+# meta/_journal.json file").
+on:
+  deployment_status
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    # Two unrelated Vercel projects are linked to this repo (a leftover
+    # from before the homelab self-host migration) — "repo-rater" and
+    # "repo-rater-demo", the latter being the actual public demo this
+    # checks. Vercel's environment name only carries a "– repo-rater-demo"
+    # / "– repo-rater" suffix when both projects report for the same push;
+    # when only one does, it reports bare "Preview". So: match anything
+    # that looks like a preview environment, except the one exact name
+    # known to belong to the other, unrelated project.
+    if: >
+      startsWith(github.event.deployment.environment, 'Preview') &&
+      github.event.deployment.environment != 'Preview – repo-rater' &&
+      contains(fromJSON('["success", "failure", "error"]'), github.event.deployment_status.state)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if the Vercel deployment itself didn't succeed
+        if: github.event.deployment_status.state != 'success'
+        run: |
+          echo "::error::Vercel deployment ended in state '${{ github.event.deployment_status.state }}' — failing this check directly instead of leaving it pending, since it has nothing to smoke-test."
+          exit 1
+
+      - name: Curl the preview deployment and check it actually rendered
+        if: github.event.deployment_status.state == 'success'
+        env:
+          PREVIEW_URL: ${{ github.event.deployment_status.target_url }}
+        run: |
+          echo "Checking $PREVIEW_URL"
+
+          status="000"
+          attempt=0
+          max_attempts=5
+          while [ "$attempt" -lt "$max_attempts" ]; do
+            attempt=$((attempt + 1))
+            status=$(curl -sS -o /tmp/body.html -w '%{http_code}' "$PREVIEW_URL" || echo "000")
+            if [ "$status" = "200" ]; then
+              break
+            fi
+            echo "Attempt $attempt/$max_attempts: got HTTP $status, retrying in 3s..."
+            sleep 3
+          done
+
+          echo "Final HTTP status: $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::Preview deploy returned HTTP $status after $max_attempts attempts"
+            exit 1
+          fi
+
+          if grep -q "Something went wrong" /tmp/body.html; then
+            echo "::error::Preview deploy rendered the error boundary fallback (\"Something went wrong\")"
+            exit 1
+          fi
+
+          echo "Preview deploy looks healthy"
