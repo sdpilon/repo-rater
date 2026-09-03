@@ -1,6 +1,7 @@
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { createDb } from "~/db/client";
 import { isConfigured, resolveConfig } from "./config";
+import { materializeMigrationsFolder } from "./migrations";
 
 let cachedDb: ReturnType<typeof createDb> | undefined;
 
@@ -30,6 +31,7 @@ const CONNECT_TIMEOUT_MS = 5000;
 export async function getDb(
   dbFactory: typeof createDb = createDb,
   migrateFn: typeof migrate = migrate,
+  materialize: typeof materializeMigrationsFolder = materializeMigrationsFolder,
 ): Promise<ReturnType<typeof createDb>> {
   if (!cachedDb) {
     const databaseUrl = resolveConfig("DATABASE_URL");
@@ -41,7 +43,8 @@ export async function getDb(
     const db = dbFactory(databaseUrl, {
       connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
     });
-    await migrateFn(db, { migrationsFolder: "./drizzle" });
+    const migrationsFolder = await materialize();
+    await migrateFn(db, { migrationsFolder });
     cachedDb = db;
   }
   return cachedDb;

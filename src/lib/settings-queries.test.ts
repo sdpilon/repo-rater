@@ -117,13 +117,17 @@ describe("validateDatabaseUrl", () => {
     const fakeMigrate = (async (db: unknown, config: unknown) => {
       migrateCalls.push([db, config]);
     }) as unknown as typeof import("drizzle-orm/node-postgres/migrator").migrate;
+    const fakeMaterialize = async () => "/tmp/fake-migrations";
     const result = await validateDatabaseUrl(
       "postgres://fake",
       fakeFactory,
       fakeMigrate,
+      fakeMaterialize,
     );
     expect(result).toEqual({ ok: true });
-    expect(migrateCalls).toEqual([[fakeDb, { migrationsFolder: "./drizzle" }]]);
+    expect(migrateCalls).toEqual([
+      [fakeDb, { migrationsFolder: "/tmp/fake-migrations" }],
+    ]);
   });
 
   it("returns ok:false with a clear error when applying migrations fails", async () => {

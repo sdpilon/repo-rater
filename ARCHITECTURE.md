@@ -125,7 +125,15 @@ at save time rather than hitting a missing-table error on first render.
 The same idempotent migration also runs from `server-db.ts`'s `getDb()`,
 the app's lazy request-time DB client — so a `DATABASE_URL` set purely via
 environment variable (the Docker/container path, which never touches the
-Settings UI) gets its schema applied on first request too. A
+Settings UI) gets its schema applied on first request too. Both call sites
+get their `migrationsFolder` from `migrations.ts`'s
+`materializeMigrationsFolder()`, which writes the bundled migration files
+back out to a real temp directory at runtime rather than pointing
+drizzle-orm's `migrate()` straight at `./drizzle` — the build only bundles
+files that are actually `import`ed, so a deploy target that doesn't
+separately ship the literal `drizzle/` directory (Vercel's build, unlike a
+plain `node .output/server/index.mjs` checkout) would otherwise have
+`migrate()` fail with "Can't find meta/_journal.json file". A
 credential resolving from an
 environment variable shows as read-only in the UI, since saving through
 the form there would write the file but the app would keep using the
