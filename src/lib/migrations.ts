@@ -35,9 +35,7 @@ interface JournalEntry {
 export async function materializeMigrationsFolder(): Promise<string> {
   const journalRaw = journalModules["../../drizzle/meta/_journal.json"];
   if (!journalRaw) {
-    throw new Error(
-      "drizzle/meta/_journal.json was not bundled at build time",
-    );
+    throw new Error("drizzle/meta/_journal.json was not bundled at build time");
   }
   const journal = JSON.parse(journalRaw) as { entries: JournalEntry[] };
 
@@ -48,9 +46,7 @@ export async function materializeMigrationsFolder(): Promise<string> {
   for (const entry of journal.entries) {
     const sql = sqlModules[`../../drizzle/${entry.tag}.sql`];
     if (sql === undefined) {
-      throw new Error(
-        `drizzle/${entry.tag}.sql was not bundled at build time`,
-      );
+      throw new Error(`drizzle/${entry.tag}.sql was not bundled at build time`);
     }
     await writeFile(join(dir, `${entry.tag}.sql`), sql);
   }

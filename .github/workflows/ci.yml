@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,6 +37,24 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Format check
+        run: pnpm run format
+
       - name: Test
         run: pnpm test
+
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download actionlint
+        id: get_actionlint
+        run: bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash)
+        shell: bash
+
+      - name: Check workflow files
+        run: ${{ steps.get_actionlint.outputs.executable }} -color
+        shell: bash
 
