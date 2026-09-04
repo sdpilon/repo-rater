@@ -137,7 +137,9 @@ plain `node .output/server/index.mjs` checkout) would otherwise have
 credential resolving from an
 environment variable shows as read-only in the UI, since saving through
 the form there would write the file but the app would keep using the
-unchanged environment variable regardless.
+unchanged environment variable regardless. The config file's path is
+overridable via `CONFIG_FILE_PATH`; it's written `0600` in a `0700`
+directory and gitignored by default.
 
 **Auth** is a single shared-secret cookie (`APP_PASSWORD`), appropriate
 for a single-user personal tool — no hashing, no session store, no

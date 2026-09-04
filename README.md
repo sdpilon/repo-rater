@@ -5,7 +5,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](./package.json)
 
-Most GitHub dashboards measure activity, not whether a project is actually converging on what it says it's for. This is for anyone with more repos than time to check on them individually: instead of opening each one to see if it's stalled, abandoned, or done, you get an honest, evidence-based read pulled from its own README, commits, and issues. It runs entirely against your own database and your own credentials, not a hosted service with visibility into your account.
+> [!WARNING]
+> **Early stage.** This is a young, mostly single-user project — expect rough edges and breaking changes. Bug reports and feature ideas are welcome; see [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+Most GitHub dashboards measure activity, not whether a project is actually converging on its stated goals. This reads each repo's own README, commits, and issues for an honest, evidence-based verdict — run entirely against your own database and credentials, not a hosted service.
 
 ![Repo Rater dashboard showing repo cards with good/warn/crit AI assessments](.github/assets/dashboard.png)
 
@@ -15,7 +18,9 @@ Most GitHub dashboards measure activity, not whether a project is actually conve
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [Quick start](#quick-start)
-  - [Docker](#docker)
+  - [Pre-built Docker image](#pre-built-docker-image)
+  - [Build from source](#build-from-source)
+  - [Populate the dashboard](#populate-the-dashboard)
 - [Usage](#usage)
   - [Keeping data fresh](#keeping-data-fresh)
 - [Development](#development)
@@ -25,67 +30,61 @@ Most GitHub dashboards measure activity, not whether a project is actually conve
 
 ## Features
 
-- **Automatic repo discovery** — finds every repo in the connected GitHub account itself; no hardcoded list to maintain.
-- **AI-written progress assessment per repo** — a 0–100 completion estimate, a good/warn/crit status, and a short evidence-based writeup that cites specific commits, issues, and PRs against the README's stated goals.
-- **Re-assessment only when something actually changed** — each repo's inputs are hashed, so the LLM is only called again when the README, commits, issues, or PRs meaningfully change, not on every refresh.
-- **Per-repo Assess control (Auto/Yes/No)** — force a repo assessed or excluded, or leave it on "Auto" and let smart defaults handle it (forks, archived repos, repos with no README, and repos with no activity are excluded by default).
-- **Rendered READMEs** — GitHub-flavored markdown, sanitized, with relative links and images resolved back to GitHub so they actually work.
+- **Automatic repo discovery** — finds every repo in the account; no hardcoded list.
+- **AI-written progress assessment per repo** — a 0–100 completion estimate, good/warn/crit status, and an evidenced writeup citing commits, issues, and PRs against the README's stated goals.
+- **Re-assessment only when something changed** — inputs are hashed, so the LLM only reruns when the README, commits, issues, or PRs meaningfully change.
+- **Per-repo Assess control** — force a repo in or out, or leave it on "Auto" for smart defaults (forks, archived, README-less, and inactive repos excluded).
+- **Rendered READMEs** — GitHub-flavored markdown, sanitized, with relative links/images resolved back to GitHub.
 - **Everything lives in Postgres, rendered on every request** — no static rebuild step, no stale cache to invalidate.
-- **In-browser Settings panel** — add or update your database connection, GitHub token, and Anthropic key from the UI itself; each is validated against the real service before it's saved, so a bad value never gets persisted silently.
-- **Optional password gate** — a shared-secret login for instances exposed beyond your own network; leave it unset for something already behind something like Tailscale.
-- **Dark mode**, following your system preference.
+- **In-browser Settings panel** — add or update credentials without restarting; each is validated against the real service before saving.
+- **Optional password gate** — shared-secret login for instances exposed beyond your network.
+- **Dark mode** — following your system preference.
 
 ## Prerequisites
 
 - **Node.js 22+** — the version pinned in `package.json`'s `engines` field.
-- **pnpm** — the only package manager this is tested and locked against (`pnpm-lock.yaml`). `npm install`/`yarn install` will likely still run, but resolve dependencies independently of the tested lockfile — not recommended.
-- **A Postgres database** — any Postgres works (a free [Neon](https://neon.tech) instance, a local install, a Docker container). Nothing Neon- or provider-specific is used beyond standard SQL.
-- **A GitHub personal access token and an Anthropic API key** — needed for the pipeline to actually populate the dashboard with data. The app itself only requires `DATABASE_URL` to run — add these two anytime through the Settings panel. Full details in [Configuration](#configuration), next.
+- **pnpm** — the only package manager this is tested and locked against; `npm`/`yarn` will resolve independently of the lockfile, so not recommended.
+- **A Postgres database** — any Postgres works; nothing provider-specific beyond standard SQL.
+- **A GitHub personal access token and an Anthropic API key** — needed for the pipeline to populate data (the app itself only needs `DATABASE_URL` to run); add both anytime via Settings. Details in [Configuration](#configuration), next.
 
-**Platform:** pure Node.js/TypeScript with no native or OS-specific dependencies — runs anywhere Node 22 runs. A multi-stage `Dockerfile` is included for containerized self-hosting (see [Docker](#docker)), or run the Node process directly (via `pnpm dev`/`pnpm build && pnpm start`, a systemd unit, etc.) if you'd rather not use a container.
+**Platform:** pure Node.js/TypeScript, no native or OS-specific dependencies — runs anywhere Node 22 runs. A pre-built Docker image is available (see [Quick start](#quick-start)), or run the Node process directly (`pnpm dev`/`pnpm build && pnpm start`, a systemd unit, etc.).
 
 ## Configuration
 
-Four settings control the app: `DATABASE_URL`, `PIPELINE_GH_TOKEN`, `ANTHROPIC_API_KEY`, and `APP_PASSWORD`. Each resolves the same way: an environment variable wins if it's set; otherwise the app falls back to a local JSON file (`./data/config.json` by default, override with `CONFIG_FILE_PATH`) written by the in-browser Settings panel. The two approaches compose freely — e.g. `DATABASE_URL` from an environment variable and the GitHub token entered through the UI. A value sourced from an environment variable shows as read-only in Settings, since anything saved there would be silently overridden by the env var anyway.
+Four settings control the app, each settable as an environment variable or through the in-browser Settings panel:
 
-| Variable            | Required                | Purpose                                                                                                                                                                                                                 |
-| ------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`      | To unlock the dashboard | Postgres connection string. Nothing renders but the credentials screen until this is set.                                                                                                                               |
-| `PIPELINE_GH_TOKEN` | To populate data        | A GitHub personal access token with read access to the repos you want tracked — a classic PAT with the`repo` scope, or a fine-grained token with equivalent read permissions on your account's repositories.            |
-| `ANTHROPIC_API_KEY` | To populate data        | Used to generate each repo's progress assessment.                                                                                                                                                                       |
-| `APP_PASSWORD`      | No                      | Shared-secret login cookie for the whole app. Unset means no login gate at all — fine behind something like Tailscale, not for anything reachable from the open internet. Env-var only; not exposed in the Settings UI. |
+| Variable            | Required                | Purpose                                                                     |
+| ------------------- | ----------------------- | --------------------------------------------------------------------------- |
+| `DATABASE_URL`      | To unlock the dashboard | Postgres connection string.                                                 |
+| `PIPELINE_GH_TOKEN` | To populate data        | GitHub PAT with read access to your repos.                                  |
+| `ANTHROPIC_API_KEY` | To populate data        | Used to generate each repo's progress assessment.                           |
+| `APP_PASSWORD`      | No                      | Optional shared-secret login gate; skip it behind something like Tailscale. |
 
-Any of `DATABASE_URL`, `PIPELINE_GH_TOKEN`, or `ANTHROPIC_API_KEY` left unset can instead be entered through the Settings panel once the app is running. Each one is checked against the real service before being saved — a live `SELECT 1` for the database, an authenticated `users.getAuthenticated` call for the GitHub token, a `models.list` call for the Anthropic key — so a bad value is rejected immediately rather than silently persisted.
-
-The config file itself is written `0600` (owner read/write only) in a `0700` directory, and is gitignored by default — don't check it into version control if you relocate it.
+See [ARCHITECTURE.md](./ARCHITECTURE.md#credentials--auth) for how settings resolve between env vars and the Settings panel, how they're validated, and where the config file lives.
 
 ## Quick start
+
+Three ways to run the app. None of them run the pipeline that populates real data — that's a separate step, [Populate the dashboard](#populate-the-dashboard) below, once the app is up with credentials in place.
+
+### Docker (Recommended)
+
+```bash
+docker run -d --name repo-rater \
+  -p 8372:8372 \
+  -e DATABASE_URL="postgres://..." \
+  -e PIPELINE_GH_TOKEN="..." \
+  -e ANTHROPIC_API_KEY="..." \
+  ghcr.io/sdpilon/repo-rater
+```
+
+### Build from source
 
 ```bash
 git clone https://github.com/sdpilon/repo-rater.git
 cd repo-rater
-pnpm install
 ```
 
-Start the app — `pnpm dev` for a dev server with hot reload, or `pnpm build && pnpm start` to run the production build:
-
-```bash
-pnpm dev
-# or
-pnpm build && pnpm start
-```
-
-Open `http://localhost:3000`. If `DATABASE_URL` isn't set as an environment variable, the app shows a credentials screen on first load — paste it in there (along with your GitHub token and Anthropic key). Either way — env var or credentials screen — the database schema is applied automatically against a fresh Postgres on first use, no separate migration step needed. See [Configuration](#configuration) for what each credential needs and every way to set it.
-
-Once credentials are in place, run the pipeline once to populate the dashboard with real data:
-
-```bash
-pnpm run pipeline
-```
-
-### Docker
-
-A multi-stage `Dockerfile` is included, producing a ~164MB image (`node:22-alpine` plus the built app — no source tree, `node_modules`, or build toolchain baked in):
+Then either build the Docker image yourself — a multi-stage `Dockerfile` produces a ~164MB image (`node:22-alpine` plus the built app, no source tree or build toolchain baked in):
 
 ```bash
 docker build --tag repo-rater .
@@ -97,48 +96,67 @@ docker run -d --name repo-rater \
   repo-rater
 ```
 
-The app listens on port `8372` by default (set via the `PORT` env var, matching the image's `EXPOSE`). The container only runs the app server — the pipeline isn't run inside it; run `pnpm run pipeline` separately (from a checkout, a scheduled job, etc.) pointed at the same `DATABASE_URL`.
+— or run the Node process directly:
+
+```bash
+pnpm install
+pnpm dev
+# or, for a production build:
+pnpm build && pnpm start
+```
+
+Open `http://localhost:3000`. If `DATABASE_URL` isn't set, the app shows a credentials screen on first load — paste it in (with your GitHub token and Anthropic key). See [Configuration](#configuration) for details.
+
+### Populate the dashboard
+
+Run the pipeline to populate the dashboard with real data — this needs a local checkout regardless of which option above you used:
+
+```bash
+git clone https://github.com/sdpilon/repo-rater.git   # skip if you already have one
+cd repo-rater && pnpm install                          # skip if already installed
+pnpm run pipeline
+```
 
 ## Usage
 
-Once the dashboard loads with data, each repo gets a card showing its assessment — a completion percentage, a status label, evidence-based reasoning, and any gaps the LLM flagged — along with collapsible sections for its recent commits, issues, and pull requests, and its rendered README. A totals bar summarizes the account across all visible repos.
+Each repo gets a card showing its assessment — completion percentage, status label, evidence-based reasoning, and flagged gaps — plus collapsible commits/issues/PRs and its rendered README. A totals bar summarizes all visible repos.
 
 Every card has an **Assess: Auto / Yes / No** control, answering "should this repo be assessed?":
 
-- **Auto** (default) — decided automatically by smart defaults (forks, archived repos, repos with no README, and repos with no activity are excluded from assessment).
-- **Yes** — force this repo to be assessed, regardless of the automatic rules.
-- **No** — force this repo to be excluded from assessment, regardless of the automatic rules.
+- **Auto** (default) — decided by smart defaults (forks, archived repos, repos with no README, and repos with no activity are excluded).
+- **Yes** — force assessment, regardless of the automatic rules.
+- **No** — force exclusion, regardless of the automatic rules.
 
-A **Hide ignored repos** toggle above the repo list filters excluded repos out of view entirely; it's remembered locally between visits.
+A **Hide ignored repos** toggle filters excluded repos out of view; remembered locally between visits.
 
-The **Settings** panel (bottom of the page) is available at any time to add or update credentials — you don't need to restart the app after changing them.
+The **Settings** panel (bottom of the page) adds or updates credentials anytime — no restart needed.
 
 ### Keeping data fresh
 
-The app doesn't refresh itself in the background — running it just serves whatever is currently in Postgres. To pull in new commits/issues/PRs and re-run assessments, run the pipeline again:
+The app doesn't refresh in the background — it just serves whatever's in Postgres. To pull in new commits/issues/PRs and re-run assessments, run the pipeline again:
 
 ```bash
 pnpm run pipeline
 ```
 
-Re-running it is cheap: assessments are only regenerated for repos whose README, commits, issues, or PRs actually changed since the last run — everything else is skipped. Schedule it however you'd schedule any recurring job on your setup (cron, a systemd timer, etc.).
+Re-running is cheap: only repos whose README, commits, issues, or PRs changed get reassessed. Schedule it however you'd schedule any recurring job (cron, a systemd timer, etc.).
 
 Two flags are available for pipeline runs:
 
-- `--dry-run` — reports what the pipeline would do (repos discovered, how many have no prior assessment) without writing anything.
-- `--limit N` — restricts the run to the first `N` discovered repos, useful for testing against a smaller slice of a large account.
+- `--dry-run` — reports what the pipeline would do, without writing anything.
+- `--limit N` — restricts the run to the first `N` discovered repos.
 
 ## Development
 
 ### Tech stack
 
-- **[SolidJS](https://www.solidjs.com/) + [SolidStart](https://start.solidjs.com/)** — UI framework and full-stack meta-framework (routing, server actions/queries, SSR).
-- **[Vite](https://vite.dev/)** — dev server and build tool, with [Nitro](https://nitro.build/) as the server engine.
-- **[Drizzle ORM](https://orm.drizzle.team/)** — schema, queries, and migrations against Postgres.
-- **[Octokit](https://github.com/octokit/octokit.js)** — GitHub API client (discovery, README/commit/issue/PR fetching).
-- **[Anthropic SDK](https://github.com/anthropics/anthropic-sdk-typescript)** — LLM calls for the per-repo assessment.
-- **[marked](https://marked.js.org/)** — README markdown rendering, sanitized with **[DOMPurify](https://github.com/cure53/DOMPurify)** client-side and **[sanitize-html](https://github.com/apostrophecms/sanitize-html)** server-side.
-- **TypeScript**, **[Biome](https://biomejs.dev/)** (lint/format), **[Vitest](https://vitest.dev/)** (tests) — tooling.
+- **[SolidJS](https://www.solidjs.com/) + [SolidStart](https://start.solidjs.com/)** — UI framework and meta-framework (routing, server actions/queries, SSR).
+- **[Vite](https://vite.dev/)** (with [Nitro](https://nitro.build/)) — dev server and build tool.
+- **[Drizzle ORM](https://orm.drizzle.team/)** — schema, queries, migrations against Postgres.
+- **[Octokit](https://github.com/octokit/octokit.js)** — GitHub API client.
+- **[Anthropic SDK](https://github.com/anthropics/anthropic-sdk-typescript)** — per-repo LLM assessment.
+- **[marked](https://marked.js.org/)** — README rendering, sanitized via **[DOMPurify](https://github.com/cure53/DOMPurify)** (client) and **[sanitize-html](https://github.com/apostrophecms/sanitize-html)** (server).
+- **TypeScript**, **[Biome](https://biomejs.dev/)**, **[Vitest](https://vitest.dev/)** — typing, lint/format, tests.
 
 Install dependencies:
 
@@ -162,32 +180,11 @@ pnpm check
 
 ### Public demo
 
-A live instance seeded entirely with fake data runs at [repo-rater-demo.vercel.app](https://repo-rater-demo.vercel.app) — not connected to any real GitHub account, useful for a quick look before setting anything up yourself. `DEMO_MODE=true` disables the Assess control there so visitors can't mutate the shared demo database.
+A live instance seeded with fake data runs at [repo-rater-demo.vercel.app](https://repo-rater-demo.vercel.app) — not connected to a real GitHub account, for a quick look before setting anything up. `DEMO_MODE=true` disables the Assess control so visitors can't mutate the shared database.
 
 ### Seeding fake data
 
-`pnpm run seed:fake` populates a fresh database with a small fake GitHub account (a handful of repos spanning good/warn/crit assessments, one unassessed, one auto-ignored fork, one private repo) instead of the real pipeline. It's how the screenshot/demo data in this README and elsewhere is generated — useful any time that needs refreshing, or for trying out the dashboard without wiring up real credentials. It refuses to run against a database that already has repos, to avoid mixing fake data into a real one — pass `--force` to seed anyway.
-
-A throwaway local Postgres works well for this — no real credentials needed at all:
-
-```bash
-docker run -d --name repo-rater-demo-db -e POSTGRES_PASSWORD=postgres -p 55432:5432 postgres:16-alpine
-
-export DATABASE_URL="postgres://postgres:postgres@localhost:55432/postgres"
-pnpm exec drizzle-kit migrate   # apply schema, one-time per database
-pnpm run seed:fake
-
-pnpm dev   # open http://localhost:3000 — no GitHub token or Anthropic key required
-```
-
-Drop the container when you're done: `docker rm -f repo-rater-demo-db`.
-
-To regenerate `.github/assets/dashboard.png` from a UI change, with the dev server from above still running:
-
-```bash
-npx playwright install chromium   # one-time, downloads Playwright's managed browser
-pnpm run screenshot
-```
+`pnpm run seed:fake` populates the database with a small fake GitHub account instead of the real pipeline — a quick way to try the dashboard without wiring up real credentials. It refuses to run against a database that already has repos; pass `--force` to seed anyway. See [CONTRIBUTING.md](./CONTRIBUTING.md#working-with-fake-data) for using it with a throwaway Postgres and regenerating the demo screenshot.
 
 ## AI disclosure
 
