@@ -8,21 +8,21 @@
 > [!WARNING]
 > **Early stage.** This is a young, mostly single-user project — expect rough edges and breaking changes. Bug reports and feature ideas are welcome; see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-Most GitHub dashboards measure activity, not whether a project is actually converging on its stated goals. This reads each repo's own README, commits, and issues for an honest, evidence-based verdict — run entirely against your own database and credentials, not a hosted service.
-
 ![Repo Rater dashboard showing repo cards with good/warn/crit AI assessments](.github/assets/dashboard.png)
 
 ## Table of contents
 
 - [Features](#features)
+- [Why](#why)
+- [Demo](#demo)
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [Quick start](#quick-start)
-  - [Pre-built Docker image](#pre-built-docker-image)
+  - [Docker (Recommended)](#docker-recommended)
   - [Build from source](#build-from-source)
-  - [Populate the dashboard](#populate-the-dashboard)
 - [Usage](#usage)
-  - [Keeping data fresh](#keeping-data-fresh)
+  - [Running the pipeline](#running-the-pipeline)
+  - [Seeding fake data](#seeding-fake-data)
 - [Development](#development)
   - [Tech stack](#tech-stack)
 - [AI disclosure](#ai-disclosure)
@@ -40,14 +40,27 @@ Most GitHub dashboards measure activity, not whether a project is actually conve
 - **Optional password gate** — shared-secret login for instances exposed beyond your network.
 - **Dark mode** — following your system preference.
 
+## Why
+
+Most GitHub dashboards measure activity, not whether a project is actually converging on its stated goals. This reads each repo's own README, commits, and issues for an honest, evidence-based verdict — run entirely against your own database and credentials, not a hosted service.
+
+## Demo
+
+A live instance seeded with fake data runs at [repo-rater-demo.vercel.app](https://repo-rater-demo.vercel.app) — not connected to a real GitHub account, for a quick look before setting anything up. `DEMO_MODE=true` disables the Assess control so visitors can't mutate the shared database.
+
 ## Prerequisites
 
-- **Node.js 22+** — the version pinned in `package.json`'s `engines` field.
-- **pnpm** — the only package manager this is tested and locked against; `npm`/`yarn` will resolve independently of the lockfile, so not recommended.
+Always needed, regardless of how you run the app:
+
 - **A Postgres database** — any Postgres works; nothing provider-specific beyond standard SQL.
 - **A GitHub personal access token and an Anthropic API key** — needed for the pipeline to populate data (the app itself only needs `DATABASE_URL` to run); add both anytime via Settings. Details in [Configuration](#configuration), next.
+- **Node.js 22+** and **pnpm** — the pipeline (`pnpm run pipeline`) always runs from a full source checkout, even if the app itself runs via Docker; the published image only bundles the built server, not the pipeline script. `package.json`'s `engines` field pins the Node version; `npm`/`yarn` will resolve independently of the tested lockfile, so pnpm is recommended.
 
-**Platform:** pure Node.js/TypeScript, no native or OS-specific dependencies — runs anywhere Node 22 runs. A pre-built Docker image is available (see [Quick start](#quick-start)), or run the Node process directly (`pnpm dev`/`pnpm build && pnpm start`, a systemd unit, etc.).
+Only if you're running the app itself via Docker instead of Node directly ([Quick start](#quick-start)):
+
+- **Docker**
+
+**Platform:** pure Node.js/TypeScript, no native or OS-specific dependencies — runs anywhere Node 22 runs.
 
 ## Configuration
 
@@ -64,7 +77,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md#credentials--auth) for how settings reso
 
 ## Quick start
 
-Three ways to run the app. None of them run the pipeline that populates real data — that's a separate step, [Populate the dashboard](#populate-the-dashboard) below, once the app is up with credentials in place.
+Three ways to run the app. None of them run the pipeline that populates real data — see [Running the pipeline](#running-the-pipeline) under Usage, once the app is up with credentials in place.
 
 ### Docker (Recommended)
 
@@ -107,35 +120,17 @@ pnpm build && pnpm start
 
 Open `http://localhost:3000`. If `DATABASE_URL` isn't set, the app shows a credentials screen on first load — paste it in (with your GitHub token and Anthropic key). See [Configuration](#configuration) for details.
 
-### Populate the dashboard
+## Usage
 
-Run the pipeline to populate the dashboard with real data — this needs a local checkout regardless of which option above you used:
+The layout is what's in the screenshot above. The one non-obvious control is each card's **Assess: Auto / Yes / No** — "Auto" applies smart defaults (forks, archived, README-less, and inactive repos excluded); "Yes"/"No" override it either way.
+
+### Running the pipeline
+
+The app doesn't refresh itself in the background or populate on its own — it just serves whatever's in Postgres. Running the pipeline is what populates the dashboard the first time, and how you keep it fresh afterward; it needs a local checkout regardless of which [Quick start](#quick-start) option you used to run the app:
 
 ```bash
 git clone https://github.com/sdpilon/repo-rater.git   # skip if you already have one
 cd repo-rater && pnpm install                          # skip if already installed
-pnpm run pipeline
-```
-
-## Usage
-
-Each repo gets a card showing its assessment — completion percentage, status label, evidence-based reasoning, and flagged gaps — plus collapsible commits/issues/PRs and its rendered README. A totals bar summarizes all visible repos.
-
-Every card has an **Assess: Auto / Yes / No** control, answering "should this repo be assessed?":
-
-- **Auto** (default) — decided by smart defaults (forks, archived repos, repos with no README, and repos with no activity are excluded).
-- **Yes** — force assessment, regardless of the automatic rules.
-- **No** — force exclusion, regardless of the automatic rules.
-
-A **Hide ignored repos** toggle filters excluded repos out of view; remembered locally between visits.
-
-The **Settings** panel (bottom of the page) adds or updates credentials anytime — no restart needed.
-
-### Keeping data fresh
-
-The app doesn't refresh in the background — it just serves whatever's in Postgres. To pull in new commits/issues/PRs and re-run assessments, run the pipeline again:
-
-```bash
 pnpm run pipeline
 ```
 
@@ -145,6 +140,10 @@ Two flags are available for pipeline runs:
 
 - `--dry-run` — reports what the pipeline would do, without writing anything.
 - `--limit N` — restricts the run to the first `N` discovered repos.
+
+### Seeding fake data
+
+`pnpm run seed:fake` populates the database with a small fake GitHub account instead of the real pipeline — a quick way to try the dashboard without wiring up real credentials. It refuses to run against a database that already has repos; pass `--force` to seed anyway. See [CONTRIBUTING.md](./CONTRIBUTING.md#working-with-fake-data) for using it with a throwaway Postgres and regenerating the demo screenshot.
 
 ## Development
 
@@ -178,14 +177,6 @@ pnpm check
 
 `pnpm tidy` applies Biome's lint and format autofixes in place.
 
-### Public demo
-
-A live instance seeded with fake data runs at [repo-rater-demo.vercel.app](https://repo-rater-demo.vercel.app) — not connected to a real GitHub account, for a quick look before setting anything up. `DEMO_MODE=true` disables the Assess control so visitors can't mutate the shared database.
-
-### Seeding fake data
-
-`pnpm run seed:fake` populates the database with a small fake GitHub account instead of the real pipeline — a quick way to try the dashboard without wiring up real credentials. It refuses to run against a database that already has repos; pass `--force` to seed anyway. See [CONTRIBUTING.md](./CONTRIBUTING.md#working-with-fake-data) for using it with a throwaway Postgres and regenerating the demo screenshot.
-
 ## AI disclosure
 
 Parts of this codebase, including this README, were written with AI coding assistance.
@@ -196,4 +187,4 @@ Parts of this codebase, including this README, were written with AI coding assis
 
 ## License
 
-[MIT](./LICENSE)
+Licensed under the [MIT License](./LICENSE).
