@@ -18,8 +18,8 @@
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [Quick start](#quick-start)
-  - [Docker (Recommended)](#docker-recommended)
-  - [Build from source](#build-from-source)
+  - [Pre-built image](#pre-built-image)
+  - [From a local checkout](#from-a-local-checkout)
 - [Usage](#usage)
   - [Running the pipeline](#running-the-pipeline)
   - [Seeding fake data](#seeding-fake-data)
@@ -77,21 +77,11 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md#credentials--auth) for how settings reso
 
 ## Quick start
 
-Three ways to run the app. None of them run the pipeline that populates real data — see [Running the pipeline](#running-the-pipeline) under Usage, once the app is up with credentials in place.
+Four ways to run the app. None of them run the pipeline that populates real data — see [Running the pipeline](#running-the-pipeline) under Usage, once the app is up with credentials in place.
 
-### Docker (Recommended)
+### Pre-built image
 
-**Docker Compose** — provisions Postgres for you, nothing else to set up first:
-
-```bash
-git clone https://github.com/sdpilon/repo-rater.git
-cd repo-rater
-docker compose up
-```
-
-Set `APP_PASSWORD`, `PIPELINE_GH_TOKEN`, and/or `ANTHROPIC_API_KEY` as shell env vars (or in a `.env` file in the repo root — `docker compose` picks it up automatically) before running, if you want them in place from the start; `DATABASE_URL` is already wired to the compose-provided Postgres. See [Configuration](#configuration).
-
-**Plain `docker run`** — bring your own Postgres instead:
+No local checkout needed — pull and run the published image, bringing your own Postgres:
 
 ```bash
 docker run -d --name repo-rater \
@@ -102,14 +92,28 @@ docker run -d --name repo-rater \
   ghcr.io/sdpilon/repo-rater
 ```
 
-### Build from source
+Open `http://localhost:8372`. If `DATABASE_URL` isn't set, the app shows a credentials screen on first load — paste it in (with your GitHub token and Anthropic key). See [Configuration](#configuration) for details.
+
+### From a local checkout
+
+Clone the repo once:
 
 ```bash
 git clone https://github.com/sdpilon/repo-rater.git
 cd repo-rater
 ```
 
-Then either build the Docker image yourself — a multi-stage `Dockerfile` produces a ~164MB image (`node:22-alpine` plus the built app, no source tree or build toolchain baked in):
+Then pick how to run it:
+
+**Docker Compose (recommended)** — provisions Postgres for you, nothing else to set up first:
+
+```bash
+docker compose up
+```
+
+Set `APP_PASSWORD`, `PIPELINE_GH_TOKEN`, and/or `ANTHROPIC_API_KEY` as shell env vars (or in a `.env` file in the repo root — `docker compose` picks it up automatically) before running, if you want them in place from the start; `DATABASE_URL` is already wired to the compose-provided Postgres. Open `http://localhost:8372` once it's up. See [Configuration](#configuration).
+
+**Build the Docker image yourself** — bring your own Postgres, same as the pre-built image; a multi-stage `Dockerfile` produces a ~164MB image (`node:22-alpine` plus the built app, no source tree or build toolchain baked in):
 
 ```bash
 docker build --tag repo-rater .
@@ -121,7 +125,9 @@ docker run -d --name repo-rater \
   repo-rater
 ```
 
-— or run the Node process directly:
+Open `http://localhost:8372`.
+
+**Run the Node process directly:**
 
 ```bash
 pnpm install
