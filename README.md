@@ -50,9 +50,9 @@ A live instance seeded with fake data runs at [repo-rater-demo.vercel.app](https
 
 ## Prerequisites
 
-Always needed, regardless of how you run the app:
+Always needed, regardless of how you run the app, unless noted otherwise:
 
-- **A Postgres database** — any Postgres works; nothing provider-specific beyond standard SQL.
+- **A Postgres database** — any Postgres works; nothing provider-specific beyond standard SQL. Skip this if you use the Docker Compose quick start below — it provisions Postgres for you.
 - **A GitHub personal access token and an Anthropic API key** — needed for the pipeline to populate data (the app itself only needs `DATABASE_URL` to run); add both anytime via Settings. Details in [Configuration](#configuration), next.
 - **Node.js 22+** and **pnpm** — the pipeline (`pnpm run pipeline`) always runs from a full source checkout, even if the app itself runs via Docker; the published image only bundles the built server, not the pipeline script. `package.json`'s `engines` field pins the Node version; `npm`/`yarn` will resolve independently of the tested lockfile, so pnpm is recommended.
 
@@ -80,6 +80,18 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md#credentials--auth) for how settings reso
 Three ways to run the app. None of them run the pipeline that populates real data — see [Running the pipeline](#running-the-pipeline) under Usage, once the app is up with credentials in place.
 
 ### Docker (Recommended)
+
+**Docker Compose** — provisions Postgres for you, nothing else to set up first:
+
+```bash
+git clone https://github.com/sdpilon/repo-rater.git
+cd repo-rater
+docker compose up
+```
+
+Set `APP_PASSWORD`, `PIPELINE_GH_TOKEN`, and/or `ANTHROPIC_API_KEY` as shell env vars (or in a `.env` file in the repo root — `docker compose` picks it up automatically) before running, if you want them in place from the start; `DATABASE_URL` is already wired to the compose-provided Postgres. See [Configuration](#configuration).
+
+**Plain `docker run`** — bring your own Postgres instead:
 
 ```bash
 docker run -d --name repo-rater \
