@@ -169,6 +169,14 @@ export async function runPipeline({
 
   if (discoverError) {
     console.error(`run ${runId}: discovery failed, aborting: ${discoverError}`);
+    await recordRunStart(db, runId, startedAt, discoveredCount);
+    await recordRunFinish(db, runId, new Date(), {
+      status: "failed",
+      reposFetchedOk: 0,
+      reposFailed: 0,
+      llmCallsMade: 0,
+      llmCallsSkipped: 0,
+    });
     return undefined;
   }
 
@@ -244,48 +252,95 @@ export async function runPipeline({
 }
 
 /**
- * Real CLI entrypoint. Reads `DATABASE_URL`/`PIPELINE_GH_TOKEN` from the
- * environment and fails fast with a clear error if either is missing
- * (rather than letting a missing env var surface later as a cryptic
- * downstream connection error), builds a real db/Octokit, runs the
- * pipeline, then closes the db connection.
+ * The same credential checks `main()` used to do inline, factored out so
+ * both the CLI entrypoint and a UI-triggerable path can share them —
+ * returning a reportable result instead of throwing, since a UI caller
+ * needs to surface a missing credential as a message, not an uncaught
+ * exception.
+ */
+export function resolvePipelineCredentials():
+  | {
+      ok: true;
+      databaseUrl: string;
+      githubToken: string;
+      anthropicApiKey: string;
+    }
+  | { ok: false; error: string } {
+  const databaseUrl = resolveConfig("DATABASE_URL");
+  if (!databaseUrl) {
+    return {
+      ok: false,
+      error:
+        "DATABASE_URL is not configured — set the DATABASE_URL environment variable or configure it via the dashboard settings before running `node run.js`.",
+    };
+  }
+  const githubToken = resolveConfig("PIPELINE_GH_TOKEN");
+  if (!githubToken) {
+    return {
+      ok: false,
+      error:
+        "PIPELINE_GH_TOKEN is not configured — set the PIPELINE_GH_TOKEN environment variable or configure it via the dashboard settings before running `node run.js`.",
+    };
+  }
+  const anthropicApiKey = resolveConfig("ANTHROPIC_API_KEY");
+  if (!anthropicApiKey) {
+    return {
+      ok: false,
+      error:
+        "ANTHROPIC_API_KEY is not configured — set the ANTHROPIC_API_KEY environment variable or configure it via the dashboard settings before running `node run.js`.",
+    };
+  }
+  return { ok: true, databaseUrl, githubToken, anthropicApiKey };
+}
+
+/**
+ * Resolves credentials, builds a real db/Octokit/Anthropic client, runs the
+ * pipeline, and closes the db connection — the shared implementation behind
+ * both `main()` (CLI) and the UI's on-demand trigger action. Returns a
+ * reportable result rather than throwing on a missing credential; opens its
+ * own db connection (not `src/lib/server-db.ts`'s cached singleton) so it
+ * can close it when done, same as `main()` always has.
+ */
+export async function runPipelineFromConfig(
+  args: ParsedArgs,
+): Promise<
+  | { ok: true; summary: RunPipelineSummary | undefined }
+  | { ok: false; error: string }
+> {
+  const credentials = resolvePipelineCredentials();
+  if (!credentials.ok) {
+    return { ok: false, error: credentials.error };
+  }
+
+  const db = createDb(credentials.databaseUrl);
+  const octokit = createOctokit({
+    PIPELINE_GH_TOKEN: credentials.githubToken,
+  } as NodeJS.ProcessEnv);
+  const anthropicClient = createAnthropicClient({
+    ANTHROPIC_API_KEY: credentials.anthropicApiKey,
+  } as NodeJS.ProcessEnv);
+
+  try {
+    const summary = await runPipeline({ db, octokit, anthropicClient, args });
+    return { ok: true, summary };
+  } finally {
+    await db.$client.end();
+  }
+}
+
+/**
+ * Real CLI entrypoint. Delegates to `runPipelineFromConfig` and throws on
+ * a missing credential or a downstream failure, preserving the existing
+ * fail-fast CLI behavior (the bottom-of-file `main().catch(...)` still logs
+ * and exits 1).
  */
 export async function main(
   argv: string[] = process.argv.slice(2),
 ): Promise<void> {
   const args = parseArgs(argv);
-
-  const databaseUrl = resolveConfig("DATABASE_URL");
-  if (!databaseUrl) {
-    throw new Error(
-      "DATABASE_URL is not configured — set the DATABASE_URL environment variable or configure it via the dashboard settings before running `node run.js`.",
-    );
-  }
-  const githubToken = resolveConfig("PIPELINE_GH_TOKEN");
-  if (!githubToken) {
-    throw new Error(
-      "PIPELINE_GH_TOKEN is not configured — set the PIPELINE_GH_TOKEN environment variable or configure it via the dashboard settings before running `node run.js`.",
-    );
-  }
-  const anthropicApiKey = resolveConfig("ANTHROPIC_API_KEY");
-  if (!anthropicApiKey) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not configured — set the ANTHROPIC_API_KEY environment variable or configure it via the dashboard settings before running `node run.js`.",
-    );
-  }
-
-  const db = createDb(databaseUrl);
-  const octokit = createOctokit({
-    PIPELINE_GH_TOKEN: githubToken,
-  } as NodeJS.ProcessEnv);
-  const anthropicClient = createAnthropicClient({
-    ANTHROPIC_API_KEY: anthropicApiKey,
-  } as NodeJS.ProcessEnv);
-
-  try {
-    await runPipeline({ db, octokit, anthropicClient, args });
-  } finally {
-    await db.$client.end();
+  const result = await runPipelineFromConfig(args);
+  if (!result.ok) {
+    throw new Error(result.error);
   }
 }
 
