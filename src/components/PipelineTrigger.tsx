@@ -15,13 +15,26 @@ const timestampFormat = new Intl.DateTimeFormat("en-US", {
   minute: "numeric",
 });
 
-const POLL_INTERVAL_MS = 3000;
+export const POLL_INTERVAL_MS = 3000;
 
 export default function PipelineTrigger() {
   const status = createAsync(() => getPipelineStatus());
   const trigger = useAction(triggerPipelineRun);
   const submission = useSubmission(triggerPipelineRun);
-  const [triggering, setTriggering] = createSignal(false);
+  // True from the moment the trigger is clicked until a poll observes a
+  // DIFFERENT run than whatever status() showed right before the click —
+  // identified by startedAt, regardless of whether that new run is still
+  // in progress or already finished. Needed because the new run's `runs`
+  // row isn't written until after discovery's GitHub round-trip completes
+  // server-side — for an account with many repos that can easily take
+  // longer than one POLL_INTERVAL_MS tick, so an early poll can still
+  // reflect the *previous* run. A plain inProgress check can't tell "still
+  // the old run" apart from "the new run already finished" (e.g. a fast
+  // credential failure) — both read as inProgress:false — so it either
+  // stops too early (treating stale data as done) or never stops at all
+  // (waiting for an in-progress sighting that may never come).
+  const [awaitingStart, setAwaitingStart] = createSignal(false);
+  let baselineStartedAt: number | undefined;
 
   let intervalId: ReturnType<typeof setInterval> | undefined;
   function stopPolling() {
@@ -39,35 +52,35 @@ export default function PipelineTrigger() {
   }
   onCleanup(stopPolling);
 
-  // Stop + clear once the polled status confirms the run is no longer in
-  // progress. This does NOT start polling on its own — see handleTrigger:
-  // the runs row for a new run isn't written until after discovery's
-  // GitHub round-trip, so status() won't show inProgress:true right away.
   createEffect(() => {
-    if (!status()?.inProgress) {
+    const s = status();
+    if (awaitingStart() && s?.startedAt.getTime() !== baselineStartedAt) {
+      setAwaitingStart(false);
+    }
+    if (!awaitingStart() && !s?.inProgress) {
       stopPolling();
-      setTriggering(false);
     }
   });
 
   async function handleTrigger() {
-    setTriggering(true);
+    baselineStartedAt = status()?.startedAt.getTime();
+    setAwaitingStart(true);
     try {
       const result = await trigger();
       if (result?.error) {
         alert(result.error);
-        setTriggering(false);
+        setAwaitingStart(false);
         return;
       }
       ensurePolling();
     } catch (err) {
       alert(`Couldn't start pipeline run: ${(err as Error).message}`);
-      setTriggering(false);
+      setAwaitingStart(false);
     }
   }
 
   const disabled = () =>
-    submission.pending || triggering() || status()?.inProgress === true;
+    submission.pending || awaitingStart() || status()?.inProgress === true;
 
   return (
     <div class="pipeline-trigger">
