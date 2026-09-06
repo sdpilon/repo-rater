@@ -12,6 +12,7 @@ vi.mock("../pipeline/run", () => ({
   resolvePipelineCredentials: vi.fn(),
   runPipelineFromConfig: vi.fn(),
 }));
+vi.mock("./dashboard", () => ({ getDashboardData: { key: "dashboard" } }));
 
 // @solidjs/router's query() caches results by cache key across calls
 // within the same module instance — reset modules between tests so each
@@ -216,7 +217,7 @@ describe("triggerPipelineRun", () => {
     expect(runPipelineFromConfig).not.toHaveBeenCalled();
   });
 
-  it("fires the pipeline run without awaiting it", async () => {
+  it("awaits the pipeline run and reports its error when it fails", async () => {
     const { isDemoMode } = await import("./demo-mode");
     vi.mocked(isDemoMode).mockReturnValue(false);
     const { resolvePipelineCredentials, runPipelineFromConfig } = await import(
@@ -233,16 +234,51 @@ describe("triggerPipelineRun", () => {
     vi.mocked(getDb).mockResolvedValue(fakeDb as never);
     const { getLatestRun } = await import("../pipeline/runs");
     vi.mocked(getLatestRun).mockResolvedValue(undefined);
-    // A never-resolving promise proves the action doesn't await it.
-    vi.mocked(runPipelineFromConfig).mockReturnValue(new Promise(() => {}));
+    vi.mocked(runPipelineFromConfig).mockResolvedValue({
+      ok: false,
+      error: "discovery failed: rate limited",
+    });
+    const { triggerPipelineRun } = await import("./pipeline");
+
+    const result = await callAction(triggerPipelineRun);
+
+    expect(result).toEqual({ error: "discovery failed: rate limited" });
+    expect(runPipelineFromConfig).toHaveBeenCalledWith({
+      dryRun: false,
+      limit: null,
+    });
+  });
+
+  it("awaits the pipeline run and revalidates status + dashboard data when it succeeds", async () => {
+    const { isDemoMode } = await import("./demo-mode");
+    vi.mocked(isDemoMode).mockReturnValue(false);
+    const { resolvePipelineCredentials, runPipelineFromConfig } = await import(
+      "../pipeline/run"
+    );
+    vi.mocked(resolvePipelineCredentials).mockReturnValue({
+      ok: true,
+      databaseUrl: "postgres://localhost/test",
+      githubToken: "gh-token",
+      anthropicApiKey: "anthropic-key",
+    });
+    const { getDb } = await import("./server-db");
+    const fakeDb = { fake: "db" };
+    vi.mocked(getDb).mockResolvedValue(fakeDb as never);
+    const { getLatestRun } = await import("../pipeline/runs");
+    vi.mocked(getLatestRun).mockResolvedValue(undefined);
+    vi.mocked(runPipelineFromConfig).mockResolvedValue({
+      ok: true,
+      summary: {
+        runId: "run_1",
+        discoveredCount: 5,
+        reposFetchedOk: 5,
+        reposFailed: 0,
+      },
+    });
     const { triggerPipelineRun } = await import("./pipeline");
 
     const result = await callAction(triggerPipelineRun);
 
     expect(result).toEqual({ error: null });
-    expect(runPipelineFromConfig).toHaveBeenCalledWith({
-      dryRun: false,
-      limit: null,
-    });
   });
 });

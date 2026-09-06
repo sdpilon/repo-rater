@@ -5,6 +5,7 @@ import {
 } from "../pipeline/run";
 import { getLatestRun } from "../pipeline/runs";
 import { assertAuthenticated } from "./auth-guard";
+import { getDashboardData } from "./dashboard";
 import { isDemoMode } from "./demo-mode";
 import { getDb, isDbConfigured } from "./server-db";
 
@@ -53,11 +54,13 @@ export const triggerPipelineRun = action(async () => {
     return { error: "A pipeline run is already in progress." };
   }
 
-  // Fire-and-forget: the UI polls getPipelineStatus for outcome instead of
-  // blocking this action on the full discover -> extract-load -> enrich run.
-  runPipelineFromConfig({ dryRun: false, limit: null }).catch((err) => {
-    console.error("pipeline run failed:", err);
-  });
+  const result = await runPipelineFromConfig({ dryRun: false, limit: null });
+  if (!result.ok) {
+    return { error: result.error };
+  }
 
-  return json({ error: null }, { revalidate: getPipelineStatus.key });
+  return json(
+    { error: null },
+    { revalidate: [getPipelineStatus.key, getDashboardData.key] },
+  );
 }, "triggerPipelineRun");
