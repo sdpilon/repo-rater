@@ -1,11 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 /**
- * Assessment-generation client backed by the Anthropic SDK, ported from
- * repo-root `pipeline/enrich.js` (read-only reference). The API call shape
- * (`output_config`/`json_schema`, `thinking: {type: "adaptive"}`) is kept
- * verbatim — it's already live-verified working in the old stack, so this
- * is a faithful port, not a "corrected" rewrite against older API docs.
+ * Assessment-generation client backed by the Anthropic SDK. The API call
+ * shape (`output_config`/`json_schema`, `thinking: {type: "adaptive"}`) is
+ * live-verified working — don't "correct" it against older API docs.
  */
 
 export function createAnthropicClient(

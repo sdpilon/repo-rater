@@ -2,9 +2,7 @@ import { Octokit } from "octokit";
 
 /**
  * GitHub data-ingestion client backed by Octokit (REST + built-in pagination
- * + throttling), replacing the old `gh`-CLI-shell-out version at repo root
- * `pipeline/github.js`. Function-for-function port: same names, same
- * shapes, same behavior — only the transport changed.
+ * + throttling).
  */
 
 /**

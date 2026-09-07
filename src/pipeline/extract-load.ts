@@ -18,37 +18,22 @@ import {
 } from "./github/client";
 
 /**
- * Per-repo, per-data-type fetch-and-upsert step, merging what the old
- * repo-root `pipeline/extract.js` (fetch → write to bronze flat files) and
- * `pipeline/load.js` (read bronze → upsert to DuckDB) did into a single step
- * that fetches from GitHub (via Octokit) and upserts straight into Postgres.
+ * Per-repo, per-data-type fetch-and-upsert step: fetches from GitHub (via
+ * Octokit) and upserts straight into Postgres.
  *
- * **No bronze flat-file layer** — this is a deliberate, approved
- * architecture decision, not an oversight. Bronze's only value in the old
- * system was "replay from raw without re-hitting GitHub," which doesn't
- * survive on ephemeral compute anyway, and GitHub is cheap to re-query at
- * this project's scale. Fetch results go straight into `commits` /
- * `issues` / `pull_requests` without ever touching disk.
+ * **No bronze flat-file layer.** Fetch results go straight into `commits` /
+ * `issues` / `pull_requests` without ever touching disk — GitHub is cheap to
+ * re-query at this project's scale, so there's no need for a raw-data cache
+ * to replay from.
  *
  * **No repo meta here** — `discover.ts`'s `upsertRepo` already upserts repo
  * metadata every run from the account-listing data (`fetchAccountRepos`),
- * which has the same fields the old per-repo `fetchRepoMeta` call would
- * return. The old system's separate per-repo `fetchRepoMeta` in
- * `extract.js`, followed by `load.js` upserting it *again*, was redundant
- * 1:1 field duplication (both went through the same `mapRawRepo`). This
- * module doesn't replicate that redundancy — it only handles
- * commits/issues/prs.
+ * so this module only handles commits/issues/prs, not repo-level fields.
  *
- * **No readme here either** — the old system never persisted readme to a
- * silver DB table at all; it re-fetched it fresh into bronze every run, and
- * `enrich.js` read it straight from there ("readme has no silver table and
- * no watermark — it's small enough to refetch in full every run"). There's
- * still no `readme` column anywhere in the new Postgres schema, and no
- * consumer of readme data in this phase (enrichment is Phase 2). So this
- * module doesn't fetch or store readme at all — Phase 2's `enrich.ts` will
- * call `fetchReadme` directly via Octokit right when it needs it, matching
- * the old "always fresh, never cached" semantic just via a direct fetch
- * instead of a bronze intermediate.
+ * **No readme here either** — there's no `readme` column anywhere in the
+ * Postgres schema, and no consumer of readme data in this phase (enrichment
+ * is Phase 2). Phase 2's `enrich.ts` calls `fetchReadme` directly via
+ * Octokit right when it needs it — always fresh, never cached.
  */
 
 export const DATA_TYPES = ["commits", "issues", "prs"] as const;
@@ -92,7 +77,7 @@ export async function getWatermark(
 /**
  * Upserts the watermark for `(repoId, dataType)`. Straightforward full
  * upsert — both remaining columns (`lastFetchedAt`, `lastSuccessRunId`) are
- * always overwritten, no preserved fields, matching the old `setWatermark`.
+ * always overwritten, no preserved fields.
  *
  * Callers must pass the run's `now`/`fetchedAt` timestamp here, not
  * anything derived from the fetched rows — watermark advances to run time,
@@ -344,10 +329,9 @@ export interface ExtractLoadAllParams {
   fetchPrs?: FetchPrsFn;
   /**
    * Injectable in tests in place of the real `extractLoadRepo`, so a whole
-   * per-repo failure (the old `extractAll`'s per-repo try/catch scenario —
-   * e.g. the entire GitHub call for a repo throwing before any per-data-type
-   * isolation would even apply) can be exercised without contriving a real
-   * DB failure. Defaults to the real `extractLoadRepo`.
+   * per-repo failure (e.g. the entire GitHub call for a repo throwing before
+   * any per-data-type isolation would even apply) can be exercised without
+   * contriving a real DB failure. Defaults to the real `extractLoadRepo`.
    */
   extractLoadOne?: (
     params: ExtractLoadRepoParams,
@@ -359,9 +343,7 @@ export interface ExtractLoadAllParams {
  * of failure isolation on top of `extractLoadRepo`'s per-data-type
  * isolation: if the call for one repo throws entirely (rather than being
  * caught and turned into a per-data-type error result), that's recorded as
- * a single "repo"-level error result and the rest of the batch still runs —
- * mirroring the old `extractAll`'s per-repo try/catch around the whole
- * per-repo call.
+ * a single "repo"-level error result and the rest of the batch still runs.
  */
 export async function extractLoadAll({
   repos: repoList,

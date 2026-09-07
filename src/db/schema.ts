@@ -12,18 +12,12 @@ import {
 } from "drizzle-orm/pg-core";
 
 /**
- * Drizzle ORM (Postgres) schema translating the old DuckDB `schema.sql`
- * (repo root, read-only reference) as part of the app/ rewrite. Table and
- * column names are kept 1:1 with the old schema; only types change where
- * DuckDB and Postgres diverge, per the approved rewrite plan. Deviations
- * from a literal translation are called out inline below and are also
- * summarized in the migration PR description.
+ * Drizzle ORM (Postgres) schema for the pipeline and dashboard.
  *
- * Timestamps: DuckDB `TIMESTAMP` is a naive (timezone-less) timestamp. We
- * preserve that semantic with Postgres `timestamp` (no `tz` suffix) rather
- * than switching to `timestamptz` — this is a deliberate choice, not an
- * oversight. If timezone-aware timestamps are wanted later, that's a
- * separate, explicit migration.
+ * Timestamps: columns use naive (timezone-less) Postgres `timestamp` (no
+ * `tz` suffix), a deliberate choice rather than an oversight. If
+ * timezone-aware timestamps are wanted later, that's a separate, explicit
+ * migration.
  */
 
 export const repos = pgTable("repos", {
@@ -42,22 +36,20 @@ export const repos = pgTable("repos", {
   isArchived: boolean("is_archived"),
   isIgnored: boolean("is_ignored").notNull().default(false),
   // 'auto' | 'manual' — plain text with an app-level union type (see
-  // IgnoreSource below), matching the old schema's VARCHAR + DEFAULT
-  // pattern rather than a native Postgres enum.
+  // IgnoreSource below) rather than a native Postgres enum.
   ignoreSource: varchar("ignore_source").notNull().default("auto"),
   // Persisted reasons behind an 'auto' ignore decision (e.g. ["no README",
   // "no activity"]), written by `applyIgnoreDefaultForRepo`
-  // (pipeline/ignore-rules.ts) at the same time it computes is_ignored.
-  // Added for the Phase 3 dashboard's ignore-reason label — the old
-  // dashboard recomputed this at display time from a freshly-fetched
-  // README, but the new schema never persists README for a currently-
-  // ignored repo (enrichment, and its input_snapshot, is skipped entirely
-  // for ignored repos), so display-time recomputation isn't possible here.
+  // (pipeline/ignore-rules.ts) at the same time it computes is_ignored. The
+  // dashboard reads this directly rather than recomputing it at display
+  // time, since README is never persisted for a currently-ignored repo
+  // (enrichment, and its input_snapshot, is skipped entirely for ignored
+  // repos).
   ignoreReasons: text("ignore_reasons").array(),
-  // New column (not in the old DuckDB schema): mirrors ignoreSource's
-  // pattern exactly for the same auto/manual override tracking, but for
-  // AI-assessment freshness instead of ignore-state. Plain text for
-  // consistency with ignoreSource, not a native enum, for the same reason.
+  // Mirrors ignoreSource's pattern exactly for the same auto/manual
+  // override tracking, but for AI-assessment freshness instead of
+  // ignore-state. Plain text for consistency with ignoreSource, not a
+  // native enum, for the same reason.
   assessmentSource: varchar("assessment_source").notNull().default("auto"),
   firstSeenAt: timestamp("first_seen_at").notNull(),
   lastSeenAt: timestamp("last_seen_at").notNull(),
@@ -136,8 +128,6 @@ export const fetchFailures = pgTable("fetch_failures", {
 });
 
 export const repoAssessments = pgTable("repo_assessments", {
-  // bigserial replaces the old DuckDB `CREATE SEQUENCE` + `DEFAULT
-  // nextval(...)` pattern — Postgres has native auto-incrementing bigserial.
   assessmentId: bigserial("assessment_id", { mode: "number" }).primaryKey(),
   repoId: bigint("repo_id", { mode: "number" }).notNull(),
   runId: varchar("run_id").notNull(),
@@ -147,9 +137,9 @@ export const repoAssessments = pgTable("repo_assessments", {
   label: varchar("label"),
   text: varchar("text"),
   gaps: text("gaps").array(),
-  // New column (not in the old DuckDB schema): raw snapshot of whatever
-  // input was fed to the assessment LLM call, for debuggability now that
-  // there's no bronze flat-file layer to inspect after the fact.
+  // Raw snapshot of whatever input was fed to the assessment LLM call, for
+  // debuggability — there's no separate raw-data layer to inspect after the
+  // fact otherwise.
   inputSnapshot: jsonb("input_snapshot"),
   createdAt: timestamp("created_at").notNull(),
 });

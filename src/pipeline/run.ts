@@ -19,10 +19,8 @@ import { createOctokit } from "./github/client";
 import { recordRunFinish, recordRunStart } from "./runs";
 
 /**
- * Phase 1+2 orchestrator: Discover -> Extract+Load -> Enrich, ported from
- * repo-root `pipeline/run.js` (read-only reference). Publish is removed
- * from the architecture entirely — the eventual SolidStart SSR route will
- * query Postgres directly once the frontend phase lands.
+ * Phase 1+2 orchestrator: Discover -> Extract+Load -> Enrich. There is no
+ * publish step — the SolidStart SSR route queries Postgres directly.
  */
 
 export interface ParsedArgs {
@@ -49,13 +47,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
 }
 
 /**
- * Adapted from the old `buildRepoList`: the old version only needed
- * `fullName` strings (extract.js re-fetched meta itself per repo), but the
- * new `extractLoadAll` needs `{repoId, fullName}` pairs since meta is no
- * longer re-fetched per data type (see `extract-load.ts`'s module comment).
- * Only repos `discoverRepos` actually recorded successfully (`status ===
- * "ok"`, with a real `repoId`) are included — a repo discovery couldn't
- * upsert has nothing valid to extract/load against.
+ * Builds the `{repoId, fullName}` pairs `extractLoadAll` needs (see
+ * `extract-load.ts`'s module comment for why meta isn't re-fetched per data
+ * type). Only repos `discoverRepos` actually recorded successfully
+ * (`status === "ok"`, with a real `repoId`) are included — a repo discovery
+ * couldn't upsert has nothing valid to extract/load against.
  */
 export function buildRepoList(
   discoveryResults: DiscoveryResult[],
@@ -71,16 +67,11 @@ export function buildRepoList(
 }
 
 /**
- * Ported from the old `computeRunCounts`, adapted to `ExtractLoadResult`'s
- * shape. The counting logic is unchanged: a repo counts as failed if *any*
- * of its data-type results errored, even if others succeeded — matching the
- * old "a whole-repo meta-fetch failure is failed, not silently dropped" and
- * "one bad data type fails the whole repo" behaviors. Unlike the old shape,
- * `ExtractLoadResult.repoId` is always a real number (never null) — the
- * old `r.repoId` truthiness filter existed only to exclude the old
- * "meta"-fetch-failed-so-no-repoId-yet" case, which has no equivalent here
- * (a repo only ever reaches `extractLoadAll` after discovery already gave it
- * a valid `repoId`) — so this version doesn't need that filter.
+ * Computes per-run repo counts from `ExtractLoadResult`s. A repo counts as
+ * failed if *any* of its data-type results errored, even if others
+ * succeeded — one bad data type fails the whole repo. `repoId` is always a
+ * real number (never null): a repo only ever reaches `extractLoadAll` after
+ * discovery already gave it a valid `repoId`.
  */
 export function computeRunCounts(extractResults: ExtractLoadResult[]): {
   repoIds: Set<number>;
