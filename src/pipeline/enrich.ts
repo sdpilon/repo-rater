@@ -262,9 +262,11 @@ export async function enrichAll({
 }: EnrichAllParams): Promise<{
   llmCallsMade: number;
   llmCallsSkipped: number;
+  llmCallsFailed: number;
 }> {
   let llmCallsMade = 0;
   let llmCallsSkipped = 0;
+  let llmCallsFailed = 0;
 
   for (const repoId of repoIds) {
     try {
@@ -332,9 +334,9 @@ export async function enrichAll({
       console.error(
         `run ${runId}: enrichment failed for repo ${repoId}, skipping: ${String(err)}`,
       );
-      llmCallsSkipped += 1;
+      llmCallsFailed += 1;
     }
   }
 
-  return { llmCallsMade, llmCallsSkipped };
+  return { llmCallsMade, llmCallsSkipped, llmCallsFailed };
 }

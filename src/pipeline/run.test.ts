@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import type { Octokit } from "octokit";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   commits,
   issues,
@@ -352,6 +352,35 @@ describe("runPipeline", () => {
     expect(runRows[0].reposFailed).toBe(1);
   });
 
+  it("marks the run partial when extraction succeeds for every repo but enrichment itself fails", async () => {
+    const { db, close } = await createTestDb();
+    cleanup = close;
+
+    const summary = await runPipeline({
+      db,
+      octokit: fakeOctokit,
+      anthropicClient: fakeAnthropicClient,
+      args: { dryRun: false, limit: null },
+      fetchRepos: fakeFetchRepos,
+      fetchCommits: fakeFetchCommits,
+      fetchIssues: fakeFetchIssues,
+      fetchPrs: fakeFetchPrs,
+      fetchReadme: fakeFetchReadme,
+      generateAssessment: async () => {
+        throw new Error("Anthropic API unavailable");
+      },
+    });
+
+    // Extraction/loading is unaffected — every repo still fetches ok.
+    expect(summary?.reposFetchedOk).toBe(2);
+    expect(summary?.reposFailed).toBe(0);
+
+    const runId = summary?.runId ?? "";
+    const runRows = await db.select().from(runs).where(eq(runs.runId, runId));
+    expect(runRows[0].status).toBe("partial");
+    expect(runRows[0].llmCallsMade).toBe(0);
+  });
+
   it("respects --limit: only the first N discovered repos are extracted/loaded", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
@@ -405,6 +434,29 @@ describe("runPipeline", () => {
     const runRows = await db.select().from(runs).where(eq(runs.runId, runId));
     expect(runRows[0].status).toBe("success");
     expect(runRows[0].reposDiscovered).toBe(2);
+  });
+
+  it("dry-run --limit reports the unassessed count over the limited set, not every discovered repo", async () => {
+    const { db, close } = await createTestDb();
+    cleanup = close;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runPipeline({
+      db,
+      octokit: fakeOctokit,
+      anthropicClient: fakeAnthropicClient,
+      args: { dryRun: true, limit: 1 },
+      fetchRepos: fakeFetchRepos,
+    });
+
+    // Both discovered repos are unassessed, but --limit 1 means only the
+    // first one would actually be processed by a matching real run.
+    const dryRunLine = logSpy.mock.calls
+      .map((args) => String(args[0]))
+      .find((line) => line.includes("dry-run"));
+    expect(dryRunLine).toContain("1 have no prior assessment");
+
+    logSpy.mockRestore();
   });
 
   it("aborts without recording a run row when discovery itself fails", async () => {

@@ -166,9 +166,7 @@ export async function runPipeline({
   if (args.dryRun) {
     await recordRunStart(db, runId, startedAt, discoveredCount);
     const repoIds = new Set(
-      discoveryResults
-        .filter((r) => r.status === "ok" && r.repoId !== null)
-        .map((r) => r.repoId as number),
+      buildRepoList(discoveryResults, args.limit).map((r) => r.repoId),
     );
     const unassessed = await countUnassessedRepos(db, repoIds);
     console.log(
@@ -203,7 +201,7 @@ export async function runPipeline({
   // No `publish` step — it's removed from the architecture entirely; the
   // SolidStart SSR route queries Postgres directly once the frontend phase
   // lands.
-  const { llmCallsMade, llmCallsSkipped } = await enrichAll({
+  const { llmCallsMade, llmCallsSkipped, llmCallsFailed } = await enrichAll({
     db,
     octokit,
     anthropicClient,
@@ -216,16 +214,21 @@ export async function runPipeline({
 
   const finishedAt = new Date();
   await recordRunFinish(db, runId, finishedAt, {
-    status: reposFailed > 0 ? "partial" : "success",
+    status: reposFailed > 0 || llmCallsFailed > 0 ? "partial" : "success",
     reposFetchedOk,
     reposFailed,
     llmCallsMade,
-    llmCallsSkipped,
+    // Errored enrichment attempts are folded into the persisted "skipped"
+    // count (there's no separate failed-count column), but they still flip
+    // `status` to "partial" above and are called out explicitly in the log
+    // line below so a run where enrichment silently stopped working doesn't
+    // read as an unremarkable success.
+    llmCallsSkipped: llmCallsSkipped + llmCallsFailed,
   });
 
   console.log(
     `run ${runId}: ${reposFetchedOk} repos ok, ${reposFailed} repos with fetch errors, ` +
-      `${llmCallsMade} enrichment calls made, ${llmCallsSkipped} skipped` +
+      `${llmCallsMade} enrichment calls made, ${llmCallsSkipped} skipped, ${llmCallsFailed} failed` +
       (args.limit
         ? ` (limited to ${args.limit} of ${discoveredCount} discovered repos)`
         : ""),

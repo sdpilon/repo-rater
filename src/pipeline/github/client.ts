@@ -166,9 +166,10 @@ export async function fetchIssuesSince(
 // The /pulls endpoint has no server-side `since=` support (unlike /commits
 // and /issues) — this is a GitHub API limitation, not a `gh`-CLI artifact —
 // so incremental fetching still has to be done by hand: walk pages sorted
-// by updated_at desc via Octokit's async iterator, and keep only PRs
-// created or merged on/after `since`, breaking early once a whole page is
-// stale.
+// by updated_at desc via Octokit's async iterator, keep any PR touched
+// on/after `since` (created, merged, closed-without-merging, reopened,
+// retitled — anything bumping updated_at), and break early once a whole
+// page is stale.
 export async function fetchPrsSince(
   fullName: string,
   since: string,
@@ -196,7 +197,7 @@ export async function fetchPrsSince(
 
   for await (const { data: page } of iterator) {
     for (const pr of page) {
-      if (pr.created_at >= since || (pr.merged_at && pr.merged_at >= since)) {
+      if (pr.updated_at >= since) {
         kept.push(pr);
       }
     }
