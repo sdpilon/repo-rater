@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    image: repo-rater
+    ports:
+      - "8372:8372"
+    environment:
+      DATABASE_URL: postgres://repo_rater:repo_rater@postgres:5432/repo_rater
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      PIPELINE_GH_TOKEN: ${PIPELINE_GH_TOKEN:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: repo_rater
+      POSTGRES_PASSWORD: repo_rater
+      POSTGRES_DB: repo_rater
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U repo_rater"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

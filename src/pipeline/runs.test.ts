@@ -1,7 +1,12 @@
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
 import { runs } from "../db/schema";
-import { makeRunId, recordRunFinish, recordRunStart } from "./runs";
+import {
+  getLatestRun,
+  makeRunId,
+  recordRunFinish,
+  recordRunStart,
+} from "./runs";
 import { createTestDb } from "./test-helpers/pglite-db";
 
 let cleanup: (() => Promise<void>) | undefined;
@@ -64,5 +69,35 @@ describe("recordRunStart / recordRunFinish", () => {
     expect(afterFinish[0].finishedAt?.toISOString()).toBe(
       "2026-07-23T00:05:00.000Z",
     );
+  });
+});
+
+describe("getLatestRun", () => {
+  it("returns undefined when no runs exist", async () => {
+    const { db, close } = await createTestDb();
+    cleanup = close;
+
+    expect(await getLatestRun(db)).toBeUndefined();
+  });
+
+  it("returns the row with the most recent startedAt", async () => {
+    const { db, close } = await createTestDb();
+    cleanup = close;
+
+    await recordRunStart(
+      db,
+      "run_older",
+      new Date("2026-07-23T00:00:00.000Z"),
+      1,
+    );
+    await recordRunStart(
+      db,
+      "run_newer",
+      new Date("2026-07-23T01:00:00.000Z"),
+      2,
+    );
+
+    const latest = await getLatestRun(db);
+    expect(latest?.runId).toBe("run_newer");
   });
 });
