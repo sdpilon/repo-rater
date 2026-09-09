@@ -16,22 +16,16 @@ import { fetchReadme as realFetchReadme } from "./github/client";
 import { applyIgnoreDefaultForRepo } from "./ignore-rules";
 
 /**
- * Ported from repo-root `pipeline/enrich.js` (read-only reference):
- * content-hash-gated, Anthropic-backed assessment generation, appended to
- * the always-append-only `repo_assessments` table. `repoId` is dropped from
- * `computeInputHash`'s signature — it was accepted but never hashed in the
- * old code, a dead parameter. Commit/issue/PR queries get an explicit
- * `ORDER BY` the old DuckDB queries never had, making the hash
- * deterministic (free to add: no existing hash values need to stay stable).
+ * Content-hash-gated, Anthropic-backed assessment generation, appended to
+ * the always-append-only `repo_assessments` table. Commit/issue/PR queries
+ * use an explicit `ORDER BY` so the hash is deterministic.
  *
- * `enrichAll` merges what the old stack did as two separate full passes
- * (`applySuggestedIgnoreDefaults` over every touched repo, then a second
- * loop for enrichment) into a single per-repo pass. The old code could
- * afford two passes because bronze cached the README; there's no such cache
- * here (see `extract-load.ts`'s module comment), so a second pass would
- * fetch each repo's README from GitHub twice. This still preserves the old
- * code's critical guarantee — ignore state is recomputed before the
- * skip-check — just per-repo instead of batched.
+ * `enrichAll` recomputes the ignore default and runs enrichment in a single
+ * per-repo pass, rather than two separate full passes over every touched
+ * repo. There's no cache for README (see `extract-load.ts`'s module
+ * comment), so a second pass would fetch each repo's README from GitHub
+ * twice; a single pass still preserves the critical guarantee that ignore
+ * state is recomputed before the skip-check.
  */
 
 export function computeInputHash(
@@ -66,8 +60,7 @@ export interface EnrichInputs {
  * Postgres — not just this run's delta — since the content-hash gate needs
  * to see the same input set every run regardless of what's newly fetched.
  * README isn't read here; it has no watermark and is fetched fresh by
- * `enrichAll` right when it's needed (matching the old "always fresh, never
- * cached" README semantic).
+ * `enrichAll` right when it's needed — always fresh, never cached.
  */
 export async function readEnrichInputs(
   db: DrizzleDb,
@@ -203,7 +196,7 @@ export async function enrichRepo({
   return { repoId, called: true };
 }
 
-/** Ported from the old `countUnassessedRepos`, used by `run.ts`'s dry-run branch. */
+/** Used by `run.ts`'s dry-run branch. */
 export async function countUnassessedRepos(
   db: DrizzleDb,
   repoIds: Set<number>,
@@ -227,8 +220,7 @@ async function fetchReadmeSafely(
     return await fetchReadme(fullName, octokit);
   } catch {
     // A missing/inaccessible README is not a fatal error for ignore-checking
-    // or enrichment — treated as "no README", matching the old bronze-layer
-    // behavior of `readBronzeJson(...) || ""` on a failed readme fetch.
+    // or enrichment — treated as "no README".
     return "";
   }
 }
@@ -255,8 +247,8 @@ export interface EnrichAllParams {
  * (`assessment_source === 'manual'`), otherwise run the content-hash-gated
  * enrichment. Wrapped in a try/catch per repo — a failure anywhere in a
  * single repo's handling is logged and counted as skipped, never aborts the
- * run for the rest of the batch (matching both the old `run.js`'s
- * enrichment-loop isolation and this codebase's `extractLoadAll` pattern).
+ * run for the rest of the batch (the same failure-isolation pattern as
+ * `extractLoadAll`).
  */
 export async function enrichAll({
   db,
@@ -270,9 +262,11 @@ export async function enrichAll({
 }: EnrichAllParams): Promise<{
   llmCallsMade: number;
   llmCallsSkipped: number;
+  llmCallsFailed: number;
 }> {
   let llmCallsMade = 0;
   let llmCallsSkipped = 0;
+  let llmCallsFailed = 0;
 
   for (const repoId of repoIds) {
     try {
@@ -340,9 +334,9 @@ export async function enrichAll({
       console.error(
         `run ${runId}: enrichment failed for repo ${repoId}, skipping: ${String(err)}`,
       );
-      llmCallsSkipped += 1;
+      llmCallsFailed += 1;
     }
   }
 
-  return { llmCallsMade, llmCallsSkipped };
+  return { llmCallsMade, llmCallsSkipped, llmCallsFailed };
 }
