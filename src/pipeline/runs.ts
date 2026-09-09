@@ -3,9 +3,7 @@ import { runs } from "../db/schema";
 import type { DrizzleDb } from "./db-types";
 
 /**
- * Run bookkeeping (the `runs` table), ported from repo-root
- * `pipeline/run-tracking.js` (read-only reference) to Drizzle/Postgres.
- * Logic is unchanged from the old version — only the storage calls differ.
+ * Run bookkeeping for the `runs` table.
  */
 
 export function makeRunId(now: Date = new Date()): string {

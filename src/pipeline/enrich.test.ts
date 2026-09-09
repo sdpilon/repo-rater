@@ -465,7 +465,7 @@ describe("enrichAll", () => {
     expect(assessments).toHaveLength(0);
   });
 
-  it("isolates a per-repo enrichment failure as skipped, without blocking the rest of the batch", async () => {
+  it("isolates a per-repo enrichment failure as failed (not skipped), without blocking the rest of the batch", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
     await insertRepo(db, { repoId: 1, fullName: "sdpilon/broken-repo" });
@@ -492,7 +492,8 @@ describe("enrichAll", () => {
     });
 
     expect(result.llmCallsMade).toBe(1);
-    expect(result.llmCallsSkipped).toBe(1);
+    expect(result.llmCallsFailed).toBe(1);
+    expect(result.llmCallsSkipped).toBe(0);
     const okAssessments = await db
       .select()
       .from(repoAssessments)

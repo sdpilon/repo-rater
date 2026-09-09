@@ -249,7 +249,7 @@ function makeRawPr({
 }
 
 describe("fetchPrsSince", () => {
-  it("keeps PRs created or merged since the cutoff and maps fields, dropping ones untouched since then", async () => {
+  it("keeps any PR touched since the cutoff (created, merged, or otherwise updated) and maps fields, dropping ones untouched since then", async () => {
     const page = [
       makeRawPr({
         number: 1,
@@ -272,6 +272,13 @@ describe("fetchPrsSince", () => {
         state: "closed",
         createdAt: "2026-05-01T00:00:00Z",
         updatedAt: "2026-05-01T00:00:00Z",
+      }),
+      makeRawPr({
+        number: 4,
+        title: "Old PR closed without merging, just reopened",
+        state: "open",
+        createdAt: "2026-06-01T00:00:00Z",
+        updatedAt: "2026-07-04T00:00:00Z",
       }),
     ];
     async function* iterator() {
@@ -308,6 +315,13 @@ describe("fetchPrsSince", () => {
         state: "closed",
         createdAt: "2026-06-01T00:00:00Z",
         mergedAt: "2026-07-03T00:00:00Z",
+      },
+      {
+        number: 4,
+        title: "Old PR closed without merging, just reopened",
+        state: "open",
+        createdAt: "2026-06-01T00:00:00Z",
+        mergedAt: null,
       },
     ]);
   });

@@ -3,13 +3,11 @@ import { repos } from "../db/schema";
 import type { DrizzleDb } from "./db-types";
 
 /**
- * Ported from repo-root `pipeline/ignore-rules.js` (read-only reference).
- * `computeSuggestedIgnore` is unchanged: same four conditions, same
- * behavior. `applyIgnoreDefaultForRepo` is the single-repo equivalent of the
- * old `load.js`'s `applySuggestedIgnoreDefaults` loop body — the loop itself
- * now lives in `enrich.ts`'s `enrichAll`, merged with the enrichment loop so
- * README is fetched once per repo instead of twice (see enrich.ts's module
- * comment for why).
+ * `applyIgnoreDefaultForRepo` recomputes and persists the ignore default for
+ * a single repo. The per-repo loop that calls it lives in `enrich.ts`'s
+ * `enrichAll`, merged together with the enrichment loop so README is
+ * fetched once per repo instead of twice (see `enrich.ts`'s module comment
+ * for why).
  */
 
 export interface SuggestedIgnoreInput {
@@ -40,9 +38,9 @@ export function computeSuggestedIgnore({
 /**
  * Recomputes and persists `is_ignored` for a single repo, unless it's been
  * manually overridden (`ignore_source === 'manual'`) — manual overrides are
- * never recomputed or touched, matching the old stack's invariant. The
- * `WHERE ignore_source != 'manual'` guard on the UPDATE is defense-in-depth
- * against a race with a concurrent manual toggle, ported from the old code.
+ * never recomputed or touched. The `WHERE ignore_source != 'manual'` guard
+ * on the UPDATE is defense-in-depth against a race with a concurrent manual
+ * toggle.
  */
 export async function applyIgnoreDefaultForRepo(
   db: DrizzleDb,
