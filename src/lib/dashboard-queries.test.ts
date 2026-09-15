@@ -9,7 +9,11 @@ import {
 } from "../db/schema";
 import type { DrizzleDb } from "../pipeline/db-types";
 import { createTestDb } from "../pipeline/test-helpers/pglite-db";
-import { getDashboardView, setRepoAssessControl } from "./dashboard-queries";
+import {
+  getDashboardView,
+  getLatestAssessmentRowsByRepo,
+  setRepoAssessControl,
+} from "./dashboard-queries";
 
 let cleanup: (() => Promise<void>) | undefined;
 afterEach(async () => {
@@ -181,6 +185,51 @@ describe("getDashboardView", () => {
       .where(eq(repos.repoId, 1));
     const autoIgnoredView = await getDashboardView(db);
     expect(autoIgnoredView.repos[0].assessControl).toBe("auto");
+  });
+});
+
+describe("getLatestAssessmentRowsByRepo", () => {
+  it("fetches exactly one row per repo from SQL, even with many historical rows", async () => {
+    const { db, close } = await createTestDb();
+    cleanup = close;
+    await insertRepo(db, { repoId: 1, fullName: "sdpilon/one" });
+    await insertRepo(db, { repoId: 2, fullName: "sdpilon/two" });
+    await db.insert(repoAssessments).values([
+      {
+        repoId: 1,
+        runId: "run-1",
+        inputHash: "hash-1",
+        inputSnapshot: {},
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+      },
+      {
+        repoId: 1,
+        runId: "run-2",
+        inputHash: "hash-2",
+        inputSnapshot: {},
+        createdAt: new Date("2026-02-01T00:00:00Z"),
+      },
+      {
+        repoId: 1,
+        runId: "run-3",
+        inputHash: "hash-3",
+        inputSnapshot: {},
+        createdAt: new Date("2026-03-01T00:00:00Z"),
+      },
+      {
+        repoId: 2,
+        runId: "run-1",
+        inputHash: "hash-4",
+        inputSnapshot: {},
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+      },
+    ]);
+
+    const rows = await getLatestAssessmentRowsByRepo(db);
+
+    expect(rows).toHaveLength(2);
+    const repo1Row = rows.find((r) => r.repoId === 1);
+    expect(repo1Row?.inputHash).toBe("hash-3");
   });
 });
 
