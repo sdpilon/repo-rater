@@ -42,35 +42,40 @@ function groupByRepoId<T extends { repoId: number }>(
   return map;
 }
 
-/** `rows` must already be ordered by (repoId, createdAt DESC) — the first row seen per repoId is kept as "latest". */
-function latestByRepoId<T extends { repoId: number }>(
-  rows: T[],
-): Map<number, T> {
-  const map = new Map<number, T>();
-  for (const row of rows) {
-    if (!map.has(row.repoId)) map.set(row.repoId, row);
-  }
-  return map;
+/**
+ * repo_assessments is append-only (never overwritten) and each row embeds a
+ * full README snapshot in inputSnapshot, so a plain `select().from(...)`
+ * re-transfers every historical assessment -- and every duplicated README
+ * -- on every call. selectDistinctOn keeps only the latest row per repo at
+ * the SQL level, matching this project's own row-picking order
+ * (repoId, createdAt DESC, assessmentId DESC as a tiebreaker).
+ */
+export async function getLatestAssessmentRowsByRepo(
+  db: DrizzleDb,
+): Promise<(typeof repoAssessments.$inferSelect)[]> {
+  return db
+    .selectDistinctOn([repoAssessments.repoId])
+    .from(repoAssessments)
+    .orderBy(
+      repoAssessments.repoId,
+      desc(repoAssessments.createdAt),
+      desc(repoAssessments.assessmentId),
+    );
 }
 
 export async function getDashboardView(db: DrizzleDb): Promise<DashboardView> {
   const [repoRows, assessmentRows, commitRows, issueRows, prRows] =
     await Promise.all([
       db.select().from(repos).orderBy(repos.fullName),
-      db
-        .select()
-        .from(repoAssessments)
-        .orderBy(
-          repoAssessments.repoId,
-          desc(repoAssessments.createdAt),
-          desc(repoAssessments.assessmentId),
-        ),
+      getLatestAssessmentRowsByRepo(db),
       db.select().from(commits).orderBy(desc(commits.authoredAt)),
       db.select().from(issues).orderBy(desc(issues.createdAt)),
       db.select().from(pullRequests).orderBy(desc(pullRequests.createdAt)),
     ]);
 
-  const latestAssessmentByRepoId = latestByRepoId(assessmentRows);
+  const latestAssessmentByRepoId = new Map(
+    assessmentRows.map((row) => [row.repoId, row]),
+  );
   const commitsByRepoId = groupByRepoId(commitRows);
   const issuesByRepoId = groupByRepoId(issueRows);
   const prsByRepoId = groupByRepoId(prRows);
