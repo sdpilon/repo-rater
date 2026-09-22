@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import type { Octokit } from "octokit";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   commits,
   issues,
@@ -15,7 +15,14 @@ import type { Assessment } from "./anthropic/client";
 import type { DiscoveryResult } from "./discover";
 import type { ExtractLoadResult } from "./extract-load";
 import type { Commit, Issue, PullRequest, RepoMeta } from "./github/client";
-import { buildRepoList, computeRunCounts, parseArgs, runPipeline } from "./run";
+import {
+  buildRepoList,
+  computeRunCounts,
+  parseArgs,
+  resolvePipelineCredentials,
+  runPipeline,
+  runPipelineFromConfig,
+} from "./run";
 import { createTestDb } from "./test-helpers/pglite-db";
 
 // A fake Octokit/Anthropic client is enough — every non-dry-run test
@@ -42,11 +49,25 @@ async function fakeGenerateAssessment(): Promise<Assessment> {
 
 let cleanup: (() => Promise<void>) | undefined;
 
+const originalDatabaseUrl = process.env.DATABASE_URL;
+const originalGithubToken = process.env.PIPELINE_GH_TOKEN;
+const originalAnthropicKey = process.env.ANTHROPIC_API_KEY;
+
 afterEach(async () => {
   if (cleanup) {
     await cleanup();
     cleanup = undefined;
   }
+});
+
+afterEach(() => {
+  if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+  else process.env.DATABASE_URL = originalDatabaseUrl;
+  if (originalGithubToken === undefined) delete process.env.PIPELINE_GH_TOKEN;
+  else process.env.PIPELINE_GH_TOKEN = originalGithubToken;
+  if (originalAnthropicKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+  else process.env.ANTHROPIC_API_KEY = originalAnthropicKey;
+  vi.restoreAllMocks();
 });
 
 describe("parseArgs", () => {
@@ -352,6 +373,35 @@ describe("runPipeline", () => {
     expect(runRows[0].reposFailed).toBe(1);
   });
 
+  it("marks the run partial when extraction succeeds for every repo but enrichment itself fails", async () => {
+    const { db, close } = await createTestDb();
+    cleanup = close;
+
+    const summary = await runPipeline({
+      db,
+      octokit: fakeOctokit,
+      anthropicClient: fakeAnthropicClient,
+      args: { dryRun: false, limit: null },
+      fetchRepos: fakeFetchRepos,
+      fetchCommits: fakeFetchCommits,
+      fetchIssues: fakeFetchIssues,
+      fetchPrs: fakeFetchPrs,
+      fetchReadme: fakeFetchReadme,
+      generateAssessment: async () => {
+        throw new Error("Anthropic API unavailable");
+      },
+    });
+
+    // Extraction/loading is unaffected — every repo still fetches ok.
+    expect(summary?.reposFetchedOk).toBe(2);
+    expect(summary?.reposFailed).toBe(0);
+
+    const runId = summary?.runId ?? "";
+    const runRows = await db.select().from(runs).where(eq(runs.runId, runId));
+    expect(runRows[0].status).toBe("partial");
+    expect(runRows[0].llmCallsMade).toBe(0);
+  });
+
   it("respects --limit: only the first N discovered repos are extracted/loaded", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
@@ -407,7 +457,30 @@ describe("runPipeline", () => {
     expect(runRows[0].reposDiscovered).toBe(2);
   });
 
-  it("aborts without recording a run row when discovery itself fails", async () => {
+  it("dry-run --limit reports the unassessed count over the limited set, not every discovered repo", async () => {
+    const { db, close } = await createTestDb();
+    cleanup = close;
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runPipeline({
+      db,
+      octokit: fakeOctokit,
+      anthropicClient: fakeAnthropicClient,
+      args: { dryRun: true, limit: 1 },
+      fetchRepos: fakeFetchRepos,
+    });
+
+    // Both discovered repos are unassessed, but --limit 1 means only the
+    // first one would actually be processed by a matching real run.
+    const dryRunLine = logSpy.mock.calls
+      .map((args) => String(args[0]))
+      .find((line) => line.includes("dry-run"));
+    expect(dryRunLine).toContain("1 have no prior assessment");
+
+    logSpy.mockRestore();
+  });
+
+  it("records a failed run row when discovery itself fails", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
 
@@ -424,6 +497,120 @@ describe("runPipeline", () => {
     expect(summary).toBeUndefined();
 
     const runRows = await db.select().from(runs);
-    expect(runRows).toHaveLength(0);
+    expect(runRows).toHaveLength(1);
+    expect(runRows[0].status).toBe("failed");
+    expect(runRows[0].reposDiscovered).toBe(0);
+    expect(runRows[0].reposFetchedOk).toBe(0);
+    expect(runRows[0].reposFailed).toBe(0);
+    expect(runRows[0].llmCallsMade).toBe(0);
+    expect(runRows[0].llmCallsSkipped).toBe(0);
+    expect(runRows[0].finishedAt).not.toBeNull();
+  });
+});
+
+describe("resolvePipelineCredentials", () => {
+  it("reports DATABASE_URL missing before checking anything else", () => {
+    delete process.env.DATABASE_URL;
+    process.env.PIPELINE_GH_TOKEN = "gh-token";
+    process.env.ANTHROPIC_API_KEY = "anthropic-key";
+
+    expect(resolvePipelineCredentials()).toEqual({
+      ok: false,
+      error:
+        "DATABASE_URL is not configured — set the DATABASE_URL environment variable or configure it via the dashboard settings before running `node run.js`.",
+    });
+  });
+
+  it("reports PIPELINE_GH_TOKEN missing when DATABASE_URL is set", () => {
+    process.env.DATABASE_URL = "postgres://localhost/test";
+    delete process.env.PIPELINE_GH_TOKEN;
+    process.env.ANTHROPIC_API_KEY = "anthropic-key";
+
+    expect(resolvePipelineCredentials()).toEqual({
+      ok: false,
+      error:
+        "PIPELINE_GH_TOKEN is not configured — set the PIPELINE_GH_TOKEN environment variable or configure it via the dashboard settings before running `node run.js`.",
+    });
+  });
+
+  it("reports ANTHROPIC_API_KEY missing when the others are set", () => {
+    process.env.DATABASE_URL = "postgres://localhost/test";
+    process.env.PIPELINE_GH_TOKEN = "gh-token";
+    delete process.env.ANTHROPIC_API_KEY;
+
+    expect(resolvePipelineCredentials()).toEqual({
+      ok: false,
+      error:
+        "ANTHROPIC_API_KEY is not configured — set the ANTHROPIC_API_KEY environment variable or configure it via the dashboard settings before running `node run.js`.",
+    });
+  });
+
+  it("returns ok:true with all three values when fully configured", () => {
+    process.env.DATABASE_URL = "postgres://localhost/test";
+    process.env.PIPELINE_GH_TOKEN = "gh-token";
+    process.env.ANTHROPIC_API_KEY = "anthropic-key";
+
+    expect(resolvePipelineCredentials()).toEqual({
+      ok: true,
+      databaseUrl: "postgres://localhost/test",
+      githubToken: "gh-token",
+      anthropicApiKey: "anthropic-key",
+    });
+  });
+});
+
+describe("runPipelineFromConfig", () => {
+  it("short-circuits without building a db connection when a credential is missing", async () => {
+    delete process.env.DATABASE_URL;
+    process.env.PIPELINE_GH_TOKEN = "gh-token";
+    process.env.ANTHROPIC_API_KEY = "anthropic-key";
+    const dbClientModule = await import("../db/client");
+    const createDbSpy = vi.spyOn(dbClientModule, "createDb");
+
+    const result = await runPipelineFromConfig({ dryRun: false, limit: null });
+
+    expect(result).toEqual({
+      ok: false,
+      error:
+        "DATABASE_URL is not configured — set the DATABASE_URL environment variable or configure it via the dashboard settings before running `node run.js`.",
+    });
+    expect(createDbSpy).not.toHaveBeenCalled();
+  });
+
+  it("builds real clients, runs the pipeline, and closes the db when credentials are present", async () => {
+    process.env.DATABASE_URL = "postgres://localhost/test";
+    process.env.PIPELINE_GH_TOKEN = "gh-token";
+    process.env.ANTHROPIC_API_KEY = "anthropic-key";
+
+    const { db: testDb, close } = await createTestDb();
+    cleanup = close;
+    const endSpy = vi.fn(async () => {
+      /* real cleanup happens via `close` in the outer afterEach */
+    });
+    // biome-ignore lint/suspicious/noExplicitAny: attaching a test-only spy in place of the real pg Pool's $client.end
+    (testDb as any).$client = { end: endSpy };
+
+    const dbClientModule = await import("../db/client");
+    const createDbSpy = vi
+      .spyOn(dbClientModule, "createDb")
+      .mockReturnValue(testDb as never);
+
+    const summary = await runPipelineFromConfig({
+      dryRun: false,
+      limit: null,
+    });
+
+    // The fake Octokit/Anthropic clients (no real credentials behind them)
+    // make discovery fail — exercising the discoverError bugfix path above,
+    // which now records a "failed" run row instead of throwing. This proves
+    // runPipelineFromConfig resolves ok:true and closes its db connection
+    // even when the underlying run itself didn't succeed.
+    expect(summary).toEqual({ ok: true, summary: undefined });
+    expect(endSpy).toHaveBeenCalledTimes(1);
+    expect(createDbSpy).toHaveBeenCalledWith("postgres://localhost/test");
+
+    const runRows = await testDb.select().from(runs);
+    expect(runRows).toHaveLength(1);
+    expect(runRows[0].status).toBe("failed");
   });
 });

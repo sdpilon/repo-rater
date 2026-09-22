@@ -9,6 +9,7 @@ import {
   onMount,
 } from "solid-js";
 import CredentialsPanel from "~/components/CredentialsPanel";
+import PipelineTrigger from "~/components/PipelineTrigger";
 import RepoCard from "~/components/RepoCard";
 import Totals from "~/components/Totals";
 import { getDashboardData } from "~/lib/dashboard";
@@ -80,6 +81,7 @@ export default function Home() {
                 against actual commits, PRs, and issues — a judgment call about
                 "stated scope shipped," not code coverage.
               </div>
+              <PipelineTrigger />
             </header>
 
             <Show when={data()}>
