@@ -1,6 +1,6 @@
 {
   "name": "repo-rater",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Self-hosted dashboard that scores your GitHub repos' actual progress against their stated goals using an LLM",
   "scripts": {
     "dev": "vite dev",
