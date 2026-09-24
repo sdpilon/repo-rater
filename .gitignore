@@ -13,6 +13,7 @@ app.config.timestamp_*.js
 .env
 .env*.local
 .env*
+.envrc
 
 # Config data (holds secrets)
 data/
