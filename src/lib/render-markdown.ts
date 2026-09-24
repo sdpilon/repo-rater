@@ -32,14 +32,6 @@ const SANITIZE_HTML_OPTIONS: sanitizeHtml.IOptions = {
   },
 };
 
-/** Real DOMPurify (browser DOM, not jsdom) for the client-render path. */
-function sanitize(html: string): string {
-  if (typeof window !== "undefined") {
-    return createDOMPurify(window).sanitize(html);
-  }
-  return sanitizeHtml(html, SANITIZE_HTML_OPTIONS);
-}
-
 function isRelativeUrl(href: string): boolean {
   return !/^([a-z][a-z0-9+.-]*:|\/\/|#)/i.test(href);
 }
@@ -49,9 +41,53 @@ function resolveAgainst(href: string, base: string): string {
   return resolved.origin === new URL(base).origin ? resolved.toString() : href;
 }
 
-function buildMarked(fullName: string): Marked {
-  const blobBase = `https://github.com/${fullName}/blob/HEAD/`;
-  const rawBase = `https://raw.githubusercontent.com/${fullName}/HEAD/`;
+/**
+ * Real DOMPurify (browser DOM, not jsdom) for the client-render path.
+ *
+ * `walkTokens` below only rewrites markdown-syntax links/images ("[x](y)",
+ * "![x](y)") — raw inline HTML in a README (e.g. `<img src="docs/logo.png">`,
+ * common for badges/centered logos) bypasses `marked` entirely and reaches
+ * here untouched, so relative `src`/`href` attributes on it are resolved
+ * post-sanitize instead, once per DOM node, rather than with a second parse.
+ */
+function sanitize(html: string, blobBase: string, rawBase: string): string {
+  if (typeof window !== "undefined") {
+    const DOMPurify = createDOMPurify(window);
+    DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+      if (node.tagName === "IMG") {
+        const src = node.getAttribute("src");
+        if (src && isRelativeUrl(src)) {
+          node.setAttribute("src", resolveAgainst(src, rawBase));
+        }
+      } else if (node.tagName === "A") {
+        const href = node.getAttribute("href");
+        if (href && isRelativeUrl(href)) {
+          node.setAttribute("href", resolveAgainst(href, blobBase));
+        }
+      }
+    });
+    return DOMPurify.sanitize(html);
+  }
+  return sanitizeHtml(html, {
+    ...SANITIZE_HTML_OPTIONS,
+    transformTags: {
+      img: (tagName, attribs) => {
+        if (attribs.src && isRelativeUrl(attribs.src)) {
+          attribs.src = resolveAgainst(attribs.src, rawBase);
+        }
+        return { tagName, attribs };
+      },
+      a: (tagName, attribs) => {
+        if (attribs.href && isRelativeUrl(attribs.href)) {
+          attribs.href = resolveAgainst(attribs.href, blobBase);
+        }
+        return { tagName, attribs };
+      },
+    },
+  });
+}
+
+function buildMarked(blobBase: string, rawBase: string): Marked {
   const instance = new Marked({ gfm: true, async: false });
   instance.use({
     walkTokens(token: Token) {
@@ -69,8 +105,10 @@ export function renderReadme(markdown: string, fullName: string): string {
   const key = `${fullName}:${markdown}`;
   const cached = cache.get(key);
   if (cached !== undefined) return cached;
-  const html = buildMarked(fullName).parse(markdown, { async: false });
-  const sanitized = sanitize(html);
+  const blobBase = `https://github.com/${fullName}/blob/HEAD/`;
+  const rawBase = `https://raw.githubusercontent.com/${fullName}/HEAD/`;
+  const html = buildMarked(blobBase, rawBase).parse(markdown, { async: false });
+  const sanitized = sanitize(html, blobBase, rawBase);
   cache.set(key, sanitized);
   return sanitized;
 }
