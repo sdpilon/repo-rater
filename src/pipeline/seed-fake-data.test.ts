@@ -119,7 +119,7 @@ describe("seedFakeData", () => {
     expect(prRows.length).toBeGreaterThan(0);
   });
 
-  it("gives each repo a full_name namespaced under a clearly fake account", async () => {
+  it("gives each repo a full_name namespaced under a clearly fake or fixture-only account", async () => {
     const { db, close } = await createTestDb();
     cleanup = close;
 
@@ -127,7 +127,7 @@ describe("seedFakeData", () => {
 
     const repoRows = await db.select({ fullName: repos.fullName }).from(repos);
     for (const { fullName } of repoRows) {
-      expect(fullName).toMatch(/^demo-user\//);
+      expect(fullName).toMatch(/^(demo-user|repo-rater-fixtures)\//);
     }
   });
 });

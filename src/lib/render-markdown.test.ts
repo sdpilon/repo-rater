@@ -155,4 +155,32 @@ describe("renderReadme", () => {
     const html = renderReadme("[ext](//example.com/x)", "octocat/hello-world");
     expect(html).toContain('href="//example.com/x"');
   });
+
+  it("resolves a raw inline <img> src against the repo's raw GitHub URL", () => {
+    const html = renderReadme(
+      '<img src="docs/logo.png">',
+      "octocat/hello-world",
+    );
+    expect(html).toContain(
+      'src="https://raw.githubusercontent.com/octocat/hello-world/HEAD/docs/logo.png"',
+    );
+  });
+
+  it("resolves a raw inline <a> href against the repo's GitHub blob URL", () => {
+    const html = renderReadme(
+      '<a href="docs/guide.md">guide</a>',
+      "octocat/hello-world",
+    );
+    expect(html).toContain(
+      'href="https://github.com/octocat/hello-world/blob/HEAD/docs/guide.md"',
+    );
+  });
+
+  it("leaves an absolute raw inline <img> src unchanged", () => {
+    const html = renderReadme(
+      '<img src="https://example.com/x.png">',
+      "octocat/hello-world",
+    );
+    expect(html).toContain('src="https://example.com/x.png"');
+  });
 });

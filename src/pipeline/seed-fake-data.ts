@@ -82,10 +82,10 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
   return [
     {
       repoId: 900001,
-      fullName: "demo-user/order-tracking-api",
+      fullName: "repo-rater-fixtures/order-tracking-api",
       description:
         "REST API for tracking multi-warehouse order fulfillment status.",
-      htmlUrl: "https://github.com/demo-user/order-tracking-api",
+      htmlUrl: "https://github.com/repo-rater-fixtures/order-tracking-api",
       defaultBranch: "main",
       language: "TypeScript",
       stargazersCount: 42,
@@ -96,7 +96,7 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
       ignoreSource: "auto",
       ignoreReasons: null,
       readme:
-        "# order-tracking-api\n\nREST API for tracking multi-warehouse order fulfillment status.\n\n## Roadmap\n\n- [x] Order creation with idempotency keys\n- [x] Webhook retry backoff\n- [ ] Partial shipment status\n\n## Running locally\n\n```\nnpm install\nnpm run dev\n```\n",
+        "# order-tracking-api\n\n<img src='docs/badge-build-passing.svg' alt='build passing'>\n\nREST API for tracking multi-warehouse order fulfillment status.\n\n## Roadmap\n\n- [x] Order creation with idempotency keys\n- [x] Webhook retry backoff\n- [ ] Partial shipment status\n\n## Running locally\n\n```\nnpm install\nnpm run dev\n```\n\nSee the <a href='docs/CONTRIBUTING.md'>contributing guide</a> before opening a PR.\n",
       commits: [
         {
           sha: "a1b2c3d",
