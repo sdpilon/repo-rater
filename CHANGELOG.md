@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/sdpilon/repo-rater/compare/repo-rater-v0.2.0...repo-rater-v0.2.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **readme:** resolve raw inline img/a URLs against GitHub ([#162](https://github.com/sdpilon/repo-rater/issues/162)) ([19bd038](https://github.com/sdpilon/repo-rater/commit/19bd038af476995171814d82a6acb336ef33eef5))
+
 ## [0.2.0](https://github.com/sdpilon/repo-rater/compare/repo-rater-v0.1.0...repo-rater-v0.2.0) (2026-09-23)
 
 
