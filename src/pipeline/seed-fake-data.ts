@@ -82,10 +82,10 @@ function buildFakeRepos(now: Date): FakeRepoFixture[] {
   return [
     {
       repoId: 900001,
-      fullName: "demo-user/order-tracking-api",
+      fullName: "repo-rater-fixtures/order-tracking-api",
       description:
         "REST API for tracking multi-warehouse order fulfillment status.",
-      htmlUrl: "https://github.com/demo-user/order-tracking-api",
+      htmlUrl: "https://github.com/repo-rater-fixtures/order-tracking-api",
       defaultBranch: "main",
       language: "TypeScript",
       stargazersCount: 42,
